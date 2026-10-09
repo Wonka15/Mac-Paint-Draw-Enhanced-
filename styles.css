@@ -97,7 +97,7 @@
       min-height:420px;
       border:1px solid #d3cbbc;
       border-radius:14px;
-      overflow:hidden;
+      overflow:auto;
       background-color:#e9e4d9;
       background-image:radial-gradient(#c8c0b1 0.7px,transparent 0.7px);
       background-size:15px 15px;
@@ -207,3 +207,5 @@
 
 /* Zoom and Pathfinder controls */
 .zoom-readout{min-width:42px;text-align:center;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}.pathfinder-help{font-size:11px;line-height:1.45;color:var(--muted);margin:0 0 8px}.pathfinder-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.pathfinder-grid .btn{font-size:12px;padding:8px 5px}#vectorLayer.vector-active{pointer-events:all;cursor:crosshair}@media(max-width:700px){.ruler-layout{width:100%;grid-template-columns:20px minmax(0,1fr)}.ruler-corner,.ruler-left{width:20px}.zoom-readout{min-width:34px}}
+
+.rulers-hidden .ruler-strip,.rulers-hidden .ruler-corner{display:none!important}.rulers-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:auto}.rulers-hidden .paper{grid-column:1;grid-row:1}
