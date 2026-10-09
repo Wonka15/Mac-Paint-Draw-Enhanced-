@@ -158,7 +158,7 @@
       const a=vectorPaths[indices[0]],b=vectorPaths[indices[1]];
       if(!a.closed||!b.closed){toast('Pathfinder needs two closed shapes. Close each path first.');return;}
       try{
-        const scope=new window.paper.PaperScope();const scratch=document.createElement('canvas');scope.setup(scratch);
+        const scope=new window.paper.PaperScope();const scratch=document.createElement('canvas');scratch.width=W();scratch.height=H();scope.setup(scratch);
         const first=vectorToPaperPath(scope,a),second=vectorToPaperPath(scope,b);
         const methods={unite:'unite',subtract:'subtract',intersect:'intersect',exclude:'exclude'};
         const result=first[methods[operation]](second);const replacements=paperItemToVectors(result,a);
