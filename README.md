@@ -47,3 +47,11 @@ GitHub Pages serves static files, so it cannot safely keep a private AI API key.
 ## Bézier tool
 
 Choose **Bezier curve**, then click-drag to create anchor points with handles. Press **Enter** or double-click to finish an open curve; click near the first point to close it. If the tool does not receive pointer input, refresh the live site to load the latest version.
+
+
+## MacPaint-style patterns, bucket, text, and sounds
+
+- Choose a black-and-white pattern in **Classic patterns**. Patterns can be used with Pencil, raster shapes, and Paint bucket.
+- **Paint bucket** fills a connected area with the selected ink or pattern. It works best inside closed outlines; clicking an unbounded white area can fill most of the canvas.
+- Choose **Font** and adjust **Text size** before clicking the canvas with the Text tool.
+- **Retro drawing sounds** uses short synthesized square-wave beeps from the browser's Web Audio API. No external audio files are loaded, so the app does not redistribute Macintosh system sounds. Turn the sound toggle off any time.
