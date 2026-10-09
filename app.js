@@ -11,6 +11,7 @@
     const rulers = $('rulers');
     const rctx = rulers.getContext('2d');
     const vectorLayer = $('vectorLayer');
+    const canvasWrap = $('canvasWrap');
     if (!ctx || !octx || !gctx || !rctx) {
       alert('Mac Paint could not start: your browser could not create a canvas. Try refreshing or using a current browser.');
       return;
@@ -21,7 +22,8 @@
     let drawing = false, startPoint = null, lastPoint = null;
     let history = [], redoStack = [], showGuides = false, showGrid = false;
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
-    let vectorPaths = [], activeVector = null, selectedVector = -1, draggingAnchor = null, curveDragAnchor = null;
+    let vectorPaths = [], activeVector = null, selectedVector = -1, selectedVectors = [], draggingAnchor = null, curveDragAnchor = null;
+    let zoomLevel = 1, rulerDrag = null;
     let saveTimer = null;
     // FRAME STUDIO: each frame stores raster art plus editable vector paths.
     const onionCanvas = $('onion'), onionCtx = onionCanvas.getContext('2d');
@@ -101,12 +103,74 @@
       guides.style.display = (showGuides || showGrid) ? 'block' : 'none';
       rctx.clearRect(0,0,W(),H());
       rulers.style.display='none';
+      renderRulerLabels();
     }
     // VECTOR ENGINE: SVG paths are stored separately from the pixel paint canvas.
     function svgPoint(event) {
       const r = vectorLayer.getBoundingClientRect();
       return {x:Math.max(0,Math.min(W(),(event.clientX-r.left)*W()/r.width)),y:Math.max(0,Math.min(H(),(event.clientY-r.top)*H()/r.height))};
     }
+
+    // RULERS + ZOOM: ruler coordinates always map to the original 1200 × 800 artboard.
+    function renderRulerLabels(){
+      const top=$('rulerTop'),left=$('rulerLeft');if(!top||!left)return;
+      top.innerHTML='';left.innerHTML='';
+      for(let x=0;x<=W();x+=100){const label=document.createElement('span');label.className='ruler-label';label.textContent=String(x);label.style.left=(x/W()*100)+'%';top.appendChild(label);}
+      for(let y=0;y<=H();y+=100){const label=document.createElement('span');label.className='ruler-label';label.textContent=String(y);label.style.top=(y/H()*100)+'%';left.appendChild(label);}
+    }
+    function setZoom(next){
+      zoomLevel=Math.max(.25,Math.min(3,next));canvasWrap.style.zoom=String(zoomLevel);$('zoomReadout').textContent=Math.round(zoomLevel*100)+'%';
+    }
+    function setGuideFromRuler(event){
+      const rect=canvas.getBoundingClientRect();
+      if(rulerDrag==='horizontal'){guideY=Math.max(0,Math.min(H(),(event.clientY-rect.top)*H()/rect.height));}
+      if(rulerDrag==='vertical'){guideX=Math.max(0,Math.min(W(),(event.clientX-rect.left)*W()/rect.width));}
+      showGuides=true;drawGuides();
+    }
+    $('zoomInBtn').addEventListener('click',()=>setZoom(zoomLevel+.25));
+    $('zoomOutBtn').addEventListener('click',()=>setZoom(zoomLevel-.25));
+    $('zoomFitBtn').addEventListener('click',()=>setZoom(1));
+    $('rulersBtn').addEventListener('click',()=>{
+      const layout=$('rulerLayout'),hidden=layout.classList.toggle('rulers-hidden');
+      $('rulersBtn').setAttribute('aria-pressed',String(!hidden));$('rulersBtn').classList.toggle('primary',!hidden);
+    });
+    $('rulerTop').addEventListener('pointerdown',event=>{rulerDrag='horizontal';setGuideFromRuler(event);});
+    $('rulerLeft').addEventListener('pointerdown',event=>{rulerDrag='vertical';setGuideFromRuler(event);});
+    document.addEventListener('pointermove',event=>{if(rulerDrag)setGuideFromRuler(event);});
+    document.addEventListener('pointerup',()=>{rulerDrag=null;});
+    document.addEventListener('pointercancel',()=>{rulerDrag=null;});
+    // PATHFINDER: boolean operations on two selected closed vector shapes.
+    function vectorToPaperPath(scope,v){
+      const segments=v.points.map(p=>new scope.Segment(new scope.Point(p.x,p.y),p.in?new scope.Point(p.in.x-p.x,p.in.y-p.y):null,p.out?new scope.Point(p.out.x-p.x,p.out.y-p.y):null));
+      return new scope.Path({segments,closed:!!v.closed,insert:false});
+    }
+    function paperItemToVectors(item,style){
+      const items=item.className==='CompoundPath'?item.children:[item];
+      return items.filter(p=>p.segments&&p.segments.length>=2).map(p=>({
+        points:p.segments.map(seg=>({x:seg.point.x,y:seg.point.y,in:{x:seg.point.x+seg.handleIn.x,y:seg.point.y+seg.handleIn.y},out:{x:seg.point.x+seg.handleOut.x,y:seg.point.y+seg.handleOut.y}})),
+        closed:p.closed,color:style.color,size:style.size,fill:true,curve:true
+      }));
+    }
+    function runBoolean(operation){
+      if(!window.paper){toast('Pathfinder library did not load — refresh with internet');return;}
+      const indices=[...new Set(selectedVectors)].filter(i=>i>=0&&i<vectorPaths.length).sort((a,b)=>a-b);
+      if(indices.length!==2){toast('Shift-click exactly two closed shapes in Edit Points');return;}
+      const a=vectorPaths[indices[0]],b=vectorPaths[indices[1]];
+      if(!a.closed||!b.closed){toast('Pathfinder needs two closed shapes. Close each path first.');return;}
+      try{
+        const scope=new window.paper.PaperScope();const scratch=document.createElement('canvas');scope.setup(scratch);
+        const first=vectorToPaperPath(scope,a),second=vectorToPaperPath(scope,b);
+        const methods={unite:'unite',subtract:'subtract',intersect:'intersect',exclude:'exclude'};
+        const result=first[methods[operation]](second);const replacements=paperItemToVectors(result,a);
+        first.remove();second.remove();result.remove();scope.project.clear();
+        if(!replacements.length){toast('That operation produced an empty shape');return;}
+        vectorPaths.splice(indices[0],1);vectorPaths.splice(indices[1]-1,1,...replacements);
+        selectedVector=indices[0];selectedVectors=replacements.map((_,i)=>indices[0]+i);
+        renderVectors();saveSoon();toast(({unite:'Shapes united',subtract:'Front shape subtracted',intersect:'Overlap kept',exclude:'Overlap excluded'})[operation]);
+      }catch(error){console.error('Pathfinder operation failed:',error);toast('Could not combine these shapes. Try simple closed shapes.');}
+    }
+    document.querySelectorAll('[data-boolean]').forEach(button=>button.addEventListener('click',()=>runBoolean(button.dataset.boolean)));
+
     function pathData(points, closed) {
       if (!points.length) return '';
       let d = `M ${points[0].x} ${points[0].y}`;
@@ -140,7 +204,7 @@
         path.setAttribute('fill-opacity',v.closed && v.fill ? '0.35' : '1');
         path.setAttribute('stroke',v.color); path.setAttribute('stroke-width',String(v.size));
         path.setAttribute('class','vector-path'); path.setAttribute('data-vector',String(i));
-        if (tool==='editpoints' && i===selectedVector) path.setAttribute('stroke-dasharray','5 4');
+        if (tool==='editpoints' && (i===selectedVector || selectedVectors.includes(i))) { path.setAttribute('stroke-dasharray','5 4'); path.setAttribute('stroke','#315cdb'); }
         vectorLayer.appendChild(path);
         if (tool==='editpoints' && i===selectedVector) v.points.forEach((p,j)=>{
           const c=document.createElementNS(ns,'circle'); c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); c.setAttribute('r','6');
@@ -151,7 +215,7 @@
     // Commit the in-progress path to the vector object list.
     function finishVector(closed=false) {
       if (!activeVector || activeVector.points.length < 2) { activeVector=null; renderVectors(); return; }
-      activeVector.closed=closed; vectorPaths.push(activeVector); selectedVector=vectorPaths.length-1; activeVector=null;
+      activeVector.closed=closed; vectorPaths.push(activeVector); selectedVector=vectorPaths.length-1; selectedVectors=[selectedVector]; activeVector=null;
       renderVectors(); saveSoon(); toast(closed?'Vector shape closed':'Vector path finished');
     }
     function vectorDown(event) {
@@ -185,8 +249,8 @@
         renderVectors(); return;
       }
       const pathHit=event.target.closest ? event.target.closest('[data-vector]') : null;
-      if(pathHit){selectedVector=Number(pathHit.getAttribute('data-vector'));renderVectors();return;}
-      selectedVector=-1; renderVectors();
+      if(pathHit){const hitIndex=Number(pathHit.getAttribute('data-vector'));if(event.shiftKey){if(selectedVectors.includes(hitIndex))selectedVectors=selectedVectors.filter(i=>i!==hitIndex);else selectedVectors.push(hitIndex);}else selectedVectors=[hitIndex];selectedVector=hitIndex;renderVectors();return;}
+      selectedVector=-1;selectedVectors=[];renderVectors();
     }
     function vectorMove(event) {
       if (tool==='bezier' && curveDragAnchor!==null && activeVector) {
@@ -399,10 +463,10 @@
         const saved=JSON.parse(localStorage.getItem('mpde-art')||'null');
         if(!saved||!saved.image)return;
         const img=new Image();
-        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';selectTool(tool);drawGuides();renderVectors();};
+        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';selectTool(tool);drawGuides();renderVectors();};
         img.src=saved.image;
       } catch(error) { console.warn('Could not restore drawing:',error); }
     }
     ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());
-    updateButtons();status();drawGuides();renderFrameStrip();restore();
+    updateButtons();status();drawGuides();renderRulerLabels();renderFrameStrip();restore();
   })();
