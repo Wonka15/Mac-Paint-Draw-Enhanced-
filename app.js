@@ -18,7 +18,7 @@
     }
 
     // APP STATE: selected tool, drawing style, and current interaction.
-    let tool = 'pencil', color = '#20252b', size = 4, fill = false, selectedPattern = 'solid', textSize = 24;
+    let tool = 'pencil', color = '#20252b', size = 4, fill = false, selectedPattern = 'solid', textSize = 24, selectedBrush = 'round', roughPaper = false;
     let drawing = false, startPoint = null, lastPoint = null;
     let history = [], redoStack = [], showGuides = false, showGrid = false;
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
@@ -72,7 +72,7 @@
         try {
           localStorage.setItem('mpde-art', JSON.stringify({
             w: W(), h: H(), image: canvas.toDataURL('image/png'),
-            color, size, textSize, selectedPattern, tool, guideX, guideY, showGuides, showGrid, vectors: vectorPaths
+            color, size, textSize, selectedPattern, selectedBrush, roughPaper, tool, guideX, guideY, showGuides, showGrid, vectors: vectorPaths
           }));
         } catch (error) { console.warn('Autosave unavailable:', error); }
       }, 300);
@@ -130,6 +130,38 @@
         for(const n of neighbors)if(n>=0&&!seen[n]){seen[n]=1;if(top<count)stack[top++]=n;}
       }
       ctx.putImageData(image,0,0);saveSoon();retroSound('fill');
+    }
+
+
+    function brushStamp(x,y,angle,erase=false){
+      const ink=erase?'#ffffff':color, radius=Math.max(1,size/2);
+      if(selectedBrush==='round'){ctx.fillStyle=ink;ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fill();return;}
+      if(selectedBrush==='calligraphy'){
+        ctx.save();ctx.translate(x,y);ctx.rotate(angle-0.45);ctx.fillStyle=ink;ctx.beginPath();ctx.ellipse(0,0,Math.max(1,radius*1.3),Math.max(.6,radius*.24),0,0,Math.PI*2);ctx.fill();ctx.restore();return;
+      }
+      if(selectedBrush==='watercolor'){
+        ctx.save();
+        for(let i=3;i>=1;i--){const rr=radius*(.45+i*.28);ctx.globalAlpha=erase?.25:.055+i*.018;ctx.fillStyle=ink;ctx.beginPath();ctx.ellipse(x+(Math.random()-.5)*radius*.3,y+(Math.random()-.5)*radius*.3,rr,rr*(.78+Math.random()*.3),angle,0,Math.PI*2);ctx.fill();}
+        ctx.globalAlpha=erase?1:.11;ctx.strokeStyle=ink;ctx.lineWidth=Math.max(.5,radius*.12);ctx.beginPath();ctx.arc(x,y,radius*.85,0,Math.PI*2);ctx.stroke();ctx.restore();return;
+      }
+      if(selectedBrush==='acrylic'){
+        ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.fillStyle=ink;
+        const strands=Math.max(5,Math.min(18,Math.round(size*.65)));
+        for(let i=0;i<strands;i++){if(Math.random()<.14)continue;const offset=(i/(strands-1)-.5)*radius*1.5;ctx.globalAlpha=.5+Math.random()*.5;ctx.fillRect(-radius*.9,offset,Math.max(1,radius*(1.2+Math.random()*.6)),Math.max(.5,radius*.08));}
+        ctx.globalAlpha=.32;ctx.fillRect(-radius*.8,-radius*.13,radius*1.5,Math.max(1,radius*.25));ctx.restore();return;
+      }
+      ctx.save();ctx.fillStyle=ink;const dots=Math.max(8,Math.min(40,Math.round(size*1.5)));
+      for(let i=0;i<dots;i++){if(Math.random()<.32)continue;const a=Math.random()*Math.PI*2,rr=Math.random()*radius;ctx.globalAlpha=.25+Math.random()*.6;ctx.fillRect(x+Math.cos(a)*rr,y+Math.sin(a)*rr,Math.max(.5,size*.06),Math.max(.5,size*.08));}
+      ctx.restore();
+    }
+    function paintBrushSegment(from,to,erase=false){
+      const dx=to.x-from.x,dy=to.y-from.y,dist=Math.hypot(dx,dy),angle=Math.atan2(dy,dx);
+      if(selectedBrush==='round'&&selectedPattern!=='solid'&&!erase){
+        ctx.save();ctx.strokeStyle=drawingStyle();ctx.lineWidth=size;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.lineTo(to.x,to.y);ctx.stroke();ctx.restore();return;
+      }
+      const spacing=Math.max(1,selectedBrush==='watercolor'?size*.22:selectedBrush==='acrylic'?size*.16:size*.2);
+      const steps=Math.max(1,Math.ceil(dist/spacing));
+      for(let i=0;i<=steps;i++){const t=i/steps;brushStamp(from.x+dx*t,from.y+dy*t,angle,erase);}
     }
 
     function point(event) {
@@ -392,20 +424,15 @@
         guideX=p.x;guideY=p.y;showGuides=true;drawGuides();toast('Guide placed');return;
       }
       drawing=true;startPoint=p;lastPoint=p;snapshot();retroSound('start');
-      if(tool==='pencil'||tool==='eraser'){
-        ctx.beginPath();ctx.arc(p.x,p.y,Math.max(0.5,size/2),0,Math.PI*2);
-        ctx.fillStyle=tool==='eraser'?'#ffffff':drawingStyle();ctx.fill();
-      }
+      if(tool==='pencil'||tool==='eraser'){paintBrushSegment(p,p,tool==='eraser');}
       if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}
     }
     function move(event) {
       if(!drawing)return;
       const p=point(event);
       $('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';
-      if(tool==='pencil'||tool==='eraser'){
-        ctx.beginPath();ctx.moveTo(lastPoint.x,lastPoint.y);ctx.lineTo(p.x,p.y);
-        ctx.strokeStyle=tool==='eraser'?'#ffffff':drawingStyle();ctx.lineWidth=size;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();lastPoint=p;
-      } else if(['line','rect','ellipse'].includes(tool)) shape(p);
+      if(tool==='pencil'||tool==='eraser'){paintBrushSegment(lastPoint,p,tool==='eraser');lastPoint=p;}
+      else if(['line','rect','ellipse'].includes(tool)) shape(p);
     }
     function up(event) {
       if(!drawing)return;
@@ -427,6 +454,8 @@
     $('textSizeInput').addEventListener('input',e=>{textSize=Number(e.target.value);$('textSizeValue').textContent=textSize+'px';});
     document.querySelectorAll('.pattern-swatch').forEach(b=>b.addEventListener('click',()=>{selectedPattern=b.dataset.pattern;document.querySelectorAll('.pattern-swatch').forEach(s=>s.classList.toggle('active',s===b));toast('Pattern: '+(selectedPattern==='solid'?'Solid ink':selectedPattern));}));
     document.addEventListener('pointermove',()=>{if(drawing){const now=performance.now();if(now-lastDragSound>90){lastDragSound=now;retroSound('tick');}}});
+    document.querySelectorAll('.brush-option').forEach(b=>b.addEventListener('click',()=>{selectedBrush=b.dataset.brush;document.querySelectorAll('.brush-option').forEach(x=>x.classList.toggle('active',x===b));toast('Brush: '+b.dataset.brush);}));
+    $('roughPaperToggle').addEventListener('change',e=>{roughPaper=e.target.checked;canvasWrap.classList.toggle('rough-paper',roughPaper);toast(roughPaper?'Rough paper texture on':'Rough paper texture off');});
     $('fillToggle').addEventListener('change',e=>fill=e.target.checked);
     $('snapCheck').addEventListener('change',()=>{});
     $('guidesBtn').addEventListener('click',()=>{showGuides=!showGuides;if(showGuides&&guideX===null){guideX=Math.round(W()/2);guideY=Math.round(H()/2);}drawGuides();toast(showGuides?'Guides on':'Guides off');});
@@ -553,7 +582,7 @@
         const saved=JSON.parse(localStorage.getItem('mpde-art')||'null');
         if(!saved||!saved.image)return;
         const img=new Image();
-        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;selectedPattern=saved.selectedPattern||selectedPattern;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));selectTool(tool);drawGuides();renderVectors();};
+        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;selectedPattern=saved.selectedPattern||selectedPattern;selectedBrush=saved.selectedBrush||selectedBrush;roughPaper=!!saved.roughPaper;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush===selectedBrush));$('roughPaperToggle').checked=roughPaper;canvasWrap.classList.toggle('rough-paper',roughPaper);selectTool(tool);drawGuides();renderVectors();};
         img.src=saved.image;
       } catch(error) { console.warn('Could not restore drawing:',error); }
     }
