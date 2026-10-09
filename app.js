@@ -21,7 +21,7 @@
     let drawing = false, startPoint = null, lastPoint = null;
     let history = [], redoStack = [], showGuides = false, showGrid = false;
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
-    let vectorPaths = [], activeVector = null, selectedVector = -1, draggingAnchor = null;
+    let vectorPaths = [], activeVector = null, selectedVector = -1, draggingAnchor = null, curveDragAnchor = null;
     let saveTimer = null;
 
     const W = () => canvas.width, H = () => canvas.height;
@@ -34,7 +34,7 @@
       toast.timer = setTimeout(() => node.classList.remove('show'), 1800);
     }
     function status() {
-      const names = {pencil:'Pencil',eraser:'Eraser',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',pen:'Vector pen',editpoints:'Edit points'};
+      const names = {pencil:'Pencil',eraser:'Eraser',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',pen:'Vector pen',bezier:'Bezier curve',editpoints:'Edit points'};
       $('toolStatus').innerHTML = '<strong>Tool:</strong> ' + (names[tool] || tool);
       document.querySelectorAll('.tool').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
     }
@@ -43,7 +43,8 @@
       vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'editpoints');
       renderVectors();
       status();
-      if (tool === 'pen') toast('Vector Pen: click to add points; click the first point to close');
+      if (tool === 'pen') toast('Vector Pen: click to add straight points; Enter finishes');
+      if (tool === 'bezier') toast('Bezier: click-drag to shape handles; Enter finishes');
       if (tool === 'editpoints') toast('Drag a blue anchor to reshape a vector');
     }
     function updateButtons() {
@@ -104,7 +105,24 @@
     }
     function pathData(points, closed) {
       if (!points.length) return '';
-      return 'M ' + points.map(p => `${p.x} ${p.y}`).join(' L ') + (closed ? ' Z' : '');
+      let d = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 1; i < points.length; i++) {
+        const prev = points[i - 1], current = points[i];
+        if (prev.out || current.in) {
+          const c1 = prev.out || prev;
+          const c2 = current.in || current;
+          d += ` C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${current.x} ${current.y}`;
+        } else d += ` L ${current.x} ${current.y}`;
+      }
+      if (closed) {
+        const last = points[points.length - 1], first = points[0];
+        if (last.out || first.in) {
+          const c1 = last.out || last, c2 = first.in || first;
+          d += ` C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${first.x} ${first.y}`;
+        }
+        d += ' Z';
+      }
+      return d;
     }
     function renderVectors() {
       vectorLayer.innerHTML = '';
@@ -133,9 +151,20 @@
       renderVectors(); saveSoon(); toast(closed?'Vector shape closed':'Vector path finished');
     }
     function vectorDown(event) {
-      if (tool!=='pen' && tool!=='editpoints') return;
+      if (tool!=='pen' && tool!=='bezier' && tool!=='editpoints') return;
       event.preventDefault(); event.stopPropagation();
       const p=svgPoint(event);
+      if (tool==='bezier') {
+        if (activeVector && activeVector.points.length>=3) {
+          const first=activeVector.points[0];
+          if (Math.hypot(p.x-first.x,p.y-first.y)<16) { finishVector(true); return; }
+        }
+        if (!activeVector) activeVector={points:[],color,size,fill,closed:false,curve:true};
+        activeVector.points.push({x:p.x,y:p.y,in:null,out:null});
+        curveDragAnchor=activeVector.points.length-1;
+        if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}
+        renderVectors(); return;
+      }
       if (tool==='pen') {
         if (activeVector && activeVector.points.length>=3) {
           const first=activeVector.points[0];
@@ -156,11 +185,25 @@
       selectedVector=-1; renderVectors();
     }
     function vectorMove(event) {
+      if (tool==='bezier' && curveDragAnchor!==null && activeVector) {
+        event.preventDefault();
+        const p=svgPoint(event), anchor=activeVector.points[curveDragAnchor];
+        if (anchor) {
+          const dx=p.x-anchor.x, dy=p.y-anchor.y;
+          anchor.out={x:p.x,y:p.y}; anchor.in={x:anchor.x-dx,y:anchor.y-dy};
+          renderVectors();
+        }
+        return;
+      }
       if (!draggingAnchor || tool!=='editpoints') return;
       event.preventDefault(); const p=svgPoint(event); const v=vectorPaths[draggingAnchor.vector];
       if(v && v.points[draggingAnchor.point]){v.points[draggingAnchor.point]=p;renderVectors();}
     }
     function vectorUp(event) {
+      if(curveDragAnchor!==null){
+        if(event && vectorLayer.releasePointerCapture){try{vectorLayer.releasePointerCapture(event.pointerId);}catch(_){}}
+        curveDragAnchor=null;renderVectors();saveSoon();return;
+      }
       if(!draggingAnchor)return;
       if(event && vectorLayer.releasePointerCapture){try{vectorLayer.releasePointerCapture(event.pointerId);}catch(_){}}
       draggingAnchor=null;saveSoon();
@@ -221,8 +264,8 @@
     vectorLayer.addEventListener('pointermove',vectorMove);
     vectorLayer.addEventListener('pointerup',vectorUp);
     vectorLayer.addEventListener('pointercancel',vectorUp);
-    vectorLayer.addEventListener('dblclick',event=>{if(tool==='pen'&&activeVector){event.preventDefault();finishVector(false);}});
-    document.addEventListener('keydown',event=>{if(event.key==='Enter'&&tool==='pen'&&activeVector)finishVector(false);if(event.key==='Escape'&&activeVector){activeVector=null;renderVectors();toast('Path cancelled');}});
+    vectorLayer.addEventListener('dblclick',event=>{if((tool==='pen'||tool==='bezier')&&activeVector){event.preventDefault();finishVector(false);}});
+    document.addEventListener('keydown',event=>{if(event.key==='Enter'&&(tool==='pen'||tool==='bezier')&&activeVector)finishVector(false);if(event.key==='Escape'&&activeVector){activeVector=null;renderVectors();toast('Path cancelled');}});
     document.querySelectorAll('.swatch').forEach(b=>b.addEventListener('click',()=>{color=b.dataset.color;$('colorInput').value=color;toast('Color selected');}));
     $('colorInput').addEventListener('input',e=>color=e.target.value);
     $('sizeInput').addEventListener('input',e=>{size=Number(e.target.value);$('sizeValue').textContent=size+'px';});
