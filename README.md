@@ -14,13 +14,13 @@ Visit https://wonka15.github.io/Mac-Paint-Draw-Enhanced-/
 
 Keep these jobs separate: HTML describes the interface, CSS styles it, and JavaScript makes it work. Most tool behavior lives in `app.js`.
 
-## Vector pen and anchor points
+## Vector pen, Bézier curves, and anchor points
 
-1. Choose **Vector Pen**.
-2. Click to place straight-line anchor points.
-3. Click the first anchor to close a path (three or more points), or press **Enter** to finish an open path.
-4. Choose **Edit Points** and drag an anchor to adjust the path.
-5. Choose **Export SVG · Vinyl** to save vector paths as black, unfilled SVG outlines.
+- Choose **Vector Pen** and click to create straight-line anchor points.
+- Choose **Bézier Curve** and click-drag at each anchor to shape its curve handles. Drag direction controls the outgoing curve; the opposite handle is mirrored for a smooth join.
+- Click the first anchor (three or more points) to close a path, or press **Enter** / double-click to finish an open path.
+- Choose **Edit Points** and drag an anchor to reposition it.
+- Choose **Export SVG · Vinyl** to save vector paths, including curves, as black, unfilled SVG outlines.
 
 The SVG export contains vector paths only. Freehand pencil marks on the raster canvas are not included. SVG is commonly accepted by vinyl-cutting software, but confirm your cutter software's import settings and perform a small test cut first.
 
