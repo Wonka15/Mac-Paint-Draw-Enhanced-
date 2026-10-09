@@ -34,3 +34,16 @@ GitHub Pages serves static files, so it cannot safely keep a private AI API key.
 - Select, move, scale, and duplicate whole vector objects.
 - SVG import and bitmap tracing.
 - Optional AI-assisted outline creation through a secure backend.
+
+## Zoom, rulers, guides, and Pathfinder
+
+- Use **− / +** to zoom and **Fit** to fit the canvas to the available workspace.
+- Drag from the top ruler down onto the canvas to place a horizontal guide. Drag from the left ruler right onto the canvas to place a vertical guide.
+- Turn on **Snap to guides** to align pencil and vector points to guide positions.
+- Use **Vector rect** and **Vector oval**, or draw and close a path with **Vector pen** or **Bezier curve**, to create editable closed vector shapes.
+- In **Edit points**, click one closed vector shape, then **Shift-click** a second. Use **Unite**, **Subtract**, **Intersect**, or **Exclude** in Pathfinder.
+- Pathfinder uses Paper.js from a public CDN, so those boolean operations require an internet connection.
+
+## Bézier tool
+
+Choose **Bezier curve**, then click-drag to create anchor points with handles. Press **Enter** or double-click to finish an open curve; click near the first point to close it. If the tool does not receive pointer input, refresh the live site to load the latest version.
