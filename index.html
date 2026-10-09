@@ -305,448 +305,178 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
-    (() => {
-      'use strict';
+  (() => {
+    'use strict';
+    const $ = id => document.getElementById(id);
+    const canvas = $('paper');
+    const ctx = canvas.getContext('2d');
+    const overlay = $('overlay');
+    const octx = overlay.getContext('2d');
+    const guides = $('guides');
+    const gctx = guides.getContext('2d');
+    const rulers = $('rulers');
+    const rctx = rulers.getContext('2d');
+    if (!ctx || !octx || !gctx || !rctx) {
+      alert('Mac Paint could not start: your browser could not create a canvas. Try refreshing or using a current browser.');
+      return;
+    }
 
-      const $ = (id) => document.getElementById(id);
-      const paper = $('paper');
-      const overlay = $('overlay');
-      const guides = $('guides');
-      const rulers = $('rulers');
-      const ctx = paper.getContext('2d');
-      const octx = overlay.getContext('2d');
-      const gctx = guides.getContext('2d');
-      const rctx = rulers.getContext('2d');
+    let tool = 'pencil', color = '#20252b', size = 4, fill = false;
+    let drawing = false, startPoint = null, lastPoint = null;
+    let history = [], redoStack = [], showGuides = false, showGrid = false;
+    let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
+    let saveTimer = null;
 
-      let tool = 'pencil';
-      let color = '#20252b';
-      let size = 4;
-      let fill = false;
-      let drawing = false;
-      let start = null;
-      let last = null;
-      let history = [];
-      let redoStack = [];
-      let guideX = null;
-      let guideY = null;
-      let showGuides = false;
-      let showGrid = false;
-      let showRulers = false;
-      let saveTimer = null;
-      let ghostImage = null;
-      let ghostOpacity = 0.35;
-      let currentFont = 'sans-serif';
-
-      const W = () => paper.width;
-      const H = () => paper.height;
-
-      function toast(msg){
-        const t = $('toast');
-        t.textContent = msg;
-        t.classList.add('show');
-        clearTimeout(toast.timer);
-        toast.timer = setTimeout(()=>t.classList.remove('show'), 1800);
-      }
-
-      function setStatus(){
-        const labels = {
-          pencil: 'Pencil',
-          eraser: 'Eraser',
-          line: 'Line',
-          rect: 'Rectangle',
-          ellipse: 'Oval',
-          text: 'Text',
-          eyedropper: 'Pick color',
-          hand: 'Pan / guide'
-        };
-        $('toolStatus').innerHTML = '<strong>Tool:</strong> ' + (labels[tool] || tool);
-      }
-
-      function selectTool(nextTool){
-        tool = nextTool;
-        document.querySelectorAll('.tool').forEach((btn) => {
-          btn.classList.toggle('active', btn.dataset.tool === nextTool);
-        });
-        setStatus();
-      }
-
-      function point(event){
-        const rect = paper.getBoundingClientRect();
-        let x = ((event.clientX - rect.left) * W()) / rect.width;
-        let y = ((event.clientY - rect.top) * H()) / rect.height;
-
-        if ($('snapCheck').checked) {
-          if (guideX !== null && Math.abs(x - guideX) < 14) x = guideX;
-          if (guideY !== null && Math.abs(y - guideY) < 14) y = guideY;
-        }
-
-        return {
-          x: Math.max(0, Math.min(W() - 1, x)),
-          y: Math.max(0, Math.min(H() - 1, y))
-        };
-      }
-
-      function snapshot(){
-        try {
-          history.push(ctx.getImageData(0, 0, W(), H()));
-          if (history.length > 40) history.shift();
-          redoStack = [];
-          updateUndo();
-          scheduleSave();
-        } catch (err) {
-          console.warn('snapshot failed', err);
-        }
-      }
-
-      function updateUndo(){
-        $('undoBtn').disabled = history.length === 0;
-        $('redoBtn').disabled = redoStack.length === 0;
-      }
-
-      function drawRulers(){
-        rctx.clearRect(0, 0, W(), H());
-        if (!showRulers) {
-          rulers.style.display = 'none';
-          return;
-        }
-
-        rulers.style.display = 'block';
-        rctx.save();
-        rctx.strokeStyle = 'rgba(30,35,41,0.55)';
-        rctx.fillStyle = 'rgba(30,35,41,0.8)';
-        rctx.font = '10px sans-serif';
-        rctx.lineWidth = 1;
-
-        for (let x = 0; x <= W(); x += 50) {
-          rctx.beginPath();
-          rctx.moveTo(x, 0);
-          rctx.lineTo(x, 18);
-          rctx.stroke();
-          rctx.fillText(String(x), x + 4, 12);
-        }
-
-        for (let y = 0; y <= H(); y += 50) {
-          rctx.beginPath();
-          rctx.moveTo(0, y);
-          rctx.lineTo(18, y);
-          rctx.stroke();
-          rctx.fillText(String(y), 4, y + 12);
-        }
-
-        rctx.restore();
-      }
-
-      function drawGuides(){
-        gctx.clearRect(0, 0, W(), H());
-
-        if (showGrid) {
-          gctx.save();
-          gctx.strokeStyle = 'rgba(100,130,220,0.18)';
-          gctx.lineWidth = 1;
-          for (let x = 50; x < W(); x += 50) {
-            gctx.beginPath();
-            gctx.moveTo(x, 0);
-            gctx.lineTo(x, H());
-            gctx.stroke();
-          }
-          for (let y = 50; y < H(); y += 50) {
-            gctx.beginPath();
-            gctx.moveTo(0, y);
-            gctx.lineTo(W(), y);
-            gctx.stroke();
-          }
-          gctx.restore();
-        }
-
-        if (showGuides) {
-          gctx.save();
-          gctx.strokeStyle = '#315cdb';
-          gctx.lineWidth = 1;
-          gctx.setLineDash([5, 5]);
-          if (guideX !== null) {
-            gctx.beginPath();
-            gctx.moveTo(guideX, 0);
-            gctx.lineTo(guideX, H());
-            gctx.stroke();
-          }
-          if (guideY !== null) {
-            gctx.beginPath();
-            gctx.moveTo(0, guideY);
-            gctx.lineTo(W(), guideY);
-            gctx.stroke();
-          }
-          gctx.restore();
-        }
-
-        guides.style.display = (showGuides || showGrid) ? 'block' : 'none';
-        drawRulers();
-      }
-
-      function scheduleSave(){
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => {
-          try {
-            const saved = {
-              w: W(),
-              h: H(),
-              image: paper.toDataURL('image/png'),
-              color,
-              size,
-              tool
-            };
-            localStorage.setItem('mpde-art', JSON.stringify(saved));
-          } catch (err) {
-            console.warn('save failed', err);
-          }
-        }, 250);
-      }
-
-      function restore(){
-        try {
-          const saved = JSON.parse(localStorage.getItem('mpde-art'));
-          if (!saved || !saved.image) return;
-          const img = new Image();
-          img.onload = () => {
-            ctx.clearRect(0, 0, W(), H());
-            ctx.drawImage(img, 0, 0, W(), H());
-            if (saved.color) color = saved.color;
-            if (saved.size) size = saved.size;
-            if (saved.tool) tool = saved.tool;
-            $('colorInput').value = color;
-            $('sizeInput').value = String(size);
-            $('sizeValue').textContent = `${size}px`;
-            setStatus();
-            selectTool(tool);
-          };
-          img.src = saved.image;
-        } catch (err) {
-          console.warn('restore failed', err);
-        }
-      }
-
-      function drawShape(currentPoint){
-        octx.clearRect(0, 0, W(), H());
-        octx.save();
-        octx.strokeStyle = color;
-        octx.fillStyle = color;
-        octx.lineWidth = size;
-        octx.lineCap = 'round';
-        octx.lineJoin = 'round';
-
-        const left = Math.min(start.x, currentPoint.x);
-        const top = Math.min(start.y, currentPoint.y);
-        const width = Math.abs(start.x - currentPoint.x);
-        const height = Math.abs(start.y - currentPoint.y);
-
-        if (tool === 'line') {
-          octx.beginPath();
-          octx.moveTo(start.x, start.y);
-          octx.lineTo(currentPoint.x, currentPoint.y);
-          octx.stroke();
-        } else if (tool === 'rect') {
-          if (fill) {
-            octx.fillRect(left, top, width, height);
-          } else {
-            octx.strokeRect(left, top, width, height);
-          }
-        } else if (tool === 'ellipse') {
-          octx.beginPath();
-          octx.ellipse(left + width / 2, top + height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
-          if (fill) octx.fill();
-          else octx.stroke();
-        }
-
-        octx.restore();
-      }
-
-      function pointerDown(event){
-        event.preventDefault();
-        const p = point(event);
-        $('coordStatus').textContent = `${Math.round(p.x)} × ${Math.round(p.y)} px`;
-
-        if (tool === 'text') {
-          const label = prompt('What would you like to write?');
-          if (!label) return;
-          snapshot();
-          ctx.fillStyle = color;
-          ctx.font = `${size * 2}px ${currentFont}`;
-          ctx.fillText(label, p.x, p.y);
-          scheduleSave();
-          toast('Text added');
-          return;
-        }
-
-        if (tool === 'eyedropper') {
-          const data = ctx.getImageData(Math.floor(p.x), Math.floor(p.y), 1, 1).data;
-          const [r, g, b] = data;
-          color = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-          $('colorInput').value = color;
-          toast('Color picked');
-          return;
-        }
-
-        if (tool === 'hand') {
-          guideX = p.x;
-          guideY = p.y;
-          showGuides = true;
-          drawGuides();
-          toast('Guide placed');
-          return;
-        }
-
-        drawing = true;
-        start = p;
-        last = p;
-        snapshot();
-      }
-
-      function pointerMove(event){
-        if (!drawing) return;
-        const p = point(event);
-        $('coordStatus').textContent = `${Math.round(p.x)} × ${Math.round(p.y)} px`;
-
-        if (tool === 'pencil' || tool === 'eraser') {
-          ctx.beginPath();
-          ctx.moveTo(last.x, last.y);
-          ctx.lineTo(p.x, p.y);
-          ctx.strokeStyle = tool === 'eraser' ? '#ffffff' : color;
-          ctx.lineWidth = size;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          ctx.stroke();
-          last = p;
-        } else if (['line', 'rect', 'ellipse'].includes(tool)) {
-          drawShape(p);
-        }
-      }
-
-      function pointerUp(event){
-        if (!drawing) return;
-        drawing = false;
-
-        if (['line', 'rect', 'ellipse'].includes(tool)) {
-          ctx.drawImage(overlay, 0, 0);
-          octx.clearRect(0, 0, W(), H());
-        }
-
-        if (event) {
-          const p = point(event);
-          $('coordStatus').textContent = `${Math.round(p.x)} × ${Math.round(p.y)} px`;
-        }
-
-        scheduleSave();
-      }
-
-      document.querySelectorAll('.tool').forEach((button) => {
-        button.addEventListener('click', () => selectTool(button.dataset.tool));
-      });
-
-      document.querySelectorAll('.swatch').forEach((button) => {
-        button.addEventListener('click', () => {
-          color = button.dataset.color;
-          $('colorInput').value = color;
-          toast('Color selected');
-        });
-      });
-
-      $('colorInput').addEventListener('input', (event) => {
-        color = event.target.value;
-      });
-
-      $('sizeInput').addEventListener('input', (event) => {
-        size = Number(event.target.value);
-        $('sizeValue').textContent = `${size}px`;
-      });
-
-      $('fillToggle').addEventListener('change', (event) => {
-        fill = event.target.checked;
-      });
-
-      $('guidesBtn').addEventListener('click', () => {
-        showGuides = !showGuides;
-        if (showGuides && guideX === null && guideY === null) {
-          guideX = Math.round(W() / 2);
-          guideY = Math.round(H() / 2);
-        }
-        drawGuides();
-      });
-
-      $('gridBtn').addEventListener('click', () => {
-        showGrid = !showGrid;
-        drawGuides();
-      });
-
-      $('clearBtn').addEventListener('click', () => {
-        if (!confirm('Clear the whole canvas?')) return;
-        snapshot();
-        ctx.clearRect(0, 0, W(), H());
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, W(), H());
-        scheduleSave();
-        toast('Canvas cleared');
-      });
-
-      $('undoBtn').addEventListener('click', () => {
-        if (!history.length) return;
-        redoStack.push(ctx.getImageData(0, 0, W(), H()));
-        ctx.putImageData(history.pop(), 0, 0);
-        updateUndo();
-        scheduleSave();
-        toast('Undid action');
-      });
-
-      $('redoBtn').addEventListener('click', () => {
-        if (!redoStack.length) return;
+    const W = () => canvas.width, H = () => canvas.height;
+    function toast(message) {
+      const node = $('toast');
+      if (!node) return;
+      node.textContent = message;
+      node.classList.add('show');
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => node.classList.remove('show'), 1800);
+    }
+    function status() {
+      const names = {pencil:'Pencil',eraser:'Eraser',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide'};
+      $('toolStatus').innerHTML = '<strong>Tool:</strong> ' + (names[tool] || tool);
+      document.querySelectorAll('.tool').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+    }
+    function selectTool(next) { tool = next; status(); }
+    function updateButtons() {
+      $('undoBtn').disabled = history.length === 0;
+      $('redoBtn').disabled = redoStack.length === 0;
+    }
+    function snapshot() {
+      try {
         history.push(ctx.getImageData(0, 0, W(), H()));
-        ctx.putImageData(redoStack.pop(), 0, 0);
-        updateUndo();
-        scheduleSave();
-        toast('Redid action');
-      });
-
-      $('newBtn').addEventListener('click', () => {
-        const ok = confirm('Start a new drawing?');
-        if (!ok) return;
-        snapshot();
-        ctx.clearRect(0, 0, W(), H());
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, W(), H());
-        scheduleSave();
-      });
-
-      $('exportBtn').addEventListener('click', () => {
-        const link = document.createElement('a');
-        link.download = 'drawing.png';
-        link.href = paper.toDataURL('image/png');
-        link.click();
-        toast('PNG exported');
-      });
-
-      $('fontSelect').addEventListener('change', (event) => {
-        currentFont = event.target.value;
-      });
-
-      $('ghostOpacity').addEventListener('input', (event) => {
-        ghostOpacity = Number(event.target.value);
-      });
-
-      paper.addEventListener('pointerdown', pointerDown);
-      paper.addEventListener('pointermove', pointerMove);
-      paper.addEventListener('pointerup', pointerUp);
-      paper.addEventListener('pointercancel', pointerUp);
-      paper.addEventListener('pointerleave', pointerUp);
-
-      function init(){
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, W(), H());
-        setStatus();
-        drawGuides();
-        updateUndo();
-        restore();
+        if (history.length > 40) history.shift();
+        redoStack = [];
+        updateButtons();
+      } catch (error) { console.error('Could not save undo state:', error); }
+    }
+    function saveSoon() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        try {
+          localStorage.setItem('mpde-art', JSON.stringify({
+            w: W(), h: H(), image: canvas.toDataURL('image/png'),
+            color, size, tool, guideX, guideY, showGuides, showGrid
+          }));
+        } catch (error) { console.warn('Autosave unavailable:', error); }
+      }, 300);
+    }
+    function point(event) {
+      const rect = canvas.getBoundingClientRect();
+      let x = (event.clientX - rect.left) * W() / rect.width;
+      let y = (event.clientY - rect.top) * H() / rect.height;
+      if ($('snapCheck').checked) {
+        if (guideX !== null && Math.abs(x - guideX) < 14) x = guideX;
+        if (guideY !== null && Math.abs(y - guideY) < 14) y = guideY;
       }
+      return {x:Math.max(0,Math.min(W()-1,x)), y:Math.max(0,Math.min(H()-1,y))};
+    }
+    function drawGuides() {
+      gctx.clearRect(0,0,W(),H());
+      if (showGrid) {
+        gctx.save(); gctx.strokeStyle='rgba(100,130,220,.2)'; gctx.lineWidth=1;
+        for(let x=50;x<W();x+=50){gctx.beginPath();gctx.moveTo(x,0);gctx.lineTo(x,H());gctx.stroke();}
+        for(let y=50;y<H();y+=50){gctx.beginPath();gctx.moveTo(0,y);gctx.lineTo(W(),y);gctx.stroke();}
+        gctx.restore();
+      }
+      if (showGuides) {
+        gctx.save(); gctx.strokeStyle='#315cdb'; gctx.lineWidth=1; gctx.setLineDash([5,5]);
+        if(guideX!==null){gctx.beginPath();gctx.moveTo(guideX,0);gctx.lineTo(guideX,H());gctx.stroke();}
+        if(guideY!==null){gctx.beginPath();gctx.moveTo(0,guideY);gctx.lineTo(W(),guideY);gctx.stroke();}
+        gctx.restore();
+      }
+      guides.style.display = (showGuides || showGrid) ? 'block' : 'none';
+      rctx.clearRect(0,0,W(),H());
+      rulers.style.display='none';
+    }
+    function shape(p) {
+      octx.clearRect(0,0,W(),H()); octx.save();
+      octx.strokeStyle=color; octx.fillStyle=color; octx.lineWidth=size;
+      octx.lineCap='round'; octx.lineJoin='round';
+      const x=Math.min(startPoint.x,p.x), y=Math.min(startPoint.y,p.y);
+      const w=Math.abs(startPoint.x-p.x), h=Math.abs(startPoint.y-p.y);
+      if(tool==='line'){octx.beginPath();octx.moveTo(startPoint.x,startPoint.y);octx.lineTo(p.x,p.y);octx.stroke();}
+      if(tool==='rect'){if(fill)octx.fillRect(x,y,w,h);else octx.strokeRect(x,y,w,h);}
+      if(tool==='ellipse'){octx.beginPath();octx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2);if(fill)octx.fill();else octx.stroke();}
+      octx.restore();
+    }
+    function down(event) {
+      event.preventDefault();
+      const p=point(event);
+      $('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';
+      if(tool==='text'){
+        const text=prompt('What would you like to write?');
+        if(text){snapshot();ctx.fillStyle=color;ctx.font=(size*2)+'px '+currentFont;ctx.fillText(text,p.x,p.y);saveSoon();}
+        return;
+      }
+      if(tool==='eyedropper'){
+        const d=ctx.getImageData(Math.floor(p.x),Math.floor(p.y),1,1).data;
+        color='#'+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+        $('colorInput').value=color;toast('Color picked');return;
+      }
+      if(tool==='hand'){
+        guideX=p.x;guideY=p.y;showGuides=true;drawGuides();toast('Guide placed');return;
+      }
+      drawing=true;startPoint=p;lastPoint=p;snapshot();
+      if(tool==='pencil'||tool==='eraser'){
+        ctx.beginPath();ctx.arc(p.x,p.y,Math.max(0.5,size/2),0,Math.PI*2);
+        ctx.fillStyle=tool==='eraser'?'#ffffff':color;ctx.fill();
+      }
+      if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}
+    }
+    function move(event) {
+      if(!drawing)return;
+      const p=point(event);
+      $('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';
+      if(tool==='pencil'||tool==='eraser'){
+        ctx.beginPath();ctx.moveTo(lastPoint.x,lastPoint.y);ctx.lineTo(p.x,p.y);
+        ctx.strokeStyle=tool==='eraser'?'#ffffff':color;ctx.lineWidth=size;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();lastPoint=p;
+      } else if(['line','rect','ellipse'].includes(tool)) shape(p);
+    }
+    function up(event) {
+      if(!drawing)return;
+      if(event && event.pointerId!==undefined && canvas.releasePointerCapture){try{canvas.releasePointerCapture(event.pointerId);}catch(_){}}
+      if(['line','rect','ellipse'].includes(tool)){ctx.drawImage(overlay,0,0);octx.clearRect(0,0,W(),H());}
+      drawing=false;saveSoon();
+      if(event){const p=point(event);$('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';}
+    }
+    document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>selectTool(b.dataset.tool)));
+    document.querySelectorAll('.swatch').forEach(b=>b.addEventListener('click',()=>{color=b.dataset.color;$('colorInput').value=color;toast('Color selected');}));
+    $('colorInput').addEventListener('input',e=>color=e.target.value);
+    $('sizeInput').addEventListener('input',e=>{size=Number(e.target.value);$('sizeValue').textContent=size+'px';});
+    $('fillToggle').addEventListener('change',e=>fill=e.target.checked);
+    $('snapCheck').addEventListener('change',()=>{});
+    $('guidesBtn').addEventListener('click',()=>{showGuides=!showGuides;if(showGuides&&guideX===null){guideX=Math.round(W()/2);guideY=Math.round(H()/2);}drawGuides();toast(showGuides?'Guides on':'Guides off');});
+    $('gridBtn').addEventListener('click',()=>{showGrid=!showGrid;drawGuides();toast(showGrid?'Grid on':'Grid off');});
+    $('clearBtn').addEventListener('click',()=>{if(!confirm('Clear the whole canvas?'))return;snapshot();ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());saveSoon();toast('Canvas cleared');});
+    $('newBtn').addEventListener('click',()=>{if(!confirm('Start a new drawing?'))return;snapshot();ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());saveSoon();toast('New drawing');});
+    $('undoBtn').addEventListener('click',()=>{if(!history.length)return;redoStack.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(history.pop(),0,0);updateButtons();saveSoon();toast('Undid action');});
+    $('redoBtn').addEventListener('click',()=>{if(!redoStack.length)return;history.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(redoStack.pop(),0,0);updateButtons();saveSoon();toast('Redid action');});
+    $('exportBtn').addEventListener('click',()=>{const a=document.createElement('a');a.download='drawing.png';a.href=canvas.toDataURL('image/png');a.click();toast('PNG exported');});
+    $('fontSelect').addEventListener('change',e=>currentFont=e.target.value);
+    $('ghostOpacity').addEventListener('input',e=>ghostOpacity=Number(e.target.value));
+    canvas.addEventListener('pointerdown',down);
+    canvas.addEventListener('pointermove',move);
+    canvas.addEventListener('pointerup',up);
+    canvas.addEventListener('pointercancel',up);
+    canvas.addEventListener('lostpointercapture',up);
 
-      init();
-    })();
+    function restore() {
+      try {
+        const saved=JSON.parse(localStorage.getItem('mpde-art')||'null');
+        if(!saved||!saved.image)return;
+        const img=new Image();
+        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';selectTool(tool);drawGuides();};
+        img.src=saved.image;
+      } catch(error) { console.warn('Could not restore drawing:',error); }
+    }
+    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());
+    updateButtons();status();drawGuides();restore();
+  })();
   </script>
 </body>
 </html>
