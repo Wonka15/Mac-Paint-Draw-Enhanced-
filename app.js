@@ -108,7 +108,9 @@
     // VECTOR ENGINE: SVG paths are stored separately from the pixel paint canvas.
     function svgPoint(event) {
       const r = vectorLayer.getBoundingClientRect();
-      return {x:Math.max(0,Math.min(W(),(event.clientX-r.left)*W()/r.width)),y:Math.max(0,Math.min(H(),(event.clientY-r.top)*H()/r.height))};
+      let x=(event.clientX-r.left)*W()/r.width, y=(event.clientY-r.top)*H()/r.height;
+      if($('snapCheck').checked){if(guideX!==null&&Math.abs(x-guideX)<14)x=guideX;if(guideY!==null&&Math.abs(y-guideY)<14)y=guideY;}
+      return {x:Math.max(0,Math.min(W(),x)),y:Math.max(0,Math.min(H(),y))};
     }
 
     // RULERS + ZOOM: ruler coordinates always map to the original 1200 × 800 artboard.
@@ -129,7 +131,13 @@
     }
     $('zoomInBtn').addEventListener('click',()=>setZoom(zoomLevel+.25));
     $('zoomOutBtn').addEventListener('click',()=>setZoom(zoomLevel-.25));
-    $('zoomFitBtn').addEventListener('click',()=>setZoom(1));
+    $('zoomFitBtn').addEventListener('click',()=>{
+      const stage=document.querySelector('.stage');
+      const availableWidth=Math.max(240,stage.clientWidth-70);
+      const availableHeight=Math.max(240,stage.clientHeight-70);
+      const fit=Math.min(1,availableWidth/Math.max(1,canvasWrap.offsetWidth),availableHeight/Math.max(1,canvasWrap.offsetHeight));
+      setZoom(fit);
+    });
     $('rulersBtn').addEventListener('click',()=>{
       const layout=$('rulerLayout'),hidden=layout.classList.toggle('rulers-hidden');
       $('rulersBtn').setAttribute('aria-pressed',String(!hidden));$('rulersBtn').classList.toggle('primary',!hidden);
