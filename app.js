@@ -305,7 +305,13 @@
     }
     function drawOnionSkin(){
       onionCtx.clearRect(0,0,W(),H());if(!$('onionToggle').checked||currentFrame<=0||!frames[currentFrame-1])return;
-      const img=new Image();img.onload=()=>{onionCtx.clearRect(0,0,W(),H());onionCtx.globalAlpha=.28;onionCtx.drawImage(img,0,0,W(),H());onionCtx.globalAlpha=1;onionCtx.globalCompositeOperation='source-atop';onionCtx.fillStyle='#35a8ed';onionCtx.fillRect(0,0,W(),H());onionCtx.globalCompositeOperation='source-over';};img.src=frames[currentFrame-1].composite||frames[currentFrame-1].raster;
+      const img=new Image();img.onload=()=>{
+        onionCtx.clearRect(0,0,W(),H());
+        const ghost=document.createElement('canvas');ghost.width=W();ghost.height=H();const gx=ghost.getContext('2d');gx.drawImage(img,0,0,W(),H());
+        const pixels=gx.getImageData(0,0,W(),H()),data=pixels.data;
+        for(let i=0;i<data.length;i+=4){const brightness=(data[i]+data[i+1]+data[i+2])/3;if(brightness>242){data[i+3]=0;}else{data[i]=53;data[i+1]=168;data[i+2]=237;data[i+3]=Math.round(data[i+3]*.38);}}
+        gx.putImageData(pixels,0,0);onionCtx.drawImage(ghost,0,0);
+      };img.src=frames[currentFrame-1].composite||frames[currentFrame-1].raster;
     }
     $('addFrameBtn').addEventListener('click',async()=>{
       if(frameBusy)return;frameBusy=true;if(currentFrame<0){frames.push(await captureFrame());currentFrame=0;}else frames[currentFrame]=await captureFrame();
