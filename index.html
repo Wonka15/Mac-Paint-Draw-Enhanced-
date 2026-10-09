@@ -76,12 +76,17 @@
         <div class="stage">
           <div class="paper" id="canvasWrap">
             <canvas id="paper" width="1200" height="800"></canvas>
+            <canvas id="onion" width="1200" height="800" aria-hidden="true"></canvas>
             <canvas id="overlay" width="1200" height="800"></canvas>
             <svg id="vectorLayer" viewBox="0 0 1200 800" preserveAspectRatio="none" aria-label="Editable vector artwork"></svg>
             <canvas id="guides" width="1200" height="800"></canvas>
             <canvas id="rulers" width="1200" height="800"></canvas>
           </div>
         </div>
+<section class="animation-panel" aria-label="Animation timeline">
+<div class="animation-heading"><div><strong>Frame Studio</strong><span class="animation-subtitle">Onion skin · playback · animated GIF</span></div><span class="animation-badge">BETA</span></div>
+<div class="animation-controls"><button class="btn primary" id="addFrameBtn">＋ Add frame</button><button class="btn secondary" id="playAnimationBtn">▶ Play</button><button class="btn secondary" id="stopAnimationBtn" disabled>■ Stop</button><button class="btn secondary" id="exportGifBtn">Export GIF</button><label class="fps-control" for="animationFps">FPS <select id="animationFps"><option>4</option><option>6</option><option selected>8</option><option>12</option><option>15</option><option>24</option></select></label><label class="onion-toggle"><input type="checkbox" id="onionToggle" checked> Onion skin</label></div>
+<div class="frame-strip" id="frameStrip"><span class="frame-empty">Draw something, then press Add frame.</span></div><p class="animation-help">Add frame saves the current drawing and opens a blank frame. Click a thumbnail to edit it. Previous artwork appears in blue.</p></section>
       </section>
 
       <aside class="panel rightpanel">
@@ -127,6 +132,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.js"></script>
   <script src="app.js" defer></script>
 </body>
 </html>
