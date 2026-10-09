@@ -661,14 +661,15 @@
           if(!confirm('Delete frame '+(i+1)+'? This cannot be undone.'))return;
           frameBusy=true;
           if(currentFrame>=0&&frames[currentFrame])frames[currentFrame]=await captureFrame();
+          const deletedCurrent=i===currentFrame, deletedBeforeCurrent=i<currentFrame;
           frames.splice(i,1);
           if(!frames.length){
             currentFrame=-1;ctx.clearRect(0,0,W(),H());ctx.fillStyle='#fff';ctx.fillRect(0,0,W(),H());
             vectorPaths=[];activeVector=null;selectedVector=-1;renderVectors();renderFrameStrip();drawOnionSkin();
           }else{
-            if(i<currentFrame)currentFrame--;
-            else if(i===currentFrame)currentFrame=Math.min(i,frames.length-1);
-            if(i===currentFrame||i<currentFrame)loadFrame(currentFrame);
+            if(deletedBeforeCurrent)currentFrame--;
+            else if(deletedCurrent)currentFrame=Math.min(i,frames.length-1);
+            if(deletedCurrent||deletedBeforeCurrent)loadFrame(currentFrame);
             else{renderFrameStrip();drawOnionSkin();}
           }
           frameBusy=false;toast('Frame deleted');
