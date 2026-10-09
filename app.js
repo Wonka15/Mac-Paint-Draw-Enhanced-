@@ -23,6 +23,10 @@
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
     let vectorPaths = [], activeVector = null, selectedVector = -1, draggingAnchor = null, curveDragAnchor = null;
     let saveTimer = null;
+    // FRAME STUDIO: each frame stores raster art plus editable vector paths.
+    const onionCanvas = $('onion'), onionCtx = onionCanvas.getContext('2d');
+    const frames = [];
+    let currentFrame = -1, playbackTimer = null, playbackIndex = 0, frameBusy = false;
 
     const W = () => canvas.width, H = () => canvas.height;
     function toast(message) {
@@ -277,6 +281,55 @@
     $('newBtn').addEventListener('click',()=>{if(!confirm('Start a new drawing?'))return;snapshot();ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());saveSoon();toast('New drawing');});
     $('undoBtn').addEventListener('click',()=>{if(!history.length)return;redoStack.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(history.pop(),0,0);updateButtons();saveSoon();toast('Undid action');});
     $('redoBtn').addEventListener('click',()=>{if(!redoStack.length)return;history.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(redoStack.pop(),0,0);updateButtons();saveSoon();toast('Redid action');});
+
+    // FRAME STUDIO: compose raster and SVG layers for thumbnails, onion skin, and GIFs.
+    function compositeDataURL(){
+      return new Promise(resolve=>{
+        const out=document.createElement('canvas');out.width=W();out.height=H();const ox=out.getContext('2d');ox.drawImage(canvas,0,0);
+        const svg=vectorLayer.cloneNode(true);svg.querySelectorAll('.vector-anchor').forEach(n=>n.remove());svg.setAttribute('xmlns','http://www.w3.org/2000/svg');svg.setAttribute('width',String(W()));svg.setAttribute('height',String(H()));
+        const url=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml;charset=utf-8'}));const img=new Image();
+        img.onload=()=>{ox.drawImage(img,0,0,W(),H());URL.revokeObjectURL(url);resolve(out.toDataURL('image/png'));};img.onerror=()=>{URL.revokeObjectURL(url);resolve(out.toDataURL('image/png'));};img.src=url;
+      });
+    }
+    async function captureFrame(){return {raster:canvas.toDataURL('image/png'),composite:await compositeDataURL(),vectors:JSON.parse(JSON.stringify(vectorPaths)),color,size};}
+    async function saveCurrentFrame(){if(currentFrame>=0&&frames[currentFrame])frames[currentFrame]=await captureFrame();renderFrameStrip();}
+    function blankFrame(){const c=document.createElement('canvas');c.width=W();c.height=H();const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,W(),H());const data=c.toDataURL('image/png');return {raster:data,composite:data,vectors:[],color,size};}
+    function loadFrame(index){
+      if(!frames[index])return;currentFrame=index;const f=frames[index],img=new Image();
+      img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());vectorPaths=JSON.parse(JSON.stringify(f.vectors||[]));activeVector=null;selectedVector=-1;color=f.color||color;size=f.size||size;$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';renderVectors();renderFrameStrip();drawOnionSkin();};img.src=f.raster;
+    }
+    function renderFrameStrip(){
+      const strip=$('frameStrip');strip.innerHTML='';
+      if(!frames.length){const empty=document.createElement('span');empty.className='frame-empty';empty.textContent='Draw something, then press Add frame.';strip.appendChild(empty);return;}
+      frames.forEach((f,i)=>{const b=document.createElement('button');b.type='button';b.className='frame-thumb'+(i===currentFrame?' active':'');b.setAttribute('aria-label','Edit frame '+(i+1));const img=document.createElement('img');img.alt='';img.src=f.composite||f.raster;const label=document.createElement('span');label.textContent='FRAME '+(i+1);b.append(img,label);b.addEventListener('click',async()=>{if(frameBusy||i===currentFrame)return;frameBusy=true;await saveCurrentFrame();loadFrame(i);frameBusy=false;});strip.appendChild(b);});
+    }
+    function drawOnionSkin(){
+      onionCtx.clearRect(0,0,W(),H());if(!$('onionToggle').checked||currentFrame<=0||!frames[currentFrame-1])return;
+      const img=new Image();img.onload=()=>{onionCtx.clearRect(0,0,W(),H());onionCtx.globalAlpha=.28;onionCtx.drawImage(img,0,0,W(),H());onionCtx.globalAlpha=1;onionCtx.globalCompositeOperation='source-atop';onionCtx.fillStyle='#35a8ed';onionCtx.fillRect(0,0,W(),H());onionCtx.globalCompositeOperation='source-over';};img.src=frames[currentFrame-1].composite||frames[currentFrame-1].raster;
+    }
+    $('addFrameBtn').addEventListener('click',async()=>{
+      if(frameBusy)return;frameBusy=true;if(currentFrame<0){frames.push(await captureFrame());currentFrame=0;}else frames[currentFrame]=await captureFrame();
+      frames.push(blankFrame());currentFrame=frames.length-1;ctx.fillStyle='#fff';ctx.fillRect(0,0,W(),H());vectorPaths=[];activeVector=null;selectedVector=-1;renderVectors();renderFrameStrip();drawOnionSkin();frameBusy=false;toast('Frame '+(currentFrame+1)+' ready — draw the next pose');
+    });
+    $('onionToggle').addEventListener('change',drawOnionSkin);
+    $('playAnimationBtn').addEventListener('click',async()=>{
+      if(playbackTimer||frameBusy)return;if(currentFrame<0){toast('Add frames first');return;}frameBusy=true;await saveCurrentFrame();frameBusy=false;
+      if(frames.length<2){toast('Add at least two frames');return;}$('playAnimationBtn').disabled=true;$('stopAnimationBtn').disabled=false;playbackIndex=currentFrame;
+      playbackTimer=setInterval(()=>{playbackIndex=(playbackIndex+1)%frames.length;loadFrame(playbackIndex);},1000/Number($('animationFps').value));toast('Animation playing');
+    });
+    function stopPlayback(){if(playbackTimer){clearInterval(playbackTimer);playbackTimer=null;}$('playAnimationBtn').disabled=false;$('stopAnimationBtn').disabled=true;}
+    $('stopAnimationBtn').addEventListener('click',()=>{stopPlayback();toast('Playback stopped');});
+    $('animationFps').addEventListener('change',()=>{if(playbackTimer){stopPlayback();$('playAnimationBtn').click();}});
+    $('exportGifBtn').addEventListener('click',async()=>{
+      if(currentFrame<0){toast('Add frames before exporting');return;}if(typeof GIF==='undefined'){toast('GIF encoder failed to load — refresh with internet');return;}if(frameBusy)return;
+      frameBusy=true;stopPlayback();await saveCurrentFrame();if(frames.length<2){frameBusy=false;toast('Add at least two frames');return;}toast('Building animated GIF…');
+      const gif=new GIF({workers:2,quality:10,workerScript:'https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.worker.js'}),delay=Math.round(1000/Number($('animationFps').value));
+      try{for(const f of frames){const img=new Image();await new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;img.src=f.composite||f.raster;});gif.addFrame(img,{delay,copy:true});}
+        gif.on('finished',blob=>{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mac-paint-animation.gif';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);frameBusy=false;toast('GIF exported');});
+        gif.on('abort',()=>{frameBusy=false;toast('GIF export stopped');});gif.render();
+      }catch(error){frameBusy=false;console.error('GIF export failed:',error);toast('Could not export GIF');}
+    });
+
     // Export editable vector paths as SVG cut outlines. Raster pencil marks are intentionally excluded.
     function exportVectorSvg() {
       if (!vectorPaths.length) {
@@ -345,5 +398,5 @@
       } catch(error) { console.warn('Could not restore drawing:',error); }
     }
     ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());
-    updateButtons();status();drawGuides();restore();
+    updateButtons();status();drawGuides();renderFrameStrip();restore();
   })();
