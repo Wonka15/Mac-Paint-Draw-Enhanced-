@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="macpaint-enhanced.png" alt="MacPaint Enhanced" width="800">
+</p>
 # MacDraw Enhanced
 
 A classic-Mac-inspired drawing app that combines pixel painting with editable SVG vector paths.
