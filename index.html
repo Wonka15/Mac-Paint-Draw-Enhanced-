@@ -14,7 +14,7 @@
       <div class="brand">
         <div class="mark" aria-hidden="true">✎</div>
         <div>
-          <h1>Mac paint/draw enhanced</h1>
+          <h1>Mac paint/draw enhanced <span class="version-badge">v1.0</span></h1>
           <p>A little classic Mac magic. A lot more room to create.</p>
         </div>
       </div>
@@ -44,7 +44,8 @@
           <button class="tool" data-tool="bezier"><span class="ico">∿</span>Bezier curve</button>
           <button class="tool" data-tool="vectorrect"><span class="ico">▱</span>Vector rect</button>
           <button class="tool" data-tool="vectoroval"><span class="ico">◯</span>Vector oval</button>
-          <button class="tool" data-tool="editpoints"><span class="ico">◇</span>Edit points</button>
+          <button class="tool" data-tool="editpoints" aria-pressed="false"><span class="ico">◇</span>Edit points</button>
+          <button class="tool" data-tool="shapebuilder" aria-pressed="false"><span class="ico">⬡</span>Shape Builder</button>
         </div>
 
         <div class="separator"></div>
@@ -135,7 +136,18 @@
         <label class="check"><input type="checkbox" id="fillToggle"> Fill shapes</label>
         <label class="check"><input type="checkbox" id="snapCheck"> Snap to guides</label>
         <div class="separator"></div>
-        <h2>Pathfinder</h2><p class="pathfinder-help">In Edit Points, click a shape, then Shift-click a second closed shape.</p><div class="pathfinder-grid"><button class="btn secondary" data-boolean="unite">Unite</button><button class="btn secondary" data-boolean="subtract">Subtract</button><button class="btn secondary" data-boolean="intersect">Intersect</button><button class="btn secondary" data-boolean="exclude">Exclude</button></div>
+        <h2>Shape Builder</h2>
+        <p class="shape-builder-help">Choose Shape Builder, then click or drag across closed vector shapes to select them. Select at least two shapes, then choose an operation.</p>
+        <div class="shape-builder-status" id="shapeBuilderStatus" role="status" aria-live="polite">0 shapes selected</div>
+        <div class="shape-builder-grid">
+          <button class="btn secondary" id="shapeBuilderUniteBtn">Build / Unite</button>
+          <button class="btn secondary" id="shapeBuilderSubtractBtn">Subtract</button>
+          <button class="btn secondary" id="shapeBuilderIntersectBtn">Keep overlap</button>
+          <button class="btn secondary" id="shapeBuilderExcludeBtn">Remove overlap</button>
+          <button class="btn secondary" id="shapeBuilderClearBtn">Clear selection</button>
+        </div>
+        <div class="separator"></div>
+        <h2>Pathfinder</h2><p class="pathfinder-help">For a quick two-shape operation, use Edit Points, click one shape, then Shift-click another.</p><div class="pathfinder-grid"><button class="btn secondary" data-boolean="unite">Unite</button><button class="btn secondary" data-boolean="subtract">Subtract</button><button class="btn secondary" data-boolean="intersect">Intersect</button><button class="btn secondary" data-boolean="exclude">Exclude</button></div>
 
         <div class="separator"></div>
 
