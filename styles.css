@@ -106,9 +106,15 @@
       padding:18px;
     }
 
+    .ruler-layout{display:grid;grid-template-columns:24px minmax(0,1fr);grid-template-rows:22px auto;width:min(100%,924px);align-self:center}
+    .ruler-corner{grid-column:1;grid-row:1;display:grid;place-items:center;background:#e6e1d6;color:#6d675d;border:1px solid #c9c1b3;font-size:10px;font-weight:700}
+    .ruler-strip{position:relative;overflow:hidden;background-color:#f7f4ed;color:#6a665d;user-select:none;touch-action:none}
+    .ruler-top{grid-column:2;grid-row:1;height:22px;border:1px solid #c9c1b3;cursor:crosshair;background-image:repeating-linear-gradient(90deg,transparent 0,transparent 9px,#b6aea0 9px,#b6aea0 10px,transparent 10px,transparent 49px,#8f877a 49px,#8f877a 50px)}
+    .ruler-left{grid-column:1;grid-row:2;width:24px;border:1px solid #c9c1b3;cursor:crosshair;background-image:repeating-linear-gradient(180deg,transparent 0,transparent 9px,#b6aea0 9px,#b6aea0 10px,transparent 10px,transparent 49px,#8f877a 49px,#8f877a 50px)}
+    .ruler-label{position:absolute;font:9px/1 sans-serif;color:#5f594f;pointer-events:none}.ruler-top .ruler-label{top:2px;transform:translateX(2px)}.ruler-left .ruler-label{left:2px;transform:translateY(2px);writing-mode:vertical-rl}
     .paper{
       position:relative;
-      width:min(100%,900px);
+      width:100%;
       height:min(72vh,640px);
       min-height:340px;
       background:white;
@@ -198,3 +204,6 @@
 .frame-empty{align-self:center;color:var(--muted);font-size:12px;padding:8px}.frame-thumb{flex:0 0 82px;min-height:72px;padding:4px;background:#fff;border:2px solid #d7d0c4;border-radius:8px;color:var(--ink);display:flex;flex-direction:column;gap:4px}
 .frame-thumb.active{border-color:var(--blue);background:#eaf0ff;box-shadow:0 0 0 2px #dce5ff}.frame-thumb img{width:100%;height:48px;object-fit:contain;background:#fff;border:1px solid #eee}.frame-thumb span{font-size:10px;font-weight:700;text-align:center}
 .animation-help{font-size:11px;color:var(--muted);margin:0}@media(max-width:700px){.animation-controls{justify-content:flex-start}.frame-strip{min-height:76px}.frame-thumb{flex-basis:74px}}
+
+/* Zoom and Pathfinder controls */
+.zoom-readout{min-width:42px;text-align:center;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}.pathfinder-help{font-size:11px;line-height:1.45;color:var(--muted);margin:0 0 8px}.pathfinder-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.pathfinder-grid .btn{font-size:12px;padding:8px 5px}#vectorLayer.vector-active{pointer-events:all;cursor:crosshair}@media(max-width:700px){.ruler-layout{width:100%;grid-template-columns:20px minmax(0,1fr)}.ruler-corner,.ruler-left{width:20px}.zoom-readout{min-width:34px}}
