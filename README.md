@@ -60,3 +60,25 @@ Choose **Bezier curve**, then click-drag to create anchor points with handles. P
 ## Painterly brushes
 
 The Paintbrush presets include **Round**, **Japanese ink**, **Acrylic**, **Watercolor**, and **Dry / chalk**. Adjust Brush size and Ink color to tune each. Japanese ink uses a slanted nib; acrylic leaves bristle-like marks; watercolor layers translucent washes; dry brush scatters broken grainy marks. **Rough paper texture** is an optional on-screen texture toggle for the canvas.
+
+
+## Version 1.0 — Shape Builder and maintainable code
+
+Shape Builder is for **closed vector shapes** (Vector Rectangle, Vector Oval, or a closed Vector Pen / Bézier path):
+
+1. Choose **Shape Builder** in the Toolbox.
+2. Click a shape, then drag across other closed shapes to add them to the selection. Hold **Shift** while clicking to add or remove a shape from the selection.
+3. Choose **Build / Unite**, **Subtract**, **Keep overlap**, or **Remove overlap**. Subtract uses the first selected shape as the base and subtracts the remaining selected shapes from it.
+4. Use **Clear selection** to start over. You can click the active tool again to return to Paintbrush.
+
+Shape Builder and Pathfinder use Paper.js from a public CDN, so boolean operations need an internet connection. Shape Builder combines whole shapes; it does not yet let you click individual overlap regions the way Illustrator's full Shape Builder does.
+
+### Beginner-friendly maintenance rules
+
+- Keep interface structure in `index.html`, visual styling in `styles.css`, and app behavior in `app.js`.
+- In `app.js`, keep new behavior beside its matching section (for example, vector selection and boolean operations beside the Vector Engine / Pathfinder sections).
+- Prefer descriptive function names, short functions, and comments that explain *why* a section exists rather than repeating each line.
+- Use CSS custom properties at the top of `styles.css` for shared colors; this keeps the palette consistent.
+- Before publishing a change, check the browser console for errors and test: draw, undo/redo, select/toggle tools, save/restore after refresh, vector shapes, Shape Builder, PNG export, and SVG export.
+
+This is the **1.0 feature baseline**, not a claim that every browser and export path has been exhaustively tested. Keep future features additive and avoid replacing the whole drawing engine unless a tested migration is planned.
