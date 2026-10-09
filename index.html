@@ -519,7 +519,7 @@
             selectTool(tool);
           };
           img.src = saved.image;
-        } catch (err {
+        } catch (err) {
           console.warn('restore failed', err);
         }
       }
@@ -679,7 +679,7 @@
       $('clearBtn').addEventListener('click', () => {
         if (!confirm('Clear the whole canvas?')) return;
         snapshot();
-        ctx.clearRect(0, 0, W(), H);
+        ctx.clearRect(0, 0, W(), H());
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, W(), H());
         scheduleSave();
