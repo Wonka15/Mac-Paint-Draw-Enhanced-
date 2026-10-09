@@ -398,7 +398,10 @@
         path.setAttribute('fill',v.closed && v.fill ? v.color : 'none');
         path.setAttribute('fill-opacity',v.closed && v.fill ? '0.35' : '1');
         path.setAttribute('stroke',v.color); path.setAttribute('stroke-width',String(v.size));
-        path.setAttribute('class','vector-path'); path.setAttribute('data-vector',String(i));
+        path.setAttribute('class','vector-path');
+        path.setAttribute('data-vector',String(i));
+        // Let closed shapes be selected from their interior, even when unfilled.
+        path.setAttribute('pointer-events', v.closed ? 'visibleFill' : 'visiblePainted');
         if ((tool==='editpoints' || tool==='shapebuilder') && (i===selectedVector || selectedVectors.includes(i))) {
           path.setAttribute('stroke-dasharray','5 4');
           path.setAttribute('stroke','#315cdb');
@@ -743,7 +746,7 @@
         const saved=JSON.parse(localStorage.getItem('mpde-art')||'null');
         if(!saved||!saved.image)return;
         const img=new Image();
-        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;selectedPattern=saved.selectedPattern||selectedPattern;selectedBrush=saved.selectedBrush||selectedBrush;roughPaper=!!saved.roughPaper;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush===selectedBrush));$('roughPaperToggle').checked=roughPaper;canvasWrap.classList.toggle('rough-paper',roughPaper);selectTool(tool);drawGuides();renderVectors();};
+        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;selectedPattern=saved.selectedPattern||selectedPattern;selectedBrush=saved.selectedBrush||selectedBrush;roughPaper=!!saved.roughPaper;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush===selectedBrush));$('roughPaperToggle').checked=roughPaper;canvasWrap.classList.toggle('rough-paper',roughPaper);selectTool(tool);setToggleButton('guidesBtn',showGuides);setToggleButton('gridBtn',showGrid);setToggleButton('rulersBtn',!$('rulerLayout').classList.contains('rulers-hidden'));drawGuides();renderVectors();updateShapeBuilderStatus();};
         img.src=saved.image;
       } catch(error) { console.warn('Could not restore drawing:',error); }
     }
