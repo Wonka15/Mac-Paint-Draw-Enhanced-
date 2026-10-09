@@ -648,8 +648,33 @@
     }
     function renderFrameStrip(){
       const strip=$('frameStrip');strip.innerHTML='';
-      if(!frames.length){const empty=document.createElement('span');empty.className='frame-empty';empty.textContent='Draw something, then press Add frame.';strip.appendChild(empty);return;}
-      frames.forEach((f,i)=>{const b=document.createElement('button');b.type='button';b.className='frame-thumb'+(i===currentFrame?' active':'');b.setAttribute('aria-label','Edit frame '+(i+1));const img=document.createElement('img');img.alt='';img.src=f.composite||f.raster;const label=document.createElement('span');label.textContent='FRAME '+(i+1);b.append(img,label);b.addEventListener('click',async()=>{if(frameBusy||i===currentFrame)return;frameBusy=true;await saveCurrentFrame();loadFrame(i);frameBusy=false;});strip.appendChild(b);});
+      if(!frames.length){const empty=document.createElement('span');empty.className='frame-empty';empty.textContent='No frames yet. Draw something, then press Add frame.';strip.appendChild(empty);return;}
+      frames.forEach((f,i)=>{
+        const card=document.createElement('div');card.className='frame-card';
+        const b=document.createElement('button');b.type='button';b.className='frame-thumb'+(i===currentFrame?' active':'');b.setAttribute('aria-label','Edit frame '+(i+1));b.setAttribute('aria-pressed',String(i===currentFrame));
+        const img=document.createElement('img');img.alt='';img.src=f.composite||f.raster;
+        const label=document.createElement('span');label.textContent='FRAME '+(i+1);b.append(img,label);
+        b.addEventListener('click',async()=>{if(frameBusy||i===currentFrame)return;frameBusy=true;await saveCurrentFrame();loadFrame(i);frameBusy=false;});
+        const del=document.createElement('button');del.type='button';del.className='frame-delete';del.textContent='×';del.title='Delete frame '+(i+1);del.setAttribute('aria-label','Delete frame '+(i+1));
+        del.addEventListener('click',async event=>{
+          event.stopPropagation();if(frameBusy)return;
+          if(!confirm('Delete frame '+(i+1)+'? This cannot be undone.'))return;
+          frameBusy=true;
+          if(currentFrame>=0&&frames[currentFrame])frames[currentFrame]=await captureFrame();
+          frames.splice(i,1);
+          if(!frames.length){
+            currentFrame=-1;ctx.clearRect(0,0,W(),H());ctx.fillStyle='#fff';ctx.fillRect(0,0,W(),H());
+            vectorPaths=[];activeVector=null;selectedVector=-1;renderVectors();renderFrameStrip();drawOnionSkin();
+          }else{
+            if(i<currentFrame)currentFrame--;
+            else if(i===currentFrame)currentFrame=Math.min(i,frames.length-1);
+            if(i===currentFrame||i<currentFrame)loadFrame(currentFrame);
+            else{renderFrameStrip();drawOnionSkin();}
+          }
+          frameBusy=false;toast('Frame deleted');
+        });
+        card.append(b,del);strip.appendChild(card);
+      });
     }
     function drawOnionSkin(){
       onionCtx.clearRect(0,0,W(),H());if(!$('onionToggle').checked||currentFrame<=0||!frames[currentFrame-1])return;
