@@ -40,7 +40,7 @@
       toast.timer = setTimeout(() => node.classList.remove('show'), 1800);
     }
     function status() {
-      const names = {pencil:'Pencil',eraser:'Eraser',bucket:'Paint bucket',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',pen:'Vector pen',bezier:'Bezier curve',vectorrect:'Vector rectangle',vectoroval:'Vector oval',editpoints:'Edit points'};
+      const names = {pencil:'Paintbrush',eraser:'Eraser',bucket:'Paint bucket',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',pen:'Vector pen',bezier:'Bezier curve',vectorrect:'Vector rectangle',vectoroval:'Vector oval',editpoints:'Edit points'};
       $('toolStatus').innerHTML = '<strong>Tool:</strong> ' + (names[tool] || tool);
       document.querySelectorAll('.tool').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
     }
