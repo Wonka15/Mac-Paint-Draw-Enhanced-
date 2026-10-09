@@ -40,7 +40,7 @@
     }
     function selectTool(next) {
       tool = next;
-      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'editpoints');
+      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'editpoints');
       renderVectors();
       status();
       if (tool === 'pen') toast('Vector Pen: click to add straight points; Enter finishes');
