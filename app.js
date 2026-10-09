@@ -1,41 +1,17 @@
-/*
-  Mac Paint Draw Enhanced
-  ----------------------
-
-  This file is the heart of the app.
-
-  Think of it like a Python script that runs when the page loads:
-  - grab the canvas and buttons
-  - track the current color and tool
-  - allow drawing with mouse or touch
-  - save the drawing to local storage
-  - export the drawing as a PNG
-
-  The comments are written to be beginner-friendly.
-*/
-
 (() => {
   'use strict';
 
-  // ---------------------------------------------------------------
-  // 1) Get references to the HTML elements we need
-  // ---------------------------------------------------------------
   const $ = (id) => document.getElementById(id);
 
   const paper = $('paper');
-  const art = $('art');
   const overlay = $('overlay');
   const guides = $('guides');
-  const rulerCanvas = $('rulers');
-
+  const rulers = $('rulers');
   const ctx = paper.getContext('2d');
   const octx = overlay.getContext('2d');
   const gctx = guides.getContext('2d');
-  const rctx = rulerCanvas.getContext('2d');
+  const rctx = rulers.getContext('2d');
 
-  // ---------------------------------------------------------------
-  // 2) State variables for the app
-  // ---------------------------------------------------------------
   let tool = 'pencil';
   let color = '#20252b';
   let size = 4;
@@ -51,24 +27,16 @@
   let guideX = null;
   let guideY = null;
   let saveTimer = null;
-
   let ghostImage = null;
   let ghostOpacity = 0.35;
-
-  let gifFrames = [];
-  let gifRecording = false;
-
   let currentFont = 'sans-serif';
 
-  // ---------------------------------------------------------------
-  // 3) Small helper functions
-  // ---------------------------------------------------------------
   const W = () => paper.width;
   const H = () => paper.height;
 
-  function toast(message) {
+  function toast(msg) {
     const t = $('toast');
-    t.textContent = message;
+    t.textContent = msg;
     t.classList.add('show');
     clearTimeout(toast.timer);
     toast.timer = setTimeout(() => t.classList.remove('show'), 1800);
@@ -85,18 +53,14 @@
       eyedropper: 'Pick color',
       hand: 'Pan'
     };
-
     $('toolStatus').innerHTML = `<strong>Tool:</strong> ${names[tool] || tool}`;
   }
 
   function selectTool(nextTool) {
     tool = nextTool;
-
     document.querySelectorAll('.tool').forEach((button) => {
-      const isActive = button.dataset.tool === nextTool;
-      button.classList.toggle('active', isActive);
+      button.classList.toggle('active', button.dataset.tool === nextTool);
     });
-
     setStatus();
   }
 
@@ -105,7 +69,7 @@
     let x = ((event.clientX - rect.left) * W()) / rect.width;
     let y = ((event.clientY - rect.top) * H()) / rect.height;
 
-    if ($('snapCheck').checked) {
+    if ($('snapToggle').checked) {
       if (guideX !== null && Math.abs(x - guideX) < 14) x = guideX;
       if (guideY !== null && Math.abs(y - guideY) < 14) y = guideY;
     }
@@ -116,60 +80,51 @@
     };
   }
 
-  // ---------------------------------------------------------------
-  // 4) Undo / redo system
-  // ---------------------------------------------------------------
   function snapshot() {
     try {
       history.push(ctx.getImageData(0, 0, W(), H()));
       if (history.length > 40) history.shift();
       redoStack = [];
-      updateUndoButtons();
+      updateButtons();
       scheduleSave();
-    } catch (error) {}
+    } catch (err) {
+      console.warn('Snapshot failed', err);
+    }
   }
 
-  function updateUndoButtons() {
-    $('undoBtn').disabled = !history.length;
-    $('redoBtn').disabled = !redoStack.length;
+  function updateButtons() {
+    $('undoBtn').disabled = history.length === 0;
+    $('redoBtn').disabled = redoStack.length === 0;
   }
 
-  // ---------------------------------------------------------------
-  // 5) Canvas resizing and guide drawing
-  // ---------------------------------------------------------------
   function resizeCanvas(width, height, preserve = true) {
-    let tempCanvas = null;
-
+    let temp = null;
     if (preserve && W() && H()) {
-      tempCanvas = document.createElement('canvas');
-      tempCanvas.width = W();
-      tempCanvas.height = H();
-      tempCanvas.getContext('2d').drawImage(paper, 0, 0);
+      temp = document.createElement('canvas');
+      temp.width = W();
+      temp.height = H();
+      temp.getContext('2d').drawImage(paper, 0, 0);
     }
 
-    [paper, art, overlay, guides, rulerCanvas].forEach((canvas) => {
+    [paper, overlay, guides, rulers].forEach((canvas) => {
       canvas.width = width;
       canvas.height = height;
     });
 
-    if (tempCanvas) {
-      ctx.drawImage(tempCanvas, 0, 0);
-    }
-
+    if (temp) ctx.drawImage(temp, 0, 0);
     drawGuides();
   }
 
   function drawRulers() {
-    rctx.clearRect(0, 0, W(), H);
+    rctx.clearRect(0, 0, W(), H());
     if (!showRulers) return;
 
     rctx.save();
-    rctx.strokeStyle = 'rgba(48, 64, 90, 0.4)';
-    rctx.fillStyle = 'rgba(48, 64, 90, 0.7)';
-    rctx.lineWidth = 1;
+    rctx.strokeStyle = 'rgba(50,60,75,0.6)';
+    rctx.fillStyle = 'rgba(50,60,75,0.8)';
     rctx.font = '10px sans-serif';
+    rctx.lineWidth = 1;
 
-    // Horizontal ruler
     for (let x = 0; x <= W(); x += 50) {
       rctx.beginPath();
       rctx.moveTo(x, 0);
@@ -178,7 +133,6 @@
       rctx.fillText(String(x), x + 4, 12);
     }
 
-    // Vertical ruler
     for (let y = 0; y <= H(); y += 50) {
       rctx.beginPath();
       rctx.moveTo(0, y);
@@ -195,7 +149,7 @@
 
     if (showGrid) {
       gctx.save();
-      gctx.strokeStyle = '#6b8bd522';
+      gctx.strokeStyle = 'rgba(100,130,220,0.18)';
       gctx.lineWidth = 1;
 
       for (let x = 50; x < W(); x += 50) {
@@ -239,17 +193,15 @@
     }
 
     guides.style.display = (showGuides || showGrid) ? 'block' : 'none';
+    rulers.style.display = showRulers ? 'block' : 'none';
     drawRulers();
   }
 
-  // ---------------------------------------------------------------
-  // 6) Local save and restore
-  // ---------------------------------------------------------------
   function scheduleSave() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       try {
-        const savedState = {
+        const state = {
           w: W(),
           h: H(),
           image: paper.toDataURL('image/png'),
@@ -261,10 +213,11 @@
           ghostOpacity,
           currentFont
         };
-
-        localStorage.setItem('mpde-art', JSON.stringify(savedState));
-      } catch (error) {}
-    }, 500);
+        localStorage.setItem('mpde-art', JSON.stringify(state));
+      } catch (err) {
+        console.warn('Save failed', err);
+      }
+    }, 400);
   }
 
   function restore() {
@@ -276,7 +229,6 @@
       img.onload = () => {
         resizeCanvas(saved.w, saved.h, false);
         ctx.drawImage(img, 0, 0);
-
         color = saved.color || color;
         size = saved.size || size;
         tool = saved.tool || tool;
@@ -284,23 +236,23 @@
         guideY = saved.guideY || null;
         ghostOpacity = saved.ghostOpacity || ghostOpacity;
         currentFont = saved.currentFont || currentFont;
-
         $('colorInput').value = color;
-        $('sizeInput').value = size;
-        $('sizeDisplay').textContent = `${size}px`;
-        $('ghostOpacity').value = ghostOpacity;
-        document.body.style.setProperty('--font-family', currentFont);
+        $('sizeInput').value = String(size);
+        $('sizeValue').textContent = `${size}px`;
+        $('ghostOpacity').value = String(ghostOpacity);
+        $('ghostValue').textContent = Number(ghostOpacity).toFixed(2);
+        const fontSelect = $('fontSelect');
+        if ([...fontSelect.options].some((opt) => opt.value === currentFont)) {
+          fontSelect.value = currentFont;
+        }
         selectTool(tool);
-        drawGuides();
       };
-
       img.src = saved.image;
-    } catch (error) {}
+    } catch (err) {
+      console.warn('Restore failed', err);
+    }
   }
 
-  // ---------------------------------------------------------------
-  // 7) Shape drawing logic
-  // ---------------------------------------------------------------
   function drawShape(currentPoint) {
     octx.clearRect(0, 0, W(), H());
     octx.save();
@@ -325,18 +277,13 @@
       else octx.strokeRect(left, top, width, height);
     } else if (tool === 'ellipse') {
       octx.beginPath();
-      octx.ellipse(left + width / 2, top + height / 2, width / 2, height / 2, 0, 0, 2 * Math.PI);
-
+      octx.ellipse(left + width / 2, top + height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
       if (fill) octx.fill();
       else octx.stroke();
     }
-
     octx.restore();
   }
 
-  // ---------------------------------------------------------------
-  // 8) Mouse and touch events
-  // ---------------------------------------------------------------
   function handlePointerDown(event) {
     event.preventDefault();
     const p = point(event);
@@ -354,14 +301,17 @@
       return;
     }
 
-    if (tool === 'hand') return;
-
     if (tool === 'eyedropper') {
-      const imageData = ctx.getImageData(p.x, p.y, 1, 1);
-      const [r, g, b] = imageData.data;
-      color = '#' + [r, g, b].map((channel) => channel.toString(16).padStart(2, '0')).join('');
+      const data = ctx.getImageData(Math.floor(p.x), Math.floor(p.y), 1, 1).data;
+      const [r, g, b] = data;
+      color = '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
       $('colorInput').value = color;
-      toast('Color picked!');
+      toast('Color picked');
+      return;
+    }
+
+    if (tool === 'hand') {
+      toast('Pan tool is a placeholder');
       return;
     }
 
@@ -373,7 +323,6 @@
 
   function handlePointerMove(event) {
     if (!drawing) return;
-
     const p = point(event);
     $('coordStatus').textContent = `${Math.round(p.x)} × ${Math.round(p.y)} px`;
 
@@ -381,7 +330,7 @@
       ctx.beginPath();
       ctx.moveTo(last.x, last.y);
       ctx.lineTo(p.x, p.y);
-      ctx.strokeStyle = tool === 'eraser' ? 'white' : color;
+      ctx.strokeStyle = tool === 'eraser' ? '#ffffff' : color;
       ctx.lineWidth = size;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -394,28 +343,36 @@
 
   function handlePointerUp(event) {
     if (!drawing) return;
-
     drawing = false;
-    const p = point(event);
 
     if (['line', 'rect', 'ellipse'].includes(tool)) {
       ctx.drawImage(overlay, 0, 0);
       octx.clearRect(0, 0, W(), H());
       scheduleSave();
-    }
-
-    if (tool === 'pencil' || tool === 'eraser') {
+    } else if (tool === 'pencil' || tool === 'eraser') {
       scheduleSave();
     }
 
-    if (p) {
+    if (event) {
+      const p = point(event);
       $('coordStatus').textContent = `${Math.round(p.x)} × ${Math.round(p.y)} px`;
     }
   }
 
-  // ---------------------------------------------------------------
-  // 9) Buttons and controls
-  // ---------------------------------------------------------------
+  function drawGhostImage() {
+    if (!ghostImage) return;
+    const scale = Math.min(W() / ghostImage.width, H() / ghostImage.height);
+    const x = (W() - ghostImage.width * scale) / 2;
+    const y = (H() - ghostImage.height * scale) / 2;
+    const w = ghostImage.width * scale;
+    const h = ghostImage.height * scale;
+
+    ctx.save();
+    ctx.globalAlpha = ghostOpacity;
+    ctx.drawImage(ghostImage, x, y, w, h);
+    ctx.restore();
+  }
+
   document.querySelectorAll('.tool').forEach((button) => {
     button.addEventListener('click', () => selectTool(button.dataset.tool));
   });
@@ -432,84 +389,74 @@
   });
 
   $('sizeInput').addEventListener('input', (event) => {
-    size = parseInt(event.target.value, 10);
-    $('sizeDisplay').textContent = `${size}px`;
+    size = Number(event.target.value);
+    $('sizeValue').textContent = `${size}px`;
   });
 
-  $('fillCheck').addEventListener('change', (event) => {
+  $('fillToggle').addEventListener('change', (event) => {
     fill = event.target.checked;
   });
 
-  $('guidesBtn').addEventListener('click', () => {
-    showGuides = !showGuides;
-    $('guidesBtn').setAttribute('aria-pressed', showGuides);
+  $('gridToggle').addEventListener('change', (event) => {
+    showGrid = event.target.checked;
+    drawGuides();
+  });
 
+  $('snapToggle').addEventListener('change', () => {});
+
+  $('guideBtn').addEventListener('click', () => {
+    showGuides = !showGuides;
     if (showGuides && guideX === null && guideY === null) {
       guideX = Math.round(W() / 2);
       guideY = Math.round(H() / 2);
     }
-
-    drawGuides();
-  });
-
-  $('gridCheck').addEventListener('change', (event) => {
-    showGrid = event.target.checked;
     drawGuides();
   });
 
   $('rulerBtn').addEventListener('click', () => {
     showRulers = !showRulers;
     drawGuides();
-    toast(showRulers ? 'Rulers on' : 'Rulers off');
   });
 
   $('ghostOpacity').addEventListener('input', (event) => {
     ghostOpacity = Number(event.target.value);
-    $('ghostValue').textContent = ghostOpacity.toFixed(2);
-    if (ghostImage) {
-      drawGhostLayer();
-    }
+    $('ghostValue').textContent = Number(ghostOpacity).toFixed(2);
+    if (ghostImage) drawGhostImage();
   });
 
   $('undoBtn').addEventListener('click', () => {
     if (!history.length) return;
-
     redoStack.push(ctx.getImageData(0, 0, W(), H()));
     ctx.putImageData(history.pop(), 0, 0);
-    updateUndoButtons();
+    updateButtons();
     scheduleSave();
     toast('Undid action');
   });
 
   $('redoBtn').addEventListener('click', () => {
     if (!redoStack.length) return;
-
     history.push(ctx.getImageData(0, 0, W(), H()));
     ctx.putImageData(redoStack.pop(), 0, 0);
-    updateUndoButtons();
+    updateButtons();
     scheduleSave();
     toast('Redid action');
   });
 
   $('clearBtn').addEventListener('click', () => {
-    if (!confirm('Clear the whole canvas? You can undo this.')) return;
-
+    if (!confirm('Clear the whole canvas?')) return;
     snapshot();
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, W(), H());
     scheduleSave();
     toast('Canvas cleared');
   });
 
   $('resetBtn').addEventListener('click', () => {
-    if (!confirm('Reset canvas size to 1200×800?')) return;
+    if (!confirm('Reset canvas to 1200x800?')) return;
     resizeCanvas(1200, 800, true);
     toast('Canvas reset');
   });
 
-  // ---------------------------------------------------------------
-  // 10) Save, export, and load features
-  // ---------------------------------------------------------------
   $('saveBtn').addEventListener('click', () => {
     $('saveModal').classList.add('show');
     $('saveName').focus();
@@ -525,74 +472,67 @@
     link.href = paper.toDataURL('image/png');
     link.download = `${name}-${Date.now()}.png`;
     link.click();
-
-    toast(`Saved: ${name}`);
     $('saveModal').classList.remove('show');
-    $('saveName').value = '';
+    toast('Saved PNG');
   });
 
   $('exportBtn').addEventListener('click', () => {
     const link = document.createElement('a');
     link.href = paper.toDataURL('image/png');
-    link.download = `mac-paint-${Date.now()}.png`;
+    link.download = `drawing-${Date.now()}.png`;
     link.click();
-    toast('Exported as PNG');
+    toast('Exported PNG');
   });
 
-  $('svgExportBtn').addEventListener('click', () => {
-    const pngData = paper.toDataURL('image/png');
+  $('svgBtn').addEventListener('click', () => {
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" width="${W()}" height="${H()}">
-        <image href="${pngData}" width="${W()}" height="${H()}" preserveAspectRatio="xMidYMid meet"/>
+        <image href="${paper.toDataURL('image/png')}" width="${W()}" height="${H()}" />
       </svg>
     `;
-
-    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `mac-paint-${Date.now()}.svg`;
-    link.click();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `drawing-${Date.now()}.svg`;
+    a.click();
     URL.revokeObjectURL(url);
-    toast('Exported as SVG');
+    toast('Exported SVG');
   });
 
-  $('gifRecordBtn').addEventListener('click', () => {
+  $('gifBtn').addEventListener('click', async () => {
     if (!window.GIF) {
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.js';
       script.onload = () => {
-        $('gifRecordBtn').click();
+        toast('GIF ready');
       };
       document.head.appendChild(script);
       return;
     }
 
-    if (!gifRecording) {
-      gifRecording = true;
-      gifFrames = [];
-      $('gifRecordBtn').textContent = 'Stop Recording';
-      toast('GIF recording started');
-      return;
-    }
-
-    gifRecording = false;
-    $('gifRecordBtn').textContent = 'Record GIF';
-
     const gif = new GIF({
       workers: 2,
       quality: 10,
-      workerScript: 'https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.worker.js',
       width: W(),
-      height: H()
+      height: H(),
+      workerScript: 'https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.worker.js'
     });
 
-    gifFrames.forEach((frame) => gif.addFrame(frame, { copy: true, delay: 80 }));
+    for (let i = 0; i < 5; i++) {
+      const frame = document.createElement('canvas');
+      frame.width = W();
+      frame.height = H();
+      const fctx = frame.getContext('2d');
+      fctx.drawImage(paper, 0, 0);
+      gif.addFrame(frame, { copy: true, delay: 120 });
+    }
+
     gif.on('finished', (blob) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `mac-paint-${Date.now()}.gif`;
+      a.download = `drawing-${Date.now()}.gif`;
       a.click();
       URL.revokeObjectURL(url);
       toast('GIF exported');
@@ -601,147 +541,96 @@
     gif.render();
   });
 
-  $('loadBtn').addEventListener('click', () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-
-    input.addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (loadEvent) => {
-        const img = new Image();
-        img.onload = () => {
-          snapshot();
-          ctx.fillStyle = '#fff';
-          ctx.fillRect(0, 0, W(), H());
-
-          const scale = Math.min(W() / img.width, H() / img.height);
-          const x = (W() - img.width * scale) / 2;
-          const y = (H() - img.height * scale) / 2;
-
-          ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-          scheduleSave();
-          toast('Image loaded');
-        };
-
-        img.src = loadEvent.target.result;
-      };
-
-      reader.readAsDataURL(file);
-    });
-
-    input.click();
+  $('fontSelect').addEventListener('change', (event) => {
+    currentFont = event.target.value;
+    toast(`Font set: ${currentFont}`);
   });
 
-  $('ghostImport').addEventListener('click', () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-
-    input.addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (loadEvent) => {
-        const img = new Image();
-        img.onload = () => {
-          ghostImage = img;
-          drawGhostLayer();
-          toast('Ghost image loaded');
-        };
-        img.src = loadEvent.target.result;
-      };
-
-      reader.readAsDataURL(file);
-    });
-
-    input.click();
-  });
-
-  $('fontImport').addEventListener('click', () => {
+  $('fontImportBtn').addEventListener('click', () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.ttf,.otf,.woff,.woff2';
-
-    input.addEventListener('change', (event) => {
+    input.addEventListener('change', async (event) => {
       const file = event.target.files[0];
       if (!file) return;
 
       const fontUrl = URL.createObjectURL(file);
-      const name = file.name.replace(/\.[^.]+$/, '');
-      const fontFace = new FontFace(name, `url(${fontUrl})`);
-
-      fontFace.load().then(() => {
-        document.fonts.add(fontFace);
-        currentFont = name;
-        $('fontSelect').value = name;
-        $('fontSelect').append(new Option(name, name));
-        toast(`${name} loaded`);
-      }).catch(() => {
-        toast('Font could not be loaded');
-      });
+      const fontName = file.name.replace(/\.[^.]+$/, '');
+      const face = new FontFace(fontName, `url(${fontUrl})`);
+      try {
+        await face.load();
+        document.fonts.add(face);
+        currentFont = fontName;
+        const select = $('fontSelect');
+        if (![...select.options].some((opt) => opt.value === fontName)) {
+          select.add(new Option(fontName, fontName));
+        }
+        select.value = fontName;
+        toast(`Loaded ${fontName}`);
+      } catch (err) {
+        toast('Font load failed');
+      }
     });
-
     input.click();
   });
 
-  $('fontSelect').addEventListener('change', (event) => {
-    currentFont = event.target.value;
-    document.body.style.setProperty('--font-family', currentFont);
-    toast(`Font changed to ${currentFont}`);
+  $('ghostImportBtn').addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          ghostImage = img;
+          drawGhostImage();
+          toast('Ghost image loaded');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+    input.click();
   });
 
-  function drawGhostLayer() {
-    if (!ghostImage) return;
-    const ghostCanvas = document.createElement('canvas');
-    ghostCanvas.width = W();
-    ghostCanvas.height = H();
-    const g = ghostCanvas.getContext('2d');
-    g.clearRect(0, 0, W(), H());
-    g.globalAlpha = ghostOpacity;
-    const scale = Math.min(W() / ghostImage.width, H() / ghostImage.height);
-    const x = (W() - ghostImage.width * scale) / 2;
-    const y = (H() - ghostImage.height * scale) / 2;
-    g.drawImage(ghostImage, x, y, ghostImage.width * scale, ghostImage.height * scale);
+  $('loadBtn').addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          snapshot();
+          ctx.clearRect(0, 0, W(), H());
+          const scale = Math.min(W() / img.width, H() / img.height);
+          const x = (W() - img.width * scale) / 2;
+          const y = (H() - img.height * scale) / 2;
+          ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+          scheduleSave();
+          toast('Image loaded');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+    input.click();
+  });
 
-    const imageData = ghostCanvas.toDataURL('image/png');
-    const overlayImage = new Image();
-    overlayImage.onload = () => {
-      ctx.save();
-      ctx.globalAlpha = ghostOpacity;
-      ctx.drawImage(overlayImage, x, y, ghostImage.width * scale, ghostImage.height * scale);
-      ctx.restore();
-    };
-    overlayImage.src = imageData;
-  }
-
-  function recordFrame() {
-    if (!gifRecording) return;
-    gifFrames.push(paper.toCanvas ? paper.toCanvas() : paper);
-  }
-
-  // ---------------------------------------------------------------
-  // 11) Connect pointer events to drawing functions
-  // ---------------------------------------------------------------
   paper.addEventListener('pointerdown', handlePointerDown);
   paper.addEventListener('pointermove', handlePointerMove);
   paper.addEventListener('pointerup', handlePointerUp);
   paper.addEventListener('pointercancel', handlePointerUp);
 
-  setInterval(() => {
-    if (gifRecording) {
-      gifFrames.push(paper.toDataURL('image/webp', 0.8));
-    }
-  }, 120);
-
-  // ---------------------------------------------------------------
-  // 12) Start the app
-  // ---------------------------------------------------------------
   resizeCanvas(1200, 800, false);
+  drawGuides();
   restore();
+  updateButtons();
   setStatus();
 })();
