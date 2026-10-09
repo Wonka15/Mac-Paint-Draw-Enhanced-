@@ -59,13 +59,14 @@
       button.classList.toggle('primary', isOn);
     }
 
-    function selectTool(next) {
-      // Clicking an active tool again returns to the default Paintbrush.
-      if (next === tool && next !== 'pencil') next = 'pencil';
+    function selectTool(next, toggleIfActive = false) {
+      // User clicks can turn the current tool off; programmatic selection stays explicit.
+      if (toggleIfActive && next === tool && next !== 'pencil') next = 'pencil';
       tool = next;
       vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'editpoints' || tool === 'shapebuilder');
       renderVectors();
       status();
+      updateShapeBuilderStatus();
       if (tool === 'pen') toast('Vector Pen: click to add straight points; Enter finishes');
       if (tool === 'bezier') toast('Bezier: click-drag to shape handles; Enter finishes');
       if (tool === 'editpoints') toast('Edit Points: drag a blue anchor to reshape a vector');
@@ -439,7 +440,7 @@
             } else {
               selectedVectors = [index];
             }
-            selectedVector = index;
+            selectedVector = selectedVectors.includes(index) ? index : (selectedVectors[0] ?? -1);
             shapeBuilderVisited.add(index);
           } else {
             toast('Choose a closed vector shape.');
@@ -604,7 +605,7 @@
       drawing=false;saveSoon();retroSound('end');
       if(event){const p=point(event);$('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';}
     }
-    document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>selectTool(b.dataset.tool)));
+    document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>selectTool(b.dataset.tool, true)));
     vectorLayer.addEventListener('pointerdown',vectorDown);
     vectorLayer.addEventListener('pointermove',vectorMove);
     vectorLayer.addEventListener('pointerup',vectorUp);
