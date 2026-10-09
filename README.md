@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="macpaint-enhanced.png" alt="MacPaint Enhanced" width="800">
+  <img src="IMG_1939.jpeg" alt="MacPaint Enhanced" width="800">
 </p>
 # MacDraw Enhanced
 
