@@ -257,3 +257,9 @@
 .shape-builder-grid .btn{font-size:11px;padding:8px 5px}
 .shape-builder-grid #shapeBuilderClearBtn{grid-column:1/-1;background:#fff;border-color:var(--line);color:var(--ink)}
 @media(max-width:700px){.shape-builder-grid .btn{font-size:12px}}
+
+
+/* Clear, recognizable tool icons for the Version 1.0 toolbox. */
+.tool .ico{display:inline-flex;align-items:center;justify-content:center;flex:0 0 24px;width:24px;height:24px}
+.tool .ico svg{display:block;width:23px;height:23px;overflow:visible}
+.tool .icon-eraser svg,.tool .icon-bucket svg{filter:drop-shadow(0 1px 0 rgba(0,0,0,.08))}
