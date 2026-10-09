@@ -55,3 +55,8 @@ Choose **Bezier curve**, then click-drag to create anchor points with handles. P
 - **Paint bucket** fills a connected area with the selected ink or pattern. It works best inside closed outlines; clicking an unbounded white area can fill most of the canvas.
 - Choose **Font** and adjust **Text size** before clicking the canvas with the Text tool.
 - **Retro drawing sounds** uses short synthesized square-wave beeps from the browser's Web Audio API. No external audio files are loaded, so the app does not redistribute Macintosh system sounds. Turn the sound toggle off any time.
+
+
+## Painterly brushes
+
+The Paintbrush presets include **Round**, **Japanese ink**, **Acrylic**, **Watercolor**, and **Dry / chalk**. Adjust Brush size and Ink color to tune each. Japanese ink uses a slanted nib; acrylic leaves bristle-like marks; watercolor layers translucent washes; dry brush scatters broken grainy marks. **Rough paper texture** is an optional on-screen texture toggle for the canvas.
