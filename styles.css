@@ -225,3 +225,20 @@
 .pattern-vertical{background-image:repeating-linear-gradient(90deg,#20252b 0 1px,#fff 1px 5px)}
 .pattern-brick{background-image:linear-gradient(#20252b 1px,transparent 1px),linear-gradient(90deg,#20252b 1px,transparent 1px),linear-gradient(90deg,#20252b 1px,transparent 1px);background-size:16px 10px,8px 10px,8px 10px;background-position:0 0,0 0,8px 5px}
 #soundToggle{accent-color:var(--blue)}
+
+
+/* Five simple painterly brush presets */
+.brush-help{font-size:11px;color:var(--muted);margin:-5px 0 9px}
+.brush-list{display:flex;flex-direction:column;gap:5px}
+.brush-option{display:flex;align-items:center;gap:9px;width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:7px;background:#fffdf8;text-align:left;color:var(--ink);cursor:pointer}
+.brush-option.active{border-color:var(--blue);background:var(--blue2);box-shadow:inset 3px 0 var(--blue)}
+.brush-option strong,.brush-option small{display:block}
+.brush-option strong{font-size:11px;font-weight:650}
+.brush-option small{font-size:10px;color:var(--muted);margin-top:2px}
+.brush-mark{display:block;flex:0 0 39px;height:25px;border-radius:4px;background:#f5f0e5;position:relative;overflow:hidden}
+.brush-mark:after{content:"";position:absolute;left:5px;right:5px;top:10px;height:5px;border-radius:99px;background:#20252b}
+.calligraphy-mark:after{left:5px;right:5px;top:7px;height:11px;border-radius:70% 10% 70% 10%;transform:rotate(-17deg)}
+.acrylic-mark:after{height:8px;top:8px;border-radius:1px;background:repeating-linear-gradient(0deg,#20252b 0 1px,#4b4b4b 1px 2px,#20252b 2px 3px)}
+.watercolor-mark:after{height:13px;top:6px;background:radial-gradient(ellipse,#315cdb 0 30%,rgba(49,92,219,.35) 55%,rgba(49,92,219,.08) 72%,transparent 74%)}
+.dry-mark:after{height:7px;top:9px;border-radius:0;background:repeating-linear-gradient(90deg,#20252b 0 3px,transparent 3px 5px)}
+#canvasWrap.rough-paper:after{content:"";position:absolute;inset:0;z-index:7;pointer-events:none;opacity:.16;background-image:radial-gradient(rgba(70,55,35,.32) .45px,transparent .8px),radial-gradient(rgba(70,55,35,.18) .55px,transparent .9px),repeating-linear-gradient(0deg,rgba(120,100,75,.045) 0 1px,transparent 1px 3px);background-size:5px 5px,7px 7px,100% 3px;background-position:0 0,2px 3px,0 0;mix-blend-mode:multiply}
