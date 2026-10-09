@@ -22,19 +22,20 @@
   // ---------------------------------------------------------------
   const $ = (id) => document.getElementById(id);
 
-  const paper = $('paper');        // the main canvas where drawing happens
-  const art = $('art');            // helper canvas for temporary preview shapes
-  const overlay = $('overlay');    // another helper canvas for shapes while dragging
-  const guides = $('guides');      // canvas that shows guides and grid
+  const paper = $('paper');
+  const art = $('art');
+  const overlay = $('overlay');
+  const guides = $('guides');
+  const rulerCanvas = $('rulers');
 
   const ctx = paper.getContext('2d');
   const octx = overlay.getContext('2d');
   const gctx = guides.getContext('2d');
+  const rctx = rulerCanvas.getContext('2d');
 
   // ---------------------------------------------------------------
   // 2) State variables for the app
   // ---------------------------------------------------------------
-  // These are like Python variables that remember the current state.
   let tool = 'pencil';
   let color = '#20252b';
   let size = 4;
@@ -46,9 +47,18 @@
   let redoStack = [];
   let showGuides = false;
   let showGrid = false;
+  let showRulers = false;
   let guideX = null;
   let guideY = null;
   let saveTimer = null;
+
+  let ghostImage = null;
+  let ghostOpacity = 0.35;
+
+  let gifFrames = [];
+  let gifRecording = false;
+
+  let currentFont = 'sans-serif';
 
   // ---------------------------------------------------------------
   // 3) Small helper functions
@@ -56,7 +66,6 @@
   const W = () => paper.width;
   const H = () => paper.height;
 
-  // Show a little message at the bottom of the screen.
   function toast(message) {
     const t = $('toast');
     t.textContent = message;
@@ -65,7 +74,6 @@
     toast.timer = setTimeout(() => t.classList.remove('show'), 1800);
   }
 
-  // Update the text that says which tool is active.
   function setStatus() {
     const names = {
       pencil: 'Pencil',
@@ -81,7 +89,6 @@
     $('toolStatus').innerHTML = `<strong>Tool:</strong> ${names[tool] || tool}`;
   }
 
-  // Switch to a new tool.
   function selectTool(nextTool) {
     tool = nextTool;
 
@@ -93,13 +100,11 @@
     setStatus();
   }
 
-  // Convert a mouse/touch position to canvas coordinates.
   function point(event) {
     const rect = paper.getBoundingClientRect();
     let x = ((event.clientX - rect.left) * W()) / rect.width;
     let y = ((event.clientY - rect.top) * H()) / rect.height;
 
-    // If snapping is enabled, snap to guide lines.
     if ($('snapCheck').checked) {
       if (guideX !== null && Math.abs(x - guideX) < 14) x = guideX;
       if (guideY !== null && Math.abs(y - guideY) < 14) y = guideY;
@@ -114,22 +119,14 @@
   // ---------------------------------------------------------------
   // 4) Undo / redo system
   // ---------------------------------------------------------------
-  // This works like a history stack.
-  // We save each canvas state before changes, so the user can undo.
-
   function snapshot() {
     try {
       history.push(ctx.getImageData(0, 0, W(), H()));
-
-      // Keep only the last 40 states to avoid using too much memory.
       if (history.length > 40) history.shift();
-
       redoStack = [];
       updateUndoButtons();
       scheduleSave();
-    } catch (error) {
-      // Ignore errors in browsers that do not support this action.
-    }
+    } catch (error) {}
   }
 
   function updateUndoButtons() {
@@ -150,7 +147,7 @@
       tempCanvas.getContext('2d').drawImage(paper, 0, 0);
     }
 
-    [paper, art, overlay, guides].forEach((canvas) => {
+    [paper, art, overlay, guides, rulerCanvas].forEach((canvas) => {
       canvas.width = width;
       canvas.height = height;
     });
@@ -162,7 +159,37 @@
     drawGuides();
   }
 
-  // Draw a guide line or grid overlay.
+  function drawRulers() {
+    rctx.clearRect(0, 0, W(), H);
+    if (!showRulers) return;
+
+    rctx.save();
+    rctx.strokeStyle = 'rgba(48, 64, 90, 0.4)';
+    rctx.fillStyle = 'rgba(48, 64, 90, 0.7)';
+    rctx.lineWidth = 1;
+    rctx.font = '10px sans-serif';
+
+    // Horizontal ruler
+    for (let x = 0; x <= W(); x += 50) {
+      rctx.beginPath();
+      rctx.moveTo(x, 0);
+      rctx.lineTo(x, 18);
+      rctx.stroke();
+      rctx.fillText(String(x), x + 4, 12);
+    }
+
+    // Vertical ruler
+    for (let y = 0; y <= H(); y += 50) {
+      rctx.beginPath();
+      rctx.moveTo(0, y);
+      rctx.lineTo(18, y);
+      rctx.stroke();
+      rctx.fillText(String(y), 4, y + 12);
+    }
+
+    rctx.restore();
+  }
+
   function drawGuides() {
     gctx.clearRect(0, 0, W(), H());
 
@@ -212,13 +239,12 @@
     }
 
     guides.style.display = (showGuides || showGrid) ? 'block' : 'none';
+    drawRulers();
   }
 
   // ---------------------------------------------------------------
   // 6) Local save and restore
   // ---------------------------------------------------------------
-  // This saves the drawing into browser storage so it can come back later.
-
   function scheduleSave() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
@@ -231,13 +257,13 @@
           size,
           tool,
           guideX,
-          guideY
+          guideY,
+          ghostOpacity,
+          currentFont
         };
 
         localStorage.setItem('mpde-art', JSON.stringify(savedState));
-      } catch (error) {
-        // Ignore storage problems.
-      }
+      } catch (error) {}
     }, 500);
   }
 
@@ -256,25 +282,25 @@
         tool = saved.tool || tool;
         guideX = saved.guideX || null;
         guideY = saved.guideY || null;
+        ghostOpacity = saved.ghostOpacity || ghostOpacity;
+        currentFont = saved.currentFont || currentFont;
 
         $('colorInput').value = color;
         $('sizeInput').value = size;
         $('sizeDisplay').textContent = `${size}px`;
+        $('ghostOpacity').value = ghostOpacity;
+        document.body.style.setProperty('--font-family', currentFont);
         selectTool(tool);
         drawGuides();
       };
 
       img.src = saved.image;
-    } catch (error) {
-      // Ignore restore errors.
-    }
+    } catch (error) {}
   }
 
   // ---------------------------------------------------------------
   // 7) Shape drawing logic
   // ---------------------------------------------------------------
-  // This handles line, box, and ellipse previews while dragging.
-
   function drawShape(currentPoint) {
     octx.clearRect(0, 0, W(), H());
     octx.save();
@@ -311,30 +337,25 @@
   // ---------------------------------------------------------------
   // 8) Mouse and touch events
   // ---------------------------------------------------------------
-  // This is the part that makes the app interactive.
-
   function handlePointerDown(event) {
     event.preventDefault();
     const p = point(event);
     $('coordStatus').textContent = `${Math.round(p.x)} × ${Math.round(p.y)} px`;
 
-    // Text tool: ask the user for a string and place it on the canvas.
     if (tool === 'text') {
       const text = prompt('What would you like to write?');
       if (text) {
         snapshot();
         ctx.fillStyle = color;
-        ctx.font = `${size * 2}px sans-serif`;
+        ctx.font = `${size * 2}px ${currentFont}`;
         ctx.fillText(text, p.x, p.y);
         scheduleSave();
       }
       return;
     }
 
-    // Pan tool is not drawing, it is just a placeholder tool for now.
     if (tool === 'hand') return;
 
-    // Eyedropper tool: sample a pixel and set that color.
     if (tool === 'eyedropper') {
       const imageData = ctx.getImageData(p.x, p.y, 1, 1);
       const [r, g, b] = imageData.data;
@@ -395,8 +416,6 @@
   // ---------------------------------------------------------------
   // 9) Buttons and controls
   // ---------------------------------------------------------------
-  // These are the UI actions: choose color, change size, undo, save, export.
-
   document.querySelectorAll('.tool').forEach((button) => {
     button.addEventListener('click', () => selectTool(button.dataset.tool));
   });
@@ -438,6 +457,20 @@
     drawGuides();
   });
 
+  $('rulerBtn').addEventListener('click', () => {
+    showRulers = !showRulers;
+    drawGuides();
+    toast(showRulers ? 'Rulers on' : 'Rulers off');
+  });
+
+  $('ghostOpacity').addEventListener('input', (event) => {
+    ghostOpacity = Number(event.target.value);
+    $('ghostValue').textContent = ghostOpacity.toFixed(2);
+    if (ghostImage) {
+      drawGhostLayer();
+    }
+  });
+
   $('undoBtn').addEventListener('click', () => {
     if (!history.length) return;
 
@@ -477,7 +510,6 @@
   // ---------------------------------------------------------------
   // 10) Save, export, and load features
   // ---------------------------------------------------------------
-
   $('saveBtn').addEventListener('click', () => {
     $('saveModal').classList.add('show');
     $('saveName').focus();
@@ -505,6 +537,68 @@
     link.download = `mac-paint-${Date.now()}.png`;
     link.click();
     toast('Exported as PNG');
+  });
+
+  $('svgExportBtn').addEventListener('click', () => {
+    const pngData = paper.toDataURL('image/png');
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="${W()}" height="${H()}">
+        <image href="${pngData}" width="${W()}" height="${H()}" preserveAspectRatio="xMidYMid meet"/>
+      </svg>
+    `;
+
+    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `mac-paint-${Date.now()}.svg`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast('Exported as SVG');
+  });
+
+  $('gifRecordBtn').addEventListener('click', () => {
+    if (!window.GIF) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.js';
+      script.onload = () => {
+        $('gifRecordBtn').click();
+      };
+      document.head.appendChild(script);
+      return;
+    }
+
+    if (!gifRecording) {
+      gifRecording = true;
+      gifFrames = [];
+      $('gifRecordBtn').textContent = 'Stop Recording';
+      toast('GIF recording started');
+      return;
+    }
+
+    gifRecording = false;
+    $('gifRecordBtn').textContent = 'Record GIF';
+
+    const gif = new GIF({
+      workers: 2,
+      quality: 10,
+      workerScript: 'https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.worker.js',
+      width: W(),
+      height: H()
+    });
+
+    gifFrames.forEach((frame) => gif.addFrame(frame, { copy: true, delay: 80 }));
+    gif.on('finished', (blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mac-paint-${Date.now()}.gif`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('GIF exported');
+    });
+
+    gif.render();
   });
 
   $('loadBtn').addEventListener('click', () => {
@@ -542,6 +636,94 @@
     input.click();
   });
 
+  $('ghostImport').addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+
+    input.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => {
+        const img = new Image();
+        img.onload = () => {
+          ghostImage = img;
+          drawGhostLayer();
+          toast('Ghost image loaded');
+        };
+        img.src = loadEvent.target.result;
+      };
+
+      reader.readAsDataURL(file);
+    });
+
+    input.click();
+  });
+
+  $('fontImport').addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.ttf,.otf,.woff,.woff2';
+
+    input.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const fontUrl = URL.createObjectURL(file);
+      const name = file.name.replace(/\.[^.]+$/, '');
+      const fontFace = new FontFace(name, `url(${fontUrl})`);
+
+      fontFace.load().then(() => {
+        document.fonts.add(fontFace);
+        currentFont = name;
+        $('fontSelect').value = name;
+        $('fontSelect').append(new Option(name, name));
+        toast(`${name} loaded`);
+      }).catch(() => {
+        toast('Font could not be loaded');
+      });
+    });
+
+    input.click();
+  });
+
+  $('fontSelect').addEventListener('change', (event) => {
+    currentFont = event.target.value;
+    document.body.style.setProperty('--font-family', currentFont);
+    toast(`Font changed to ${currentFont}`);
+  });
+
+  function drawGhostLayer() {
+    if (!ghostImage) return;
+    const ghostCanvas = document.createElement('canvas');
+    ghostCanvas.width = W();
+    ghostCanvas.height = H();
+    const g = ghostCanvas.getContext('2d');
+    g.clearRect(0, 0, W(), H());
+    g.globalAlpha = ghostOpacity;
+    const scale = Math.min(W() / ghostImage.width, H() / ghostImage.height);
+    const x = (W() - ghostImage.width * scale) / 2;
+    const y = (H() - ghostImage.height * scale) / 2;
+    g.drawImage(ghostImage, x, y, ghostImage.width * scale, ghostImage.height * scale);
+
+    const imageData = ghostCanvas.toDataURL('image/png');
+    const overlayImage = new Image();
+    overlayImage.onload = () => {
+      ctx.save();
+      ctx.globalAlpha = ghostOpacity;
+      ctx.drawImage(overlayImage, x, y, ghostImage.width * scale, ghostImage.height * scale);
+      ctx.restore();
+    };
+    overlayImage.src = imageData;
+  }
+
+  function recordFrame() {
+    if (!gifRecording) return;
+    gifFrames.push(paper.toCanvas ? paper.toCanvas() : paper);
+  }
+
   // ---------------------------------------------------------------
   // 11) Connect pointer events to drawing functions
   // ---------------------------------------------------------------
@@ -549,6 +731,12 @@
   paper.addEventListener('pointermove', handlePointerMove);
   paper.addEventListener('pointerup', handlePointerUp);
   paper.addEventListener('pointercancel', handlePointerUp);
+
+  setInterval(() => {
+    if (gifRecording) {
+      gifFrames.push(paper.toDataURL('image/webp', 0.8));
+    }
+  }, 120);
 
   // ---------------------------------------------------------------
   // 12) Start the app
