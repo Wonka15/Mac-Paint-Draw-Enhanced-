@@ -138,8 +138,13 @@
     }
     #paper{z-index:2}
     #overlay{z-index:3;pointer-events:none}
-    #guides{z-index:4;pointer-events:none}
-    #rulers{z-index:5;pointer-events:none}
+    #vectorLayer{z-index:4;pointer-events:none;overflow:visible}
+    #vectorLayer.vector-active{pointer-events:auto;cursor:crosshair}
+    #guides{z-index:5;pointer-events:none}
+    #rulers{z-index:6;pointer-events:none}
+    .vector-path{vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+    .vector-anchor{fill:#fff;stroke:#315cdb;stroke-width:2;vector-effect:non-scaling-stroke;cursor:move}
+    .vector-anchor.selected{fill:#315cdb}
 
     .field{display:flex;flex-direction:column;gap:5px;margin:11px 0}
     .field label{font-size:12px;color:var(--muted)}
@@ -220,6 +225,8 @@
           <button class="tool" data-tool="text"><span class="ico">T</span>Text</button>
           <button class="tool" data-tool="eyedropper"><span class="ico">◉</span>Pick color</button>
           <button class="tool" data-tool="hand"><span class="ico">✋</span>Pan / guide</button>
+          <button class="tool" data-tool="pen"><span class="ico">⌁</span>Vector pen</button>
+          <button class="tool" data-tool="editpoints"><span class="ico">◇</span>Edit points</button>
         </div>
 
         <div class="separator"></div>
@@ -255,6 +262,7 @@
           <div class="paper" id="canvasWrap">
             <canvas id="paper" width="1200" height="800"></canvas>
             <canvas id="overlay" width="1200" height="800"></canvas>
+            <svg id="vectorLayer" viewBox="0 0 1200 800" preserveAspectRatio="none" aria-label="Editable vector artwork"></svg>
             <canvas id="guides" width="1200" height="800"></canvas>
             <canvas id="rulers" width="1200" height="800"></canvas>
           </div>
@@ -316,6 +324,7 @@
     const gctx = guides.getContext('2d');
     const rulers = $('rulers');
     const rctx = rulers.getContext('2d');
+    const vectorLayer = $('vectorLayer');
     if (!ctx || !octx || !gctx || !rctx) {
       alert('Mac Paint could not start: your browser could not create a canvas. Try refreshing or using a current browser.');
       return;
@@ -325,6 +334,7 @@
     let drawing = false, startPoint = null, lastPoint = null;
     let history = [], redoStack = [], showGuides = false, showGrid = false;
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
+    let vectorPaths = [], activeVector = null, selectedVector = -1, draggingAnchor = null;
     let saveTimer = null;
 
     const W = () => canvas.width, H = () => canvas.height;
@@ -337,11 +347,18 @@
       toast.timer = setTimeout(() => node.classList.remove('show'), 1800);
     }
     function status() {
-      const names = {pencil:'Pencil',eraser:'Eraser',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide'};
+      const names = {pencil:'Pencil',eraser:'Eraser',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',pen:'Vector pen',editpoints:'Edit points'};
       $('toolStatus').innerHTML = '<strong>Tool:</strong> ' + (names[tool] || tool);
       document.querySelectorAll('.tool').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
     }
-    function selectTool(next) { tool = next; status(); }
+    function selectTool(next) {
+      tool = next;
+      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'editpoints');
+      renderVectors();
+      status();
+      if (tool === 'pen') toast('Vector Pen: click to add points; click the first point to close');
+      if (tool === 'editpoints') toast('Drag a blue anchor to reshape a vector');
+    }
     function updateButtons() {
       $('undoBtn').disabled = history.length === 0;
       $('redoBtn').disabled = redoStack.length === 0;
@@ -360,7 +377,7 @@
         try {
           localStorage.setItem('mpde-art', JSON.stringify({
             w: W(), h: H(), image: canvas.toDataURL('image/png'),
-            color, size, tool, guideX, guideY, showGuides, showGrid
+            color, size, tool, guideX, guideY, showGuides, showGrid, vectors: vectorPaths
           }));
         } catch (error) { console.warn('Autosave unavailable:', error); }
       }, 300);
@@ -392,6 +409,72 @@
       guides.style.display = (showGuides || showGrid) ? 'block' : 'none';
       rctx.clearRect(0,0,W(),H());
       rulers.style.display='none';
+    }
+    function svgPoint(event) {
+      const r = vectorLayer.getBoundingClientRect();
+      return {x:Math.max(0,Math.min(W(),(event.clientX-r.left)*W()/r.width)),y:Math.max(0,Math.min(H(),(event.clientY-r.top)*H()/r.height))};
+    }
+    function pathData(points, closed) {
+      if (!points.length) return '';
+      return 'M ' + points.map(p => `${p.x} ${p.y}`).join(' L ') + (closed ? ' Z' : '');
+    }
+    function renderVectors() {
+      vectorLayer.innerHTML = '';
+      const ns = 'http://www.w3.org/2000/svg';
+      const all = vectorPaths.map((v,i)=>({v,i}));
+      if (activeVector) all.push({v:activeVector,i:-1});
+      all.forEach(({v,i})=>{
+        const path=document.createElementNS(ns,'path');
+        path.setAttribute('d',pathData(v.points,v.closed));
+        path.setAttribute('fill',v.closed && v.fill ? v.color : 'none');
+        path.setAttribute('fill-opacity',v.closed && v.fill ? '0.35' : '1');
+        path.setAttribute('stroke',v.color); path.setAttribute('stroke-width',String(v.size));
+        path.setAttribute('class','vector-path'); path.setAttribute('data-vector',String(i));
+        if (tool==='editpoints' && i===selectedVector) path.setAttribute('stroke-dasharray','5 4');
+        vectorLayer.appendChild(path);
+        if (tool==='editpoints' && i===selectedVector) v.points.forEach((p,j)=>{
+          const c=document.createElementNS(ns,'circle'); c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); c.setAttribute('r','6');
+          c.setAttribute('class','vector-anchor'); c.setAttribute('data-anchor',`${i}:${j}`); c.setAttribute('aria-label',`Anchor point ${j+1}`); vectorLayer.appendChild(c);
+        });
+      });
+    }
+    function finishVector(closed=false) {
+      if (!activeVector || activeVector.points.length < 2) { activeVector=null; renderVectors(); return; }
+      activeVector.closed=closed; vectorPaths.push(activeVector); selectedVector=vectorPaths.length-1; activeVector=null;
+      renderVectors(); saveSoon(); toast(closed?'Vector shape closed':'Vector path finished');
+    }
+    function vectorDown(event) {
+      if (tool!=='pen' && tool!=='editpoints') return;
+      event.preventDefault(); event.stopPropagation();
+      const p=svgPoint(event);
+      if (tool==='pen') {
+        if (activeVector && activeVector.points.length>=3) {
+          const first=activeVector.points[0];
+          if (Math.hypot(p.x-first.x,p.y-first.y)<16) { finishVector(true); return; }
+        }
+        if (!activeVector) activeVector={points:[],color,size,fill,closed:false};
+        activeVector.points.push(p); renderVectors(); return;
+      }
+      const hit=event.target.closest ? event.target.closest('[data-anchor]') : null;
+      if (hit) {
+        const bits=hit.getAttribute('data-anchor').split(':').map(Number);
+        selectedVector=bits[0]; draggingAnchor={vector:bits[0],point:bits[1]};
+        if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}
+        renderVectors(); return;
+      }
+      const pathHit=event.target.closest ? event.target.closest('[data-vector]') : null;
+      if(pathHit){selectedVector=Number(pathHit.getAttribute('data-vector'));renderVectors();return;}
+      selectedVector=-1; renderVectors();
+    }
+    function vectorMove(event) {
+      if (!draggingAnchor || tool!=='editpoints') return;
+      event.preventDefault(); const p=svgPoint(event); const v=vectorPaths[draggingAnchor.vector];
+      if(v && v.points[draggingAnchor.point]){v.points[draggingAnchor.point]=p;renderVectors();}
+    }
+    function vectorUp(event) {
+      if(!draggingAnchor)return;
+      if(event && vectorLayer.releasePointerCapture){try{vectorLayer.releasePointerCapture(event.pointerId);}catch(_){}}
+      draggingAnchor=null;saveSoon();
     }
     function shape(p) {
       octx.clearRect(0,0,W(),H()); octx.save();
@@ -445,6 +528,12 @@
       if(event){const p=point(event);$('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';}
     }
     document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>selectTool(b.dataset.tool)));
+    vectorLayer.addEventListener('pointerdown',vectorDown);
+    vectorLayer.addEventListener('pointermove',vectorMove);
+    vectorLayer.addEventListener('pointerup',vectorUp);
+    vectorLayer.addEventListener('pointercancel',vectorUp);
+    vectorLayer.addEventListener('dblclick',event=>{if(tool==='pen'&&activeVector){event.preventDefault();finishVector(false);}});
+    document.addEventListener('keydown',event=>{if(event.key==='Enter'&&tool==='pen'&&activeVector)finishVector(false);if(event.key==='Escape'&&activeVector){activeVector=null;renderVectors();toast('Path cancelled');}});
     document.querySelectorAll('.swatch').forEach(b=>b.addEventListener('click',()=>{color=b.dataset.color;$('colorInput').value=color;toast('Color selected');}));
     $('colorInput').addEventListener('input',e=>color=e.target.value);
     $('sizeInput').addEventListener('input',e=>{size=Number(e.target.value);$('sizeValue').textContent=size+'px';});
@@ -456,7 +545,15 @@
     $('newBtn').addEventListener('click',()=>{if(!confirm('Start a new drawing?'))return;snapshot();ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());saveSoon();toast('New drawing');});
     $('undoBtn').addEventListener('click',()=>{if(!history.length)return;redoStack.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(history.pop(),0,0);updateButtons();saveSoon();toast('Undid action');});
     $('redoBtn').addEventListener('click',()=>{if(!redoStack.length)return;history.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(redoStack.pop(),0,0);updateButtons();saveSoon();toast('Redid action');});
-    $('exportBtn').addEventListener('click',()=>{const a=document.createElement('a');a.download='drawing.png';a.href=canvas.toDataURL('image/png');a.click();toast('PNG exported');});
+    $('exportBtn').addEventListener('click',()=>{
+      const out=document.createElement('canvas');out.width=W();out.height=H();const ox=out.getContext('2d');
+      ox.drawImage(canvas,0,0);
+      const clone=vectorLayer.cloneNode(true);clone.querySelectorAll('.vector-anchor').forEach(n=>n.remove());
+      clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+      const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml;charset=utf-8'});const url=URL.createObjectURL(blob);const img=new Image();
+      img.onload=()=>{ox.drawImage(img,0,0,W(),H());URL.revokeObjectURL(url);const a=document.createElement('a');a.download='drawing.png';a.href=out.toDataURL('image/png');a.click();toast('PNG exported');};
+      img.onerror=()=>{URL.revokeObjectURL(url);const a=document.createElement('a');a.download='drawing.png';a.href=canvas.toDataURL('image/png');a.click();toast('PNG exported (raster layer)');};img.src=url;
+    });
     $('fontSelect').addEventListener('change',e=>currentFont=e.target.value);
     $('ghostOpacity').addEventListener('input',e=>ghostOpacity=Number(e.target.value));
     canvas.addEventListener('pointerdown',down);
@@ -470,7 +567,7 @@
         const saved=JSON.parse(localStorage.getItem('mpde-art')||'null');
         if(!saved||!saved.image)return;
         const img=new Image();
-        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';selectTool(tool);drawGuides();};
+        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';selectTool(tool);drawGuides();renderVectors();};
         img.src=saved.image;
       } catch(error) { console.warn('Could not restore drawing:',error); }
     }
