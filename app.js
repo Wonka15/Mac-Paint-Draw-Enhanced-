@@ -23,7 +23,7 @@
     let history = [], redoStack = [], showGuides = false, showGrid = false;
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
     let vectorPaths = [], activeVector = null, selectedVector = -1, selectedVectors = [], draggingAnchor = null, curveDragAnchor = null;
-    let zoomLevel = 1, rulerDrag = null;
+    let zoomLevel = 1, rulerDrag = null, vectorShapeStart = null, vectorShapeDragging = false;
     let saveTimer = null;
     // FRAME STUDIO: each frame stores raster art plus editable vector paths.
     const onionCanvas = $('onion'), onionCtx = onionCanvas.getContext('2d');
@@ -40,13 +40,13 @@
       toast.timer = setTimeout(() => node.classList.remove('show'), 1800);
     }
     function status() {
-      const names = {pencil:'Pencil',eraser:'Eraser',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',pen:'Vector pen',bezier:'Bezier curve',editpoints:'Edit points'};
+      const names = {pencil:'Pencil',eraser:'Eraser',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',pen:'Vector pen',bezier:'Bezier curve',vectorrect:'Vector rectangle',vectoroval:'Vector oval',editpoints:'Edit points'};
       $('toolStatus').innerHTML = '<strong>Tool:</strong> ' + (names[tool] || tool);
       document.querySelectorAll('.tool').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
     }
     function selectTool(next) {
       tool = next;
-      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'editpoints');
+      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'editpoints');
       renderVectors();
       status();
       if (tool === 'pen') toast('Vector Pen: click to add straight points; Enter finishes');
@@ -227,9 +227,15 @@
       renderVectors(); saveSoon(); toast(closed?'Vector shape closed':'Vector path finished');
     }
     function vectorDown(event) {
-      if (tool!=='pen' && tool!=='bezier' && tool!=='editpoints') return;
+      if (tool!=='pen' && tool!=='bezier' && tool!=='vectorrect' && tool!=='vectoroval' && tool!=='editpoints') return;
       event.preventDefault(); event.stopPropagation();
       const p=svgPoint(event);
+      if(tool==='vectorrect'||tool==='vectoroval'){
+        vectorShapeStart=p;vectorShapeDragging=true;
+        activeVector={points:vectorShapePoints(p,p,tool),color,size,fill,closed:true,curve:true};
+        if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}
+        renderVectors();return;
+      }
       if (tool==='bezier') {
         if (activeVector && activeVector.points.length>=3) {
           const first=activeVector.points[0];
@@ -260,7 +266,17 @@
       if(pathHit){const hitIndex=Number(pathHit.getAttribute('data-vector'));if(event.shiftKey){if(selectedVectors.includes(hitIndex))selectedVectors=selectedVectors.filter(i=>i!==hitIndex);else selectedVectors.push(hitIndex);}else selectedVectors=[hitIndex];selectedVector=hitIndex;renderVectors();return;}
       selectedVector=-1;selectedVectors=[];renderVectors();
     }
+    function vectorShapePoints(start,end,kind){
+      const x1=Math.min(start.x,end.x),y1=Math.min(start.y,end.y),x2=Math.max(start.x,end.x),y2=Math.max(start.y,end.y);
+      if(kind==='vectorrect')return [{x:x1,y:y1},{x:x2,y:y1},{x:x2,y:y2},{x:x1,y:y2}];
+      const cx=(x1+x2)/2,cy=(y1+y2)/2,rx=Math.max(0.5,(x2-x1)/2),ry=Math.max(0.5,(y2-y1)/2),points=[];
+      for(let i=0;i<48;i++){const angle=i*Math.PI*2/48;points.push({x:cx+Math.cos(angle)*rx,y:cy+Math.sin(angle)*ry});}
+      return points;
+    }
     function vectorMove(event) {
+      if(vectorShapeDragging&&vectorShapeStart&&activeVector&&(tool==='vectorrect'||tool==='vectoroval')){
+        event.preventDefault();activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);renderVectors();return;
+      }
       if (tool==='bezier' && curveDragAnchor!==null && activeVector) {
         event.preventDefault();
         const p=svgPoint(event), anchor=activeVector.points[curveDragAnchor];
@@ -276,6 +292,12 @@
       if(v && v.points[draggingAnchor.point]){v.points[draggingAnchor.point]=p;renderVectors();}
     }
     function vectorUp(event) {
+      if(vectorShapeDragging){
+        if(event&&vectorLayer.releasePointerCapture){try{vectorLayer.releasePointerCapture(event.pointerId);}catch(_){}}
+        if(event&&activeVector)activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);
+        if(activeVector){vectorPaths.push(activeVector);selectedVector=vectorPaths.length-1;selectedVectors=[selectedVector];}
+        activeVector=null;vectorShapeStart=null;vectorShapeDragging=false;renderVectors();saveSoon();return;
+      }
       if(curveDragAnchor!==null){
         if(event && vectorLayer.releasePointerCapture){try{vectorLayer.releasePointerCapture(event.pointerId);}catch(_){}}
         curveDragAnchor=null;renderVectors();saveSoon();return;
