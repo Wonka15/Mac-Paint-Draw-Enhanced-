@@ -141,7 +141,7 @@
     document.addEventListener('pointercancel',()=>{rulerDrag=null;});
     // PATHFINDER: boolean operations on two selected closed vector shapes.
     function vectorToPaperPath(scope,v){
-      const segments=v.points.map(p=>new scope.Segment(new scope.Point(p.x,p.y),p.in?new scope.Point(p.in.x-p.x,p.in.y-p.y):null,p.out?new scope.Point(p.out.x-p.x,p.out.y-p.y):null));
+      const segments=v.points.map(p=>new scope.Segment(new scope.Point(p.x,p.y),new scope.Point(p.in?p.in.x-p.x:0,p.in?p.in.y-p.y:0),new scope.Point(p.out?p.out.x-p.x:0,p.out?p.out.y-p.y:0)));
       return new scope.Path({segments,closed:!!v.closed,insert:false});
     }
     function paperItemToVectors(item,style){
