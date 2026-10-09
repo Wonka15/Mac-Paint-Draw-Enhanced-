@@ -18,13 +18,13 @@
     }
 
     // APP STATE: selected tool, drawing style, and current interaction.
-    let tool = 'pencil', color = '#20252b', size = 4, fill = false;
+    let tool = 'pencil', color = '#20252b', size = 4, fill = false, selectedPattern = 'solid', textSize = 24;
     let drawing = false, startPoint = null, lastPoint = null;
     let history = [], redoStack = [], showGuides = false, showGrid = false;
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
     let vectorPaths = [], activeVector = null, selectedVector = -1, selectedVectors = [], draggingAnchor = null, curveDragAnchor = null;
     let zoomLevel = 1, rulerDrag = null, vectorShapeStart = null, vectorShapeDragging = false;
-    let saveTimer = null;
+    let saveTimer = null, audioContext = null, lastDragSound = 0;
     // FRAME STUDIO: each frame stores raster art plus editable vector paths.
     const onionCanvas = $('onion'), onionCtx = onionCanvas.getContext('2d');
     const frames = [];
@@ -40,7 +40,7 @@
       toast.timer = setTimeout(() => node.classList.remove('show'), 1800);
     }
     function status() {
-      const names = {pencil:'Pencil',eraser:'Eraser',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',pen:'Vector pen',bezier:'Bezier curve',vectorrect:'Vector rectangle',vectoroval:'Vector oval',editpoints:'Edit points'};
+      const names = {pencil:'Pencil',eraser:'Eraser',bucket:'Paint bucket',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',pen:'Vector pen',bezier:'Bezier curve',vectorrect:'Vector rectangle',vectoroval:'Vector oval',editpoints:'Edit points'};
       $('toolStatus').innerHTML = '<strong>Tool:</strong> ' + (names[tool] || tool);
       document.querySelectorAll('.tool').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
     }
@@ -52,6 +52,7 @@
       if (tool === 'pen') toast('Vector Pen: click to add straight points; Enter finishes');
       if (tool === 'bezier') toast('Bezier: click-drag to shape handles; Enter finishes');
       if (tool === 'editpoints') toast('Drag a blue anchor to reshape a vector');
+      if (tool === 'bucket') toast('Paint bucket: click a bounded area to fill it');
     }
     function updateButtons() {
       $('undoBtn').disabled = history.length === 0;
@@ -71,11 +72,66 @@
         try {
           localStorage.setItem('mpde-art', JSON.stringify({
             w: W(), h: H(), image: canvas.toDataURL('image/png'),
-            color, size, tool, guideX, guideY, showGuides, showGrid, vectors: vectorPaths
+            color, size, textSize, selectedPattern, tool, guideX, guideY, showGuides, showGrid, vectors: vectorPaths
           }));
         } catch (error) { console.warn('Autosave unavailable:', error); }
       }, 300);
     }
+
+    function makePattern(){
+      if(selectedPattern==='solid')return color;
+      const tile=document.createElement('canvas');tile.width=tile.height=12;
+      const t=tile.getContext('2d');t.fillStyle='#fff';t.fillRect(0,0,12,12);t.fillStyle=color;t.strokeStyle=color;
+      if(selectedPattern==='checker'){t.fillRect(0,0,6,6);t.fillRect(6,6,6,6);}
+      else if(selectedPattern==='dots'){t.beginPath();t.arc(3,3,1.5,0,Math.PI*2);t.arc(9,9,1.5,0,Math.PI*2);t.fill();}
+      else if(selectedPattern==='diagonal'){t.lineWidth=1;for(let x=-12;x<24;x+=4){t.beginPath();t.moveTo(x,0);t.lineTo(x+12,12);t.stroke();}}
+      else if(selectedPattern==='cross'){t.lineWidth=1;for(let x=-12;x<24;x+=6){t.beginPath();t.moveTo(x,0);t.lineTo(x+12,12);t.moveTo(x+12,0);t.lineTo(x,12);t.stroke();}}
+      else if(selectedPattern==='horizontal'){for(let y=0;y<12;y+=4)t.fillRect(0,y,12,1);}
+      else if(selectedPattern==='vertical'){for(let x=0;x<12;x+=4)t.fillRect(x,0,1,12);}
+      else if(selectedPattern==='brick'){t.lineWidth=1;t.strokeRect(0,0,12,6);t.beginPath();t.moveTo(6,0);t.lineTo(6,6);t.moveTo(0,6);t.lineTo(12,6);t.moveTo(3,6);t.lineTo(3,12);t.moveTo(9,6);t.lineTo(9,12);t.stroke();}
+      return ctx.createPattern(tile,'repeat');
+    }
+    function drawingStyle(){return selectedPattern==='solid'?color:makePattern();}
+    function retroSound(kind){
+      if(!$('soundToggle')||!$('soundToggle').checked)return;
+      try{
+        const AudioCtor=window.AudioContext||window.webkitAudioContext;if(!AudioCtor)return;
+        if(!audioContext)audioContext=new AudioCtor();if(audioContext.state==='suspended')audioContext.resume();
+        const now=audioContext.currentTime,osc=audioContext.createOscillator(),gain=audioContext.createGain();
+        osc.type='square';osc.frequency.setValueAtTime(kind==='start'?660:kind==='fill'?520:kind==='end'?440:740,now);
+        osc.frequency.exponentialRampToValueAtTime(kind==='end'?330:kind==='fill'?390:560,now+0.045);
+        gain.gain.setValueAtTime(0.0001,now);gain.gain.exponentialRampToValueAtTime(0.025,now+0.004);gain.gain.exponentialRampToValueAtTime(0.0001,now+0.055);
+        osc.connect(gain);gain.connect(audioContext.destination);osc.start(now);osc.stop(now+0.06);
+      }catch(_){}
+    }
+    function hexRgb(hex){return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];}
+    function floodFill(seedX,seedY){
+      const w=W(),h=H(),image=ctx.getImageData(0,0,w,h),data=image.data,original=new Uint8ClampedArray(data);
+      const sx=Math.max(0,Math.min(w-1,Math.floor(seedX))),sy=Math.max(0,Math.min(h-1,Math.floor(seedY))),seed=(sy*w+sx)*4;
+      const target=[original[seed],original[seed+1],original[seed+2],original[seed+3]],rgb=hexRgb(color),solid=selectedPattern==='solid';
+      if(solid&&target[0]===rgb[0]&&target[1]===rgb[1]&&target[2]===rgb[2]&&target[3]===255)return;
+      const count=w*h,seen=new Uint8Array(count),stack=new Uint32Array(count);let top=0,first=sy*w+sx;stack[top++]=first;seen[first]=1;
+      const tol=22;
+      while(top){
+        const idx=stack[--top],px=idx%w,py=(idx/w)|0,di=idx*4;
+        if(Math.abs(original[di]-target[0])>tol||Math.abs(original[di+1]-target[1])>tol||Math.abs(original[di+2]-target[2])>tol||Math.abs(original[di+3]-target[3])>tol)continue;
+        let ink=true;
+        if(!solid){
+          if(selectedPattern==='checker')ink=(Math.floor(px/6)+Math.floor(py/6))%2===0;
+          else if(selectedPattern==='dots')ink=px%8<2&&py%8<2;
+          else if(selectedPattern==='horizontal')ink=py%4===0;
+          else if(selectedPattern==='vertical')ink=px%4===0;
+          else if(selectedPattern==='diagonal')ink=(px+py)%5===0;
+          else if(selectedPattern==='cross')ink=(px+py)%6===0||(px-py+1200)%6===0;
+          else ink=px%12<1||py%6<1||((Math.floor(py/6)%2===0?px%12:px+6)%12<1);
+        }
+        data[di]=ink?rgb[0]:255;data[di+1]=ink?rgb[1]:255;data[di+2]=ink?rgb[2]:255;data[di+3]=255;
+        const neighbors=[px>0?idx-1:-1,px<w-1?idx+1:-1,py>0?idx-w:-1,py<h-1?idx+w:-1];
+        for(const n of neighbors)if(n>=0&&!seen[n]){seen[n]=1;if(top<count)stack[top++]=n;}
+      }
+      ctx.putImageData(image,0,0);saveSoon();retroSound('fill');
+    }
+
     function point(event) {
       const rect = canvas.getBoundingClientRect();
       let x = (event.clientX - rect.left) * W() / rect.width;
@@ -308,7 +364,7 @@
     }
     function shape(p) {
       octx.clearRect(0,0,W(),H()); octx.save();
-      octx.strokeStyle=color; octx.fillStyle=color; octx.lineWidth=size;
+      octx.strokeStyle=drawingStyle(); octx.fillStyle=drawingStyle(); octx.lineWidth=size;
       octx.lineCap='round'; octx.lineJoin='round';
       const x=Math.min(startPoint.x,p.x), y=Math.min(startPoint.y,p.y);
       const w=Math.abs(startPoint.x-p.x), h=Math.abs(startPoint.y-p.y);
@@ -323,7 +379,7 @@
       $('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';
       if(tool==='text'){
         const text=prompt('What would you like to write?');
-        if(text){snapshot();ctx.fillStyle=color;ctx.font=(size*2)+'px '+currentFont;ctx.fillText(text,p.x,p.y);saveSoon();}
+        if(text){snapshot();ctx.fillStyle=color;ctx.font=textSize+'px '+currentFont;ctx.fillText(text,p.x,p.y);saveSoon();retroSound('tick');}
         return;
       }
       if(tool==='eyedropper'){
@@ -331,13 +387,14 @@
         color='#'+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
         $('colorInput').value=color;toast('Color picked');return;
       }
+      if(tool==='bucket'){snapshot();floodFill(p.x,p.y);return;}
       if(tool==='hand'){
         guideX=p.x;guideY=p.y;showGuides=true;drawGuides();toast('Guide placed');return;
       }
-      drawing=true;startPoint=p;lastPoint=p;snapshot();
+      drawing=true;startPoint=p;lastPoint=p;snapshot();retroSound('start');
       if(tool==='pencil'||tool==='eraser'){
         ctx.beginPath();ctx.arc(p.x,p.y,Math.max(0.5,size/2),0,Math.PI*2);
-        ctx.fillStyle=tool==='eraser'?'#ffffff':color;ctx.fill();
+        ctx.fillStyle=tool==='eraser'?'#ffffff':drawingStyle();ctx.fill();
       }
       if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}
     }
@@ -347,14 +404,14 @@
       $('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';
       if(tool==='pencil'||tool==='eraser'){
         ctx.beginPath();ctx.moveTo(lastPoint.x,lastPoint.y);ctx.lineTo(p.x,p.y);
-        ctx.strokeStyle=tool==='eraser'?'#ffffff':color;ctx.lineWidth=size;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();lastPoint=p;
+        ctx.strokeStyle=tool==='eraser'?'#ffffff':drawingStyle();ctx.lineWidth=size;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();lastPoint=p;
       } else if(['line','rect','ellipse'].includes(tool)) shape(p);
     }
     function up(event) {
       if(!drawing)return;
       if(event && event.pointerId!==undefined && canvas.releasePointerCapture){try{canvas.releasePointerCapture(event.pointerId);}catch(_){}}
       if(['line','rect','ellipse'].includes(tool)){ctx.drawImage(overlay,0,0);octx.clearRect(0,0,W(),H());}
-      drawing=false;saveSoon();
+      drawing=false;saveSoon();retroSound('end');
       if(event){const p=point(event);$('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';}
     }
     document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>selectTool(b.dataset.tool)));
@@ -367,6 +424,9 @@
     document.querySelectorAll('.swatch').forEach(b=>b.addEventListener('click',()=>{color=b.dataset.color;$('colorInput').value=color;toast('Color selected');}));
     $('colorInput').addEventListener('input',e=>color=e.target.value);
     $('sizeInput').addEventListener('input',e=>{size=Number(e.target.value);$('sizeValue').textContent=size+'px';});
+    $('textSizeInput').addEventListener('input',e=>{textSize=Number(e.target.value);$('textSizeValue').textContent=textSize+'px';});
+    document.querySelectorAll('.pattern-swatch').forEach(b=>b.addEventListener('click',()=>{selectedPattern=b.dataset.pattern;document.querySelectorAll('.pattern-swatch').forEach(s=>s.classList.toggle('active',s===b));toast('Pattern: '+(selectedPattern==='solid'?'Solid ink':selectedPattern));}));
+    document.addEventListener('pointermove',()=>{if(drawing){const now=performance.now();if(now-lastDragSound>90){lastDragSound=now;retroSound('tick');}}});
     $('fillToggle').addEventListener('change',e=>fill=e.target.checked);
     $('snapCheck').addEventListener('change',()=>{});
     $('guidesBtn').addEventListener('click',()=>{showGuides=!showGuides;if(showGuides&&guideX===null){guideX=Math.round(W()/2);guideY=Math.round(H()/2);}drawGuides();toast(showGuides?'Guides on':'Guides off');});
@@ -493,7 +553,7 @@
         const saved=JSON.parse(localStorage.getItem('mpde-art')||'null');
         if(!saved||!saved.image)return;
         const img=new Image();
-        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';selectTool(tool);drawGuides();renderVectors();};
+        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;selectedPattern=saved.selectedPattern||selectedPattern;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));selectTool(tool);drawGuides();renderVectors();};
         img.src=saved.image;
       } catch(error) { console.warn('Could not restore drawing:',error); }
     }
