@@ -209,3 +209,19 @@
 .zoom-readout{min-width:42px;text-align:center;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}.pathfinder-help{font-size:11px;line-height:1.45;color:var(--muted);margin:0 0 8px}.pathfinder-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.pathfinder-grid .btn{font-size:12px;padding:8px 5px}#vectorLayer.vector-active{pointer-events:all;cursor:crosshair}@media(max-width:700px){.ruler-layout{width:100%;grid-template-columns:20px minmax(0,1fr)}.ruler-corner,.ruler-left{width:20px}.zoom-readout{min-width:34px}}
 
 .rulers-hidden .ruler-strip,.rulers-hidden .ruler-corner{display:none!important}.rulers-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:auto}.rulers-hidden .paper{grid-column:1;grid-row:1}
+
+
+/* Classic MacPaint-inspired patterns and text controls */
+.pattern-help{font-size:11px;color:var(--muted);margin:-5px 0 9px}
+.pattern-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.pattern-swatch{height:38px;min-width:0;border:1px solid #aaa294;border-radius:5px;background-color:#fff;display:grid;place-items:center;overflow:hidden;padding:0}
+.pattern-swatch span{font-size:9px;color:#222;background:#fff;padding:1px 2px}
+.pattern-swatch.active{outline:2px solid var(--blue);outline-offset:1px;border-color:var(--blue)}
+.pattern-checker{background-color:#fff;background-image:conic-gradient(#20252b 25%,#fff 0 50%,#20252b 0 75%,#fff 0);background-size:12px 12px}
+.pattern-dots{background-image:radial-gradient(#20252b 1.4px,transparent 1.5px);background-size:8px 8px}
+.pattern-diagonal{background-image:repeating-linear-gradient(135deg,#20252b 0 1px,#fff 1px 5px)}
+.pattern-cross{background-image:repeating-linear-gradient(45deg,transparent 0 5px,#20252b 5px 6px),repeating-linear-gradient(-45deg,transparent 0 5px,#20252b 5px 6px)}
+.pattern-horizontal{background-image:repeating-linear-gradient(0deg,#20252b 0 1px,#fff 1px 5px)}
+.pattern-vertical{background-image:repeating-linear-gradient(90deg,#20252b 0 1px,#fff 1px 5px)}
+.pattern-brick{background-image:linear-gradient(#20252b 1px,transparent 1px),linear-gradient(90deg,#20252b 1px,transparent 1px),linear-gradient(90deg,#20252b 1px,transparent 1px);background-size:16px 10px,8px 10px,8px 10px;background-position:0 0,0 0,8px 5px}
+#soundToggle{accent-color:var(--blue)}
