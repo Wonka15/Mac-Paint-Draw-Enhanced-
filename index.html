@@ -33,6 +33,7 @@
         <div class="toolgrid" id="toolgrid">
           <button class="tool active" data-tool="pencil"><span class="ico">✎</span>Pencil</button>
           <button class="tool" data-tool="eraser"><span class="ico">▱</span>Eraser</button>
+          <button class="tool" data-tool="bucket"><span class="ico">▨</span>Paint bucket</button>
           <button class="tool" data-tool="line"><span class="ico">／</span>Line</button>
           <button class="tool" data-tool="rect"><span class="ico">▱</span>Rectangle</button>
           <button class="tool" data-tool="ellipse"><span class="ico">◯</span>Oval</button>
@@ -63,6 +64,20 @@
           <button class="swatch" style="background:#7a7a7a" data-color="#7a7a7a" aria-label="Gray"></button>
           <button class="swatch" style="background:#f1d4c5" data-color="#f1d4c5" aria-label="Pink"></button>
         </div>
+        <div class="separator"></div>
+        <h2>Classic patterns</h2>
+        <p class="pattern-help">Choose a pattern for pencil, shapes, or the paint bucket.</p>
+        <div class="pattern-grid" id="patternGrid" aria-label="Paint patterns">
+          <button class="pattern-swatch active" data-pattern="solid" aria-label="Solid ink" title="Solid ink"><span>Solid</span></button>
+          <button class="pattern-swatch pattern-checker" data-pattern="checker" aria-label="Checkerboard" title="Checkerboard"></button>
+          <button class="pattern-swatch pattern-dots" data-pattern="dots" aria-label="Dots" title="Dots"></button>
+          <button class="pattern-swatch pattern-diagonal" data-pattern="diagonal" aria-label="Diagonal lines" title="Diagonal lines"></button>
+          <button class="pattern-swatch pattern-cross" data-pattern="cross" aria-label="Crosshatch" title="Crosshatch"></button>
+          <button class="pattern-swatch pattern-horizontal" data-pattern="horizontal" aria-label="Horizontal lines" title="Horizontal lines"></button>
+          <button class="pattern-swatch pattern-vertical" data-pattern="vertical" aria-label="Vertical lines" title="Vertical lines"></button>
+          <button class="pattern-swatch pattern-brick" data-pattern="brick" aria-label="Brick" title="Brick"></button>
+        </div>
+        <label class="check"><input type="checkbox" id="soundToggle" checked> Retro drawing sounds</label>
       </aside>
 
       <section class="canvas-shell">
@@ -120,6 +135,12 @@
             <option value="serif">Serif</option>
             <option value="monospace">Monospace</option>
           </select>
+        </div>
+
+        <div class="field">
+          <label for="textSizeInput">Text size</label>
+          <input type="range" id="textSizeInput" min="8" max="96" value="24">
+          <div class="status"><strong id="textSizeValue">24px</strong></div>
         </div>
 
         <div class="field">
