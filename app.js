@@ -24,6 +24,8 @@
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
     let vectorPaths = [], activeVector = null, selectedVector = -1, selectedVectors = [], draggingAnchor = null, curveDragAnchor = null;
     let zoomLevel = 1, rulerDrag = null, vectorShapeStart = null, vectorShapeDragging = false;
+    // Shape Builder selection is separate from anchor editing.
+    let shapeBuilderDragging = false, shapeBuilderVisited = new Set();
     let saveTimer = null, audioContext = null, lastDragSound = 0;
     // FRAME STUDIO: each frame stores raster art plus editable vector paths.
     const onionCanvas = $('onion'), onionCtx = onionCanvas.getContext('2d');
@@ -40,18 +42,34 @@
       toast.timer = setTimeout(() => node.classList.remove('show'), 1800);
     }
     function status() {
-      const names = {pencil:'Paintbrush',eraser:'Eraser',bucket:'Paint bucket',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',pen:'Vector pen',bezier:'Bezier curve',vectorrect:'Vector rectangle',vectoroval:'Vector oval',editpoints:'Edit points'};
+      const names = {pencil:'Paintbrush',eraser:'Eraser',bucket:'Paint bucket',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',pen:'Vector pen',bezier:'Bezier curve',vectorrect:'Vector rectangle',vectoroval:'Vector oval',editpoints:'Edit points',shapebuilder:'Shape Builder'};
       $('toolStatus').innerHTML = '<strong>Tool:</strong> ' + (names[tool] || tool);
-      document.querySelectorAll('.tool').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+      document.querySelectorAll('.tool').forEach(b => {
+        const active = b.dataset.tool === tool;
+        b.classList.toggle('active', active);
+        b.setAttribute('aria-pressed', String(active));
+      });
     }
+
+    // Keep on/off buttons visually and accessibly in sync with their state.
+    function setToggleButton(id, isOn) {
+      const button = $(id);
+      if (!button) return;
+      button.setAttribute('aria-pressed', String(isOn));
+      button.classList.toggle('primary', isOn);
+    }
+
     function selectTool(next) {
+      // Clicking an active tool again returns to the default Paintbrush.
+      if (next === tool && next !== 'pencil') next = 'pencil';
       tool = next;
-      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'editpoints');
+      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'editpoints' || tool === 'shapebuilder');
       renderVectors();
       status();
       if (tool === 'pen') toast('Vector Pen: click to add straight points; Enter finishes');
       if (tool === 'bezier') toast('Bezier: click-drag to shape handles; Enter finishes');
-      if (tool === 'editpoints') toast('Drag a blue anchor to reshape a vector');
+      if (tool === 'editpoints') toast('Edit Points: drag a blue anchor to reshape a vector');
+      if (tool === 'shapebuilder') toast('Shape Builder: click or drag across closed shapes, then choose an operation');
       if (tool === 'bucket') toast('Paint bucket: click a bounded area to fill it');
     }
     function updateButtons() {
@@ -228,7 +246,7 @@
     });
     $('rulersBtn').addEventListener('click',()=>{
       const layout=$('rulerLayout'),hidden=layout.classList.toggle('rulers-hidden');
-      $('rulersBtn').setAttribute('aria-pressed',String(!hidden));$('rulersBtn').classList.toggle('primary',!hidden);
+      setToggleButton('rulersBtn', !hidden);
     });
     $('rulerTop').addEventListener('pointerdown',event=>{rulerDrag='horizontal';setGuideFromRuler(event);});
     $('rulerLeft').addEventListener('pointerdown',event=>{rulerDrag='vertical';setGuideFromRuler(event);});
@@ -267,6 +285,87 @@
     }
     document.querySelectorAll('[data-boolean]').forEach(button=>button.addEventListener('click',()=>runBoolean(button.dataset.boolean)));
 
+    // SHAPE BUILDER: combine any number of selected closed vector shapes.
+    // The first selected shape is the base when Subtract is chosen.
+    function updateShapeBuilderStatus() {
+      const count = selectedVectors.filter(index => index >= 0 && index < vectorPaths.length && vectorPaths[index].closed).length;
+      const status = $('shapeBuilderStatus');
+      if (status) status.textContent = count + (count === 1 ? ' closed shape selected' : ' closed shapes selected');
+    }
+
+    function runShapeBuilder(operation) {
+      if (!window.paper) {
+        toast('Shape Builder needs an internet connection to load its vector engine.');
+        return;
+      }
+      // Keep selection order for subtraction; remove originals in reverse order later.
+      const indices = [...new Set(selectedVectors)].filter(index => index >= 0 && index < vectorPaths.length);
+      if (indices.length < 2) {
+        toast('Select at least two closed vector shapes first.');
+        return;
+      }
+      if (indices.some(index => !vectorPaths[index].closed)) {
+        toast('Shape Builder works with closed vector shapes only.');
+        return;
+      }
+
+      const base = vectorPaths[indices[0]];
+      const methods = { unite: 'unite', subtract: 'subtract', intersect: 'intersect', exclude: 'exclude' };
+      let scope;
+      try {
+        scope = new window.paper.PaperScope();
+        const scratch = document.createElement('canvas');
+        scratch.width = W();
+        scratch.height = H();
+        scope.setup(scratch);
+
+        let result = vectorToPaperPath(scope, base);
+        for (const index of indices.slice(1)) {
+          const operand = vectorToPaperPath(scope, vectorPaths[index]);
+          const combined = result[methods[operation]](operand);
+          result.remove();
+          operand.remove();
+          result = combined;
+        }
+
+        const replacements = paperItemToVectors(result, base);
+        result.remove();
+        scope.project.clear();
+        if (!replacements.length) {
+          toast('That operation produced an empty shape.');
+          return;
+        }
+
+        const insertionIndex = Math.min(...indices);
+        [...indices].sort((a, b) => b - a).forEach(index => vectorPaths.splice(index, 1));
+        vectorPaths.splice(insertionIndex, 0, ...replacements);
+        selectedVector = insertionIndex;
+        selectedVectors = replacements.map((_, offset) => insertionIndex + offset);
+        renderVectors();
+        updateShapeBuilderStatus();
+        saveSoon();
+        const messages = {unite: 'Shapes combined', subtract: 'Selected shapes subtracted', intersect: 'Overlap kept', exclude: 'Overlapping areas removed'};
+        toast(messages[operation] || 'Shape Builder finished');
+      } catch (error) {
+        if (scope && scope.project) scope.project.clear();
+        console.error('Shape Builder operation failed:', error);
+        toast('Could not combine these shapes. Try simple, closed shapes.');
+      }
+    }
+
+    $('shapeBuilderUniteBtn').addEventListener('click', () => runShapeBuilder('unite'));
+    $('shapeBuilderSubtractBtn').addEventListener('click', () => runShapeBuilder('subtract'));
+    $('shapeBuilderIntersectBtn').addEventListener('click', () => runShapeBuilder('intersect'));
+    $('shapeBuilderExcludeBtn').addEventListener('click', () => runShapeBuilder('exclude'));
+    $('shapeBuilderClearBtn').addEventListener('click', () => {
+      selectedVector = -1;
+      selectedVectors = [];
+      shapeBuilderVisited.clear();
+      renderVectors();
+      updateShapeBuilderStatus();
+      toast('Shape selection cleared');
+    });
+
     function pathData(points, closed) {
       if (!points.length) return '';
       let d = `M ${points[0].x} ${points[0].y}`;
@@ -300,7 +399,10 @@
         path.setAttribute('fill-opacity',v.closed && v.fill ? '0.35' : '1');
         path.setAttribute('stroke',v.color); path.setAttribute('stroke-width',String(v.size));
         path.setAttribute('class','vector-path'); path.setAttribute('data-vector',String(i));
-        if (tool==='editpoints' && (i===selectedVector || selectedVectors.includes(i))) { path.setAttribute('stroke-dasharray','5 4'); path.setAttribute('stroke','#315cdb'); }
+        if ((tool==='editpoints' || tool==='shapebuilder') && (i===selectedVector || selectedVectors.includes(i))) {
+          path.setAttribute('stroke-dasharray','5 4');
+          path.setAttribute('stroke','#315cdb');
+        }
         vectorLayer.appendChild(path);
         if (tool==='editpoints' && i===selectedVector) v.points.forEach((p,j)=>{
           const c=document.createElementNS(ns,'circle'); c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); c.setAttribute('r','6');
@@ -315,9 +417,42 @@
       renderVectors(); saveSoon(); toast(closed?'Vector shape closed':'Vector path finished');
     }
     function vectorDown(event) {
-      if (tool!=='pen' && tool!=='bezier' && tool!=='vectorrect' && tool!=='vectoroval' && tool!=='editpoints') return;
+      if (tool!=='pen' && tool!=='bezier' && tool!=='vectorrect' && tool!=='vectoroval' && tool!=='editpoints' && tool!=='shapebuilder') return;
       event.preventDefault(); event.stopPropagation();
       const p=svgPoint(event);
+
+      // Shape Builder: click a shape or drag across several shapes to select them.
+      if (tool === 'shapebuilder') {
+        const pathHit = event.target.closest ? event.target.closest('[data-vector]') : null;
+        shapeBuilderDragging = true;
+        shapeBuilderVisited = new Set();
+        if (pathHit) {
+          const index = Number(pathHit.getAttribute('data-vector'));
+          if (vectorPaths[index] && vectorPaths[index].closed) {
+            if (event.shiftKey) {
+              selectedVectors = selectedVectors.includes(index)
+                ? selectedVectors.filter(item => item !== index)
+                : [...selectedVectors, index];
+            } else {
+              selectedVectors = [index];
+            }
+            selectedVector = index;
+            shapeBuilderVisited.add(index);
+          } else {
+            toast('Choose a closed vector shape.');
+            shapeBuilderDragging = false;
+          }
+        } else {
+          selectedVector = -1;
+          selectedVectors = [];
+        }
+        if (shapeBuilderDragging && vectorLayer.setPointerCapture) {
+          try { vectorLayer.setPointerCapture(event.pointerId); } catch (_) {}
+        }
+        renderVectors();
+        updateShapeBuilderStatus();
+        return;
+      }
       if(tool==='vectorrect'||tool==='vectoroval'){
         vectorShapeStart=p;vectorShapeDragging=true;
         activeVector={points:vectorShapePoints(p,p,tool),color,size,fill,closed:true,curve:true};
@@ -362,6 +497,22 @@
       return points;
     }
     function vectorMove(event) {
+      // Add each closed shape the pointer crosses during a Shape Builder drag.
+      if (shapeBuilderDragging && tool === 'shapebuilder') {
+        const element = document.elementFromPoint(event.clientX, event.clientY);
+        const pathHit = element && element.closest ? element.closest('[data-vector]') : null;
+        if (pathHit) {
+          const index = Number(pathHit.getAttribute('data-vector'));
+          if (vectorPaths[index] && vectorPaths[index].closed && !shapeBuilderVisited.has(index)) {
+            shapeBuilderVisited.add(index);
+            if (!selectedVectors.includes(index)) selectedVectors.push(index);
+            selectedVector = index;
+            renderVectors();
+            updateShapeBuilderStatus();
+          }
+        }
+        return;
+      }
       if(vectorShapeDragging&&vectorShapeStart&&activeVector&&(tool==='vectorrect'||tool==='vectoroval')){
         event.preventDefault();activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);renderVectors();return;
       }
@@ -380,6 +531,15 @@
       if(v && v.points[draggingAnchor.point]){v.points[draggingAnchor.point]=p;renderVectors();}
     }
     function vectorUp(event) {
+      if (shapeBuilderDragging) {
+        if (event && vectorLayer.releasePointerCapture) {
+          try { vectorLayer.releasePointerCapture(event.pointerId); } catch (_) {}
+        }
+        shapeBuilderDragging = false;
+        shapeBuilderVisited.clear();
+        updateShapeBuilderStatus();
+        return;
+      }
       if(vectorShapeDragging){
         if(event&&vectorLayer.releasePointerCapture){try{vectorLayer.releasePointerCapture(event.pointerId);}catch(_){}}
         if(event&&activeVector)activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);
@@ -455,11 +615,12 @@
     document.querySelectorAll('.pattern-swatch').forEach(b=>b.addEventListener('click',()=>{selectedPattern=b.dataset.pattern;document.querySelectorAll('.pattern-swatch').forEach(s=>s.classList.toggle('active',s===b));toast('Pattern: '+(selectedPattern==='solid'?'Solid ink':selectedPattern));}));
     document.addEventListener('pointermove',()=>{if(drawing){const now=performance.now();if(now-lastDragSound>90){lastDragSound=now;retroSound('tick');}}});
     document.querySelectorAll('.brush-option').forEach(b=>b.addEventListener('click',()=>{selectedBrush=b.dataset.brush;document.querySelectorAll('.brush-option').forEach(x=>x.classList.toggle('active',x===b));toast('Brush: '+b.dataset.brush);}));
-    $('roughPaperToggle').addEventListener('change',e=>{roughPaper=e.target.checked;canvasWrap.classList.toggle('rough-paper',roughPaper);toast(roughPaper?'Rough paper texture on':'Rough paper texture off');});
-    $('fillToggle').addEventListener('change',e=>fill=e.target.checked);
-    $('snapCheck').addEventListener('change',()=>{});
-    $('guidesBtn').addEventListener('click',()=>{showGuides=!showGuides;if(showGuides&&guideX===null){guideX=Math.round(W()/2);guideY=Math.round(H()/2);}drawGuides();toast(showGuides?'Guides on':'Guides off');});
-    $('gridBtn').addEventListener('click',()=>{showGrid=!showGrid;drawGuides();toast(showGrid?'Grid on':'Grid off');});
+    $('roughPaperToggle').addEventListener('change',e=>{roughPaper=e.target.checked;canvasWrap.classList.toggle('rough-paper',roughPaper);saveSoon();toast(roughPaper?'Rough paper texture on':'Rough paper texture off');});
+    $('fillToggle').addEventListener('change',e=>{fill=e.target.checked;saveSoon();toast(fill?'Shape fill on':'Shape fill off');});
+    $('snapCheck').addEventListener('change',e=>toast(e.target.checked?'Snap to guides on':'Snap to guides off'));
+    // Snap-to-guides is a native checkbox; drawing reads its checked state.
+    $('guidesBtn').addEventListener('click',()=>{showGuides=!showGuides;if(showGuides&&guideX===null){guideX=Math.round(W()/2);guideY=Math.round(H()/2);}setToggleButton('guidesBtn',showGuides);drawGuides();saveSoon();toast(showGuides?'Guides on':'Guides off');});
+    $('gridBtn').addEventListener('click',()=>{showGrid=!showGrid;setToggleButton('gridBtn',showGrid);drawGuides();saveSoon();toast(showGrid?'Grid on':'Grid off');});
     $('clearBtn').addEventListener('click',()=>{if(!confirm('Clear the whole canvas?'))return;snapshot();ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());saveSoon();toast('Canvas cleared');});
     $('newBtn').addEventListener('click',()=>{if(!confirm('Start a new drawing?'))return;snapshot();ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());saveSoon();toast('New drawing');});
     $('undoBtn').addEventListener('click',()=>{if(!history.length)return;redoStack.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(history.pop(),0,0);updateButtons();saveSoon();toast('Undid action');});
@@ -587,5 +748,10 @@
       } catch(error) { console.warn('Could not restore drawing:',error); }
     }
     ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());
-    updateButtons();status();drawGuides();renderRulerLabels();renderFrameStrip();restore();
+    updateButtons();status();drawGuides();renderRulerLabels();renderFrameStrip();
+    setToggleButton('guidesBtn', showGuides);
+    setToggleButton('gridBtn', showGrid);
+    setToggleButton('rulersBtn', !$('rulerLayout').classList.contains('rulers-hidden'));
+    updateShapeBuilderStatus();
+    restore();
   })();
