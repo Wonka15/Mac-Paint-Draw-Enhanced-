@@ -427,9 +427,11 @@
     function updateFatBitsGrid(){
       const grid=$('fatBitsGrid');
       if(!grid)return;
-      // The grid is transformed with the artwork, so each 1×1 tile becomes one visible pixel cell.
-      grid.style.backgroundSize='1px 1px';
-      grid.style.backgroundImage='linear-gradient(to right, rgba(32,37,43,.62) 1px, transparent 1px), linear-gradient(to bottom, rgba(32,37,43,.62) 1px, transparent 1px)';
+      // Canvas CSS dimensions can differ from its 1200×800 source bitmap; match the real source-pixel pitch.
+      const cellWidth=canvasWrap.clientWidth/Math.max(1,W()),cellHeight=canvasWrap.clientHeight/Math.max(1,H());
+      const lineWidth=1/Math.max(1,zoomLevel);
+      grid.style.backgroundSize=cellWidth+'px '+cellHeight+'px';
+      grid.style.backgroundImage='linear-gradient(to right, rgba(32,37,43,.68) '+lineWidth+'px, transparent '+lineWidth+'px), linear-gradient(to bottom, rgba(32,37,43,.68) '+lineWidth+'px, transparent '+lineWidth+'px)';
     }
     function updateFatBitsView(){
       const layers=['paper','onion','overlay','vectorLayer','guides','rulers','selectionLayer','fatBitsGrid'];
