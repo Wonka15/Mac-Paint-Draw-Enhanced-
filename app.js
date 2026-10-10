@@ -30,6 +30,9 @@
     let history = [], redoStack = [], showGuides = false, showGrid = false;
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
     let vectorPaths = [], activeVector = null, selectedVector = -1, selectedVectors = [], draggingAnchor = null, draggingHandle = null, curveDragAnchor = null;
+    // Dragging a vector's body translates its anchors and curve handles together.
+    let draggingVector = null;
+    let traceReferenceData = '', traceReferenceOpacity = 0.24;
     let zoomLevel = 1, rulerDrag = null, vectorShapeStart = null, vectorShapeDragging = false;
     // Pan moves the whole artboard view without changing artwork coordinates.
     let panX = 0, panY = 0, panDragStart = null;
@@ -114,7 +117,7 @@
       $('appRoot').classList.toggle('canvas-focus',canvasFocus);
       setToggleButton('canvasFocusBtn',canvasFocus);
       $('canvasFocusBtn').textContent=canvasFocus?'Exit focus':'Focus canvas';
-      setTimeout(()=>{if(canvasFocus){const stage=$('.stage');const availableWidth=Math.max(240,stage.clientWidth-50);const availableHeight=Math.max(240,stage.clientHeight-48);setZoom(Math.min(1.4,availableWidth/W(),availableHeight/H()));}else setZoom(zoomLevel);},0);
+      setTimeout(()=>{if(canvasFocus){const stage=document.querySelector('.stage');const availableWidth=Math.max(240,stage.clientWidth-50);const availableHeight=Math.max(240,stage.clientHeight-48);setZoom(Math.min(1.4,availableWidth/W(),availableHeight/H()));}else setZoom(zoomLevel);},0);
     }
 
     function selectTool(next, toggleIfActive = false) {
@@ -625,6 +628,20 @@
     // The first selected shape is the base when Subtract is chosen.
     function updateShapeInspector(){const v=vectorPaths[selectedVector],card=$('shapeInspectorCard');if(!card)return;card.classList.toggle('has-selection',!!v);$('shapeInspectorStatus').textContent=v?'Selected shape '+(selectedVector+1)+' of '+vectorPaths.length:'No shape selected — choose Edit Points and click a shape';if(v){$('shapeStrokeColor').value=v.strokeColor||v.color||color;$('shapeStrokeWidth').value=v.strokeWidth||v.size||size;$('shapeStrokeWidthValue').textContent=(v.strokeWidth||v.size||size)+' px';}$('bringShapeFrontBtn').disabled=!v||selectedVector===vectorPaths.length-1;$('sendShapeBackBtn').disabled=!v||selectedVector===0;}
     function moveSelectedShape(front){if(selectedVector<0||!vectorPaths[selectedVector]){toast('Select a vector shape with Edit Points first');return;}const item=vectorPaths.splice(selectedVector,1)[0],to=front?vectorPaths.length:0;vectorPaths.splice(to,0,item);selectedVector=to;selectedVectors=[to];renderVectors();updateShapeInspector();saveSoon();retroSound('select');toast(front?'Shape brought to front':'Shape sent to back');}
+    // Convert the selected path into a new silhouette without redrawing it.
+    function convertSelectedShape(kind){
+      const v=vectorPaths[selectedVector];if(!v||!v.points.length){toast('Select a vector shape with Edit Points first');return;}
+      const xs=v.points.map(p=>p.x),ys=v.points.map(p=>p.y),l=Math.min(...xs),r=Math.max(...xs),t=Math.min(...ys),b=Math.max(...ys),w=Math.max(1,r-l),h=Math.max(1,b-t),cx=(l+r)/2,cy=(t+b)/2,k=.5522847498;
+      const rounded=rad=>[{x:l+rad,y:t,in:{x:l+rad*(1-k),y:t},out:{x:l+rad+k*rad,y:t}},{x:r-rad,y:t,in:{x:r-rad-k*rad,y:t},out:{x:r-rad+k*rad,y:t}},{x:r,y:t+rad,in:{x:r,y:t+rad-k*rad},out:{x:r,y:t+rad+k*rad}},{x:r,y:b-rad,in:{x:r,y:b-rad-k*rad},out:{x:r,y:b-rad+k*rad}},{x:r-rad,y:b,in:{x:r-rad+k*rad,y:b},out:{x:r-rad-k*rad,y:b}},{x:l+rad,y:b,in:{x:l+rad+k*rad,y:b},out:{x:l+rad-k*rad,y:b}},{x:l,y:b-rad,in:{x:l,y:b-rad+k*rad},out:{x:l,y:b-rad-k*rad}},{x:l,y:t+rad,in:{x:l,y:t+rad+k*rad},out:{x:l,y:t+rad-k*rad}}];
+      if(kind==='rectangle')v.points=[{x:l,y:t},{x:r,y:t},{x:r,y:b},{x:l,y:b}],v.details=[];
+      if(kind==='rounded')v.points=rounded(Math.min(w,h)*.18),v.details=[];
+      if(kind==='capsule')v.points=rounded(Math.min(w,h)/2),v.details=[];
+      if(kind==='oval'){const rx=w/2,ry=h/2;v.points=[{x:cx,y:t,in:{x:cx-k*rx,y:t},out:{x:cx+k*rx,y:t}},{x:r,y:cy,in:{x:r,y:cy-k*ry},out:{x:r,y:cy+k*ry}},{x:cx,y:b,in:{x:cx+k*rx,y:b},out:{x:cx-k*rx,y:b}},{x:l,y:cy,in:{x:l,y:cy+k*ry},out:{x:l,y:cy-k*ry}}];v.details=[];}
+      if(kind==='star'){const outer=Math.min(w,h)/2;v.points=Array.from({length:10},(_,i)=>{const rad=i%2?outer*.44:outer,a=-Math.PI/2+i*Math.PI/5;return{x:cx+Math.cos(a)*rad,y:cy+Math.sin(a)*rad};});v.details=[];}
+      if(kind==='cylinder'){const ry=Math.min(h*.18,w*.22);v.points=[{x:l,y:t+ry},{x:r,y:t+ry},{x:r,y:b-ry},{x:l,y:b-ry}];v.details=[{closed:true,points:[{x:cx,y:t,in:{x:cx-w*.276,y:t},out:{x:cx+w*.276,y:t}},{x:r,y:t+ry,in:{x:r,y:t+ry*.552},out:{x:r,y:t+ry*.552}},{x:cx,y:t+ry*2,in:{x:cx+w*.276,y:t+ry*2},out:{x:cx-w*.276,y:t+ry*2}},{x:l,y:t+ry,in:{x:l,y:t+ry*.552},out:{x:l,y:t+ry*.552}}]}];}
+      v.closed=true;renderVectors();updateShapeInspector();saveSoon();toast('Shape converted to '+kind);
+    }
+
     function updateShapeBuilderStatus() {
       const count = selectedVectors.filter(index => index >= 0 && index < vectorPaths.length && vectorPaths[index].closed).length;
       const status = $('shapeBuilderStatus');
@@ -747,7 +764,10 @@
     // 🟪 BEGINNER TIP — Each handle stores a canvas position. Moving an anchor shifts its handles along with it.
     function renderVectors() {
       vectorLayer.innerHTML = '';
-      const ns='http://www.w3.org/2000/svg', all=vectorPaths.map((v,i)=>({v,i}));
+      const ns='http://www.w3.org/2000/svg';
+      // The faded imported logo stays below vectors and cannot intercept drawing clicks.
+      if(traceReferenceData){const image=document.createElementNS(ns,'image');image.setAttribute('href',traceReferenceData);image.setAttribute('x','0');image.setAttribute('y','0');image.setAttribute('width',String(W()));image.setAttribute('height',String(H()));image.setAttribute('preserveAspectRatio','xMidYMid meet');image.setAttribute('opacity',String(traceReferenceOpacity));image.setAttribute('pointer-events','none');vectorLayer.appendChild(image);}
+      const all=vectorPaths.map((v,i)=>({v,i}));
       if(activeVector)all.push({v:activeVector,i:-1});
       const svgEl=(tag,attrs,className)=>{const node=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>node.setAttribute(k,String(v)));if(className)node.setAttribute('class',className);return node;};
       all.forEach(({v,i})=>{
@@ -755,6 +775,7 @@
         path.setAttribute('pointer-events',v.closed?'visibleFill':'visiblePainted');
         if((tool==='editpoints'||tool==='shapebuilder')&&(i===selectedVector||selectedVectors.includes(i))){path.setAttribute('stroke-dasharray','5 4');path.setAttribute('stroke','#315cdb');}
         vectorLayer.appendChild(path);
+        if(Array.isArray(v.details))v.details.forEach(detail=>vectorLayer.appendChild(svgEl('path',{d:pathData(detail.points,!!detail.closed),fill:'none',stroke:v.strokeColor||v.color,'stroke-width':v.strokeWidth||v.size,'data-vector':i},'vector-detail-path')));
         if(tool!=='editpoints'||i!==selectedVector)return;
         v.points.forEach((point,index)=>['in','out'].forEach(side=>{
           const handle=point[side];if(!handle)return;
@@ -834,10 +855,11 @@
       const anchorHit=event.target.closest?event.target.closest('[data-anchor]'):null;
       if(anchorHit){const [vector,point]=anchorHit.getAttribute('data-anchor').split(':').map(Number);selectedVector=vector;selectedVectors=[vector];draggingAnchor={vector,point,createHandles:!!(event.altKey||event.optionKey),original:{...vectorPaths[vector].points[point]}};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;}
       const pathHit=event.target.closest?event.target.closest('[data-vector]'):null;
-      if(pathHit){const index=Number(pathHit.getAttribute('data-vector'));if(event.shiftKey){selectedVectors=selectedVectors.includes(index)?selectedVectors.filter(i=>i!==index):[...selectedVectors,index];selectedVector=index;renderVectors();updateShapeInspector();return;}if(index===selectedVector&&addPointNear(index,p))return;selectedVector=index;selectedVectors=[index];renderVectors();updateShapeInspector();retroSound('select');return;}
-      selectedVector=-1;selectedVectors=[];renderVectors();
+      if(pathHit){const index=Number(pathHit.getAttribute('data-vector'));if(event.shiftKey){selectedVectors=selectedVectors.includes(index)?selectedVectors.filter(i=>i!==index):[...selectedVectors,index];selectedVector=index;renderVectors();updateShapeInspector();return;}if(index>=0&&vectorPaths[index]){selectedVector=index;selectedVectors=[index];if(event.altKey&&addPointNear(index,p))return;const shape=vectorPaths[index];draggingVector={vector:index,start:p,points:shape.points.map(q=>({...q,in:q.in?{...q.in}:null,out:q.out?{...q.out}:null}))};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();updateShapeInspector();return;}}
+      selectedVector=-1;selectedVectors=[];updateShapeInspector();renderVectors();
     }
     function vectorMove(event) {
+      if(draggingVector&&tool==='editpoints'){event.preventDefault();const p=svgPoint(event,null,false),dx=p.x-draggingVector.start.x,dy=p.y-draggingVector.start.y,v=vectorPaths[draggingVector.vector];if(v){v.points=draggingVector.points.map(q=>({...q,x:q.x+dx,y:q.y+dy,in:q.in?{x:q.in.x+dx,y:q.in.y+dy}:null,out:q.out?{x:q.out.x+dx,y:q.out.y+dy}:null}));renderVectors();}return;}
       if(draggingText&&tool==='text'){event.preventDefault();const p=svgPoint(event,null,false),item=textObjects[draggingText.index];if(item){item.x=draggingText.x+(p.x-draggingText.start.x);item.y=draggingText.y+(p.y-draggingText.start.y);renderVectors();}return;}
       if(shapeBuilderDragging&&tool==='shapebuilder'){const element=document.elementFromPoint(event.clientX,event.clientY),pathHit=element&&element.closest?element.closest('[data-vector]'):null;if(pathHit){const index=Number(pathHit.getAttribute('data-vector'));if(vectorPaths[index]&&vectorPaths[index].closed&&!shapeBuilderVisited.has(index)){shapeBuilderVisited.add(index);if(!selectedVectors.includes(index))selectedVectors.push(index);selectedVector=index;renderVectors();updateShapeBuilderStatus();}}return;}
       if(vectorShapeDragging&&vectorShapeStart&&activeVector&&(tool==='vectorrect'||tool==='vectoroval')){event.preventDefault();activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);renderVectors();return;}
@@ -848,6 +870,7 @@
     function vectorUp(event) {
       if(event&&vectorLayer.releasePointerCapture){try{vectorLayer.releasePointerCapture(event.pointerId);}catch(_){}}
       if(draggingText){draggingText=null;saveSoon();return;}
+      if(draggingVector){draggingVector=null;renderVectors();updateShapeInspector();saveSoon();retroSound('shape');return;}
       if(shapeBuilderDragging){shapeBuilderDragging=false;shapeBuilderVisited.clear();updateShapeBuilderStatus();return;}
       if(vectorShapeDragging){if(event&&activeVector)activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);if(activeVector){vectorPaths.push(activeVector);selectedVector=vectorPaths.length-1;selectedVectors=[selectedVector];}activeVector=null;vectorShapeStart=null;vectorShapeDragging=false;renderVectors();updateShapeInspector();saveSoon();retroSound('shape');return;}
       if(curveDragAnchor!==null){curveDragAnchor=null;renderVectors();saveSoon();return;}
@@ -1059,6 +1082,41 @@
     document.addEventListener('pointermove',()=>{if(drawing){const now=performance.now();if(now-lastDragSound>90){lastDragSound=now;retroSound('tick');}}});
     document.querySelectorAll('.brush-option').forEach(b=>b.addEventListener('click',()=>{selectedBrush=b.dataset.brush;document.querySelectorAll('.brush-option').forEach(x=>x.classList.toggle('active',x===b));toast('Brush: '+b.dataset.brush);}));
     function importLocalImage(file,kind){if(!file||!file.type||!file.type.startsWith('image/')){toast('Choose an image file');return;}const url=URL.createObjectURL(file),image=new Image();image.onload=()=>{const max=kind==='brush'?128:64,scale=Math.min(1,max/Math.max(image.naturalWidth,image.naturalHeight)),tile=document.createElement('canvas');tile.width=Math.max(1,Math.round(image.naturalWidth*scale));tile.height=Math.max(1,Math.round(image.naturalHeight*scale));const t=tile.getContext('2d',{willReadFrequently:true});t.imageSmoothingEnabled=false;t.drawImage(image,0,0,tile.width,tile.height);URL.revokeObjectURL(url);try{const data=tile.toDataURL('image/png');if(kind==='brush'){customBrushCanvas=tile;localStorage.setItem('mpde-custom-brush',data);document.querySelector('.custom-brush-option').hidden=false;$('customBrushMark').style.backgroundImage='url("'+data+'")';$('customBrushMark').style.backgroundSize='contain';$('customBrushStatus').textContent=file.name+' · '+tile.width+' × '+tile.height;selectedBrush='custom';document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush==='custom'));toast('Custom brush loaded');}else{customPatternCanvas=tile;customPatternPixels=t.getImageData(0,0,tile.width,tile.height).data;localStorage.setItem('mpde-custom-pattern',data);const sw=document.querySelector('.custom-pattern-swatch');sw.hidden=false;sw.title=file.name;selectedPattern='custom';document.querySelectorAll('.pattern-swatch').forEach(b=>{const a=b.dataset.pattern==='custom';b.classList.toggle('active',a);b.setAttribute('aria-pressed',String(a));});$('customPatternStatus').textContent=file.name+' · repeat '+tile.width+' × '+tile.height;renderPatternPreviews();toast('Custom texture loaded');}saveSoon();}catch(err){toast('Could not save image; try a smaller file');console.warn(err);}};image.onerror=()=>{URL.revokeObjectURL(url);toast('Could not read image; try PNG or JPEG');};image.src=url;}
+    // Import a scaled logo as a translucent reference layer; nothing is uploaded to a server.
+    function loadTraceReference(file){
+      if(!file||!file.type.startsWith('image/'))return toast('Choose an image file');
+      if(file.size>8*1024*1024)return toast('Please choose an image smaller than 8 MB');
+      const url=URL.createObjectURL(file),img=new Image();
+      img.onload=()=>{try{const scale=Math.min(1,W()/img.naturalWidth,H()/img.naturalHeight),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.naturalWidth*scale));c.height=Math.max(1,Math.round(img.naturalHeight*scale));const cctx=c.getContext('2d');if(!cctx)throw Error('Canvas unavailable');cctx.drawImage(img,0,0,c.width,c.height);traceReferenceData=c.toDataURL('image/png');try{localStorage.setItem('mpde-trace-reference',traceReferenceData);}catch(error){console.warn(error);}traceReferenceOpacity=Number($('traceOpacity').value)/100;$('traceReferenceStatus').textContent=file.name+' · guide loaded';renderVectors();toast('Logo guide loaded');}catch(error){toast('Could not import image');console.warn(error);}finally{URL.revokeObjectURL(url);}};
+      img.onerror=()=>{URL.revokeObjectURL(url);toast('Could not read image; try PNG or JPEG');};img.src=url;
+    }
+    // Threshold-based contour tracing creates editable polygon paths for high-contrast sticker art.
+    function traceLogo(){
+      if(!traceReferenceData)return toast('Import a logo first');
+      const img=new Image();img.onload=()=>{
+        const scale=Math.min(1,320/Math.max(img.naturalWidth,img.naturalHeight)),w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale)),c=document.createElement('canvas');c.width=w;c.height=h;
+        const cc=c.getContext('2d',{willReadFrequently:true});if(!cc)return toast('Could not prepare image');cc.drawImage(img,0,0,w,h);
+        const data=cc.getImageData(0,0,w,h).data,threshold=Number($('traceThreshold').value),invert=$('traceInvert').checked,mask=new Uint8Array(w*h);
+        for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4,lum=.2126*data[i]+.7152*data[i+1]+.0722*data[i+2];mask[y*w+x]=data[i+3]>32&&(invert?lum>=threshold:lum<threshold)?1:0;}
+        const on=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&mask[y*w+x],edges=[];
+        for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(on(x,y)){if(!on(x,y-1))edges.push({x,y,x2:x+1,y2:y});if(!on(x+1,y))edges.push({x:x+1,y,x2:x+1,y2:y+1});if(!on(x,y+1))edges.push({x:x+1,y:y+1,x2:x,y2:y+1});if(!on(x-1,y))edges.push({x,y:y+1,x2:x,y2:y});}
+        if(!edges.length)return toast('No foreground found — adjust threshold or invert');
+        const key=(x,y)=>x+','+y,nextMap=new Map();edges.forEach((e,i)=>{const k=key(e.x,e.y);if(!nextMap.has(k))nextMap.set(k,[]);nextMap.get(k).push(i);});
+        const used=new Uint8Array(edges.length),contours=[];
+        for(let start=0;start<edges.length;start++){if(used[start])continue;const pts=[];let cur=start,guard=0;while(!used[cur]&&guard++<=edges.length){const e=edges[cur];used[cur]=1;pts.push({x:e.x,y:e.y});if(e.x2===edges[start].x&&e.y2===edges[start].y)break;const n=(nextMap.get(key(e.x2,e.y2))||[]).find(i=>!used[i]);if(n===undefined)break;cur=n;}
+          const simple=pts.filter((p,i)=>{if(pts.length<4)return true;const a=pts[(i+pts.length-1)%pts.length],b=pts[(i+1)%pts.length];return (p.x-a.x)*(b.y-p.y)!==(p.y-a.y)*(b.x-p.x);});if(simple.length>=3)contours.push(simple);}
+        if(!contours.length)return toast('Could not find a usable outline');
+        const fit=Math.min(W()/img.naturalWidth,H()/img.naturalHeight),dw=img.naturalWidth*fit,dh=img.naturalHeight*fit,ox=(W()-dw)/2,oy=(H()-dh)/2,sx=dw/w,sy=dh/h;
+        const traced=contours.map(points=>({points:points.map(p=>({x:ox+p.x*sx,y:oy+p.y*sy})),color,size:1,strokeColor:color,strokeWidth:1,fill:true,closed:true,curve:false,traced:true}));
+        vectorPaths.push(...traced);selectedVector=vectorPaths.length-1;selectedVectors=[selectedVector];renderVectors();updateShapeInspector();saveSoon();toast('Traced '+traced.length+' editable outline(s)');
+      };img.onerror=()=>toast('Could not read the guide image');img.src=traceReferenceData;
+    }
+    $('traceLogoUpload').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(f)loadTraceReference(f);e.target.value='';});
+    $('traceOpacity').addEventListener('input',e=>{traceReferenceOpacity=Number(e.target.value)/100;$('traceOpacityValue').textContent=e.target.value+'%';renderVectors();});
+    $('traceLogoBtn').addEventListener('click',traceLogo);
+    $('clearTraceReferenceBtn').addEventListener('click',()=>{traceReferenceData='';try{localStorage.removeItem('mpde-trace-reference');}catch(error){console.warn(error);}$('traceReferenceStatus').textContent='No logo guide loaded';renderVectors();});
+    $('convertShapeBtn').addEventListener('click',()=>convertSelectedShape($('convertShapeType').value));
+    try{traceReferenceData=localStorage.getItem('mpde-trace-reference')||'';if(traceReferenceData)$('traceReferenceStatus').textContent='Saved logo guide restored';}catch(error){console.warn(error);}
     $('customBrushUpload').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(f)importLocalImage(f,'brush');e.target.value='';});$('customPatternUpload').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(f)importLocalImage(f,'pattern');e.target.value='';});
     function restoreLocalImage(key,kind){try{const data=localStorage.getItem(key);if(!data)return;const im=new Image();im.onload=()=>{const tile=document.createElement('canvas');tile.width=im.naturalWidth;tile.height=im.naturalHeight;const t=tile.getContext('2d',{willReadFrequently:true});t.drawImage(im,0,0);if(kind==='brush'){customBrushCanvas=tile;document.querySelector('.custom-brush-option').hidden=false;$('customBrushMark').style.backgroundImage='url("'+data+'")';$('customBrushStatus').textContent='Saved custom brush · '+tile.width+' × '+tile.height;}else{customPatternCanvas=tile;customPatternPixels=t.getImageData(0,0,tile.width,tile.height).data;document.querySelector('.custom-pattern-swatch').hidden=false;$('customPatternStatus').textContent='Saved custom texture · '+tile.width+' × '+tile.height;renderPatternPreviews();}};im.src=data;}catch(err){console.warn(err);}}restoreLocalImage('mpde-custom-brush','brush');restoreLocalImage('mpde-custom-pattern','pattern');
     const aiDialog=$('aiAssistantDialog'),aiPrompt=$('aiAssistantPrompt'),aiResponse=$('aiAssistantResponse');
