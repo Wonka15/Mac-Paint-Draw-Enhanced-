@@ -425,3 +425,25 @@
 .welcome-credit{border-top:1px dashed #aaa;padding-top:12px}
 .welcome-ack{width:100%;margin-top:8px;border-radius:4px;font-family:inherit;font-weight:700}
 @media(max-width:700px){.app{padding:6px}.workspace{grid-template-columns:minmax(0,1fr)}.ruler-layout{width:100%}.paper{height:64vh;min-height:340px}.app.canvas-focus .workspace{grid-template-columns:minmax(0,1fr)}.app.canvas-focus .leftpanel{display:none}.app.canvas-focus .stage{min-height:calc(100vh - 140px)}.app.canvas-focus .paper{height:80vh;min-height:420px}.welcome-card{padding:16px}.welcome-portraits{gap:8px}.welcome-portrait{padding:7px}}
+
+
+/* 🟩 HOW IT WORKS — The single CRT dropdown keeps all display tints in one place. */
+.crt-menu{position:relative;display:inline-block;z-index:20}
+.crt-menu>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.crt-menu>summary::-webkit-details-marker{display:none}
+.crt-menu[open]>summary{border-bottom-left-radius:5px;border-bottom-right-radius:5px}
+.crt-options{position:absolute;right:0;top:calc(100% + 5px);z-index:30;display:grid;grid-template-columns:1fr;gap:3px;min-width:142px;padding:6px;border:1px solid #c9c5bc;border-radius:9px;background:#fffdf8;box-shadow:0 8px 24px rgba(28,34,48,.18)}
+.crt-option{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid transparent;border-radius:6px;background:transparent;color:#252a32;text-align:left;font:600 12px inherit;cursor:pointer}
+.crt-option:hover{background:#f0f3fa}
+.crt-option.active{border-color:#b8c8f4;background:#e9efff;color:#2448b7}
+.crt-dot{display:inline-block;width:12px;height:12px;flex:0 0 12px;border:1px solid rgba(0,0,0,.3);border-radius:50%;box-shadow:inset 0 0 0 2px rgba(255,255,255,.45)}
+.crt-dot-off{background:#fff}
+.crt-dot-blue{background:#3e8fe8}
+.crt-dot-red{background:#d84b42}
+.crt-dot-green{background:#39a85b}
+.crt-dot-yellow{background:#e9cf48}
+#canvasWrap.crt-red:before,#canvasWrap.crt-yellow:before{content:"";position:absolute;inset:0;z-index:8;pointer-events:none;mix-blend-mode:multiply;opacity:.9}
+#canvasWrap.crt-red:before{background:linear-gradient(180deg,rgba(150,20,20,.12),rgba(100,8,8,.23)),repeating-linear-gradient(0deg,rgba(80,0,0,.17) 0 1px,transparent 1px 4px),radial-gradient(ellipse at center,rgba(255,150,150,.12),rgba(70,0,0,.3));box-shadow:inset 0 0 48px rgba(65,0,0,.4)}
+#canvasWrap.crt-red{background:#f1cccc;filter:saturate(.78) contrast(1.06)}
+#canvasWrap.crt-yellow:before{background:linear-gradient(180deg,rgba(155,125,0,.12),rgba(105,80,0,.22)),repeating-linear-gradient(0deg,rgba(85,65,0,.16) 0 1px,transparent 1px 4px),radial-gradient(ellipse at center,rgba(255,244,160,.16),rgba(75,57,0,.25));box-shadow:inset 0 0 48px rgba(80,62,0,.3)}
+#canvasWrap.crt-yellow{background:#f2edc6;filter:saturate(.78) contrast(1.05)}
