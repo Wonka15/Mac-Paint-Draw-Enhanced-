@@ -22,6 +22,7 @@
         <button class="btn secondary" id="newBtn">＋ New</button>
         <button class="btn secondary" id="undoBtn" disabled title="Undo (⌘Z on Mac)">↶ Undo <span class="shortcut-hint">⌘Z</span></button>
         <button class="btn secondary" id="redoBtn" disabled title="Redo (⇧⌘Z on Mac)">↷ Redo <span class="shortcut-hint">⇧⌘Z</span></button>
+        <button class="btn secondary ai-launch-button" id="aiAssistantBtn" type="button">✦ AI</button>
         <button class="btn secondary" id="exportSvgBtn">Export SVG · Vinyl</button>
         <button class="btn primary" id="exportBtn">Export PNG ↗</button>
       </div>
@@ -90,7 +91,7 @@
         <h2>MacPaint pattern palette</h2>
         <p class="pattern-help">30 repeating patterns for brush marks, shape fills, and the paint bucket. Pick a swatch to make it the active ink.</p>
         <div class="pattern-palette" id="patternPalette" aria-label="MacPaint pattern palette">
-          <section class="pattern-group" aria-label="MacPaint basics"><h3>MacPaint basics</h3><div class="pattern-grid"><button class="pattern-swatch active" data-pattern="solid" aria-label="Solid ink" title="Solid ink" aria-pressed="true"><span>Solid ink</span></button>
+          <section class="pattern-group" aria-label="MacPaint basics"><h3>MacPaint basics</h3><div class="pattern-grid"><button class="pattern-swatch active" data-pattern="solid" aria-label="Solid ink" title="Solid ink" aria-pressed="true"><span>Solid ink</span></button><button class="pattern-swatch custom-pattern-swatch" data-pattern="custom" aria-label="Custom texture" title="Custom texture" aria-pressed="false" hidden><span>My texture</span></button>
 <button class="pattern-swatch" data-pattern="checker" aria-label="Checkerboard" title="Checkerboard" aria-pressed="false"><span>Checkerboard</span></button>
 <button class="pattern-swatch" data-pattern="dots" aria-label="Dots" title="Dots" aria-pressed="false"><span>Dots</span></button>
 <button class="pattern-swatch" data-pattern="diagonal" aria-label="Diagonal lines" title="Diagonal lines" aria-pressed="false"><span>Diagonal lines</span></button>
@@ -123,6 +124,7 @@
 <button class="pattern-swatch" data-pattern="steve-icon" aria-label="Classic Macintosh computer pattern" title="Classic Macintosh computer pattern" aria-pressed="false"><span>Macintosh</span></button>
 <button class="pattern-swatch" data-pattern="happy-mac" aria-label="Apple logo pattern" title="Apple logo pattern" aria-pressed="false"><span>Apple logo</span></button></div></section>
         </div>
+        <div class="custom-asset-card"><h3>Custom pattern / texture</h3><p>Import a repeating tile, paper grain, fabric, or photo texture for brush strokes and shape fills.</p><label class="file-pick-button" for="customPatternUpload">＋ Upload texture</label><input class="visually-hidden-file" id="customPatternUpload" type="file" accept="image/*"><div class="custom-asset-status" id="customPatternStatus">No custom texture loaded</div></div>
         <label class="check"><input type="checkbox" id="soundToggle" checked> Retro drawing sounds</label>
       </aside>
 
@@ -207,7 +209,9 @@
           <button class="brush-option" data-brush="oil"><span class="brush-mark oil-mark"></span><span><strong>4. Oil paint</strong><small>Blending pigment and thick, glossy strokes</small></span></button>
           <button class="brush-option" data-brush="watercolor"><span class="brush-mark watercolor-mark"></span><span><strong>5. Watercolor</strong><small>Wet washes with blooming, seeping edges</small></span></button>
           <button class="brush-option" data-brush="dry"><span class="brush-mark dry-mark"></span><span><strong>6. Dry / chalk</strong><small>Grainy, broken marks</small></span></button>
+          <button class="brush-option custom-brush-option" data-brush="custom" hidden><span class="brush-mark custom-brush-mark" id="customBrushMark"></span><span><strong>Custom brush</strong><small>Your imported image stamp</small></span></button>
         </div>
+        <div class="custom-asset-card"><h3>Make it yours</h3><p>Transparent PNGs make the cleanest brush stamps. Images are resized locally.</p><label class="file-pick-button" for="customBrushUpload">＋ Upload custom brush</label><input class="visually-hidden-file" id="customBrushUpload" type="file" accept="image/*"><div class="custom-asset-status" id="customBrushStatus">No custom brush loaded</div></div>
         <label class="check"><input type="checkbox" id="roughPaperToggle"> Rough paper texture</label>
         <label class="check"><input type="checkbox" id="fillToggle"> Fill shapes</label>
         <label class="check"><input type="checkbox" id="snapCheck"> Smart snapping</label>
@@ -257,6 +261,7 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="ai-overlay" id="aiAssistantDialog" hidden><section class="ai-card" role="dialog" aria-modal="true" aria-labelledby="aiAssistantTitle"><div class="ai-card-top"><div><span class="ai-kicker">MAC PAINT CREATIVE COPILOT</span><h2 id="aiAssistantTitle">✦ AI Art Assistant</h2></div><button class="ai-close" id="aiAssistantClose" type="button" aria-label="Close assistant">×</button></div><p class="ai-intro">Get beginner-friendly help with the interface, pixel art, textures, and retro techniques.</p><div class="ai-quick-prompts"><button type="button" data-ai-prompt="How do I make crisp 1-bit pixel art?">Pixel art</button><button type="button" data-ai-prompt="How can I shade with patterns and textures?">Patterns & shading</button><button type="button" data-ai-prompt="How do I use a custom brush?">Custom brushes</button><button type="button" data-ai-prompt="Help me understand the interface.">Using the UI</button><button type="button" data-ai-prompt="Give me a cool 1980s Macintosh poster idea.">Retro art idea</button></div><label class="ai-prompt-label" for="aiAssistantPrompt">What are you trying to make or figure out?</label><textarea id="aiAssistantPrompt" rows="3" placeholder="Example: How do I shade a chrome sphere with 4 colors?"></textarea><div class="ai-actions"><button class="btn primary" id="aiGetHelpBtn" type="button">Get tips</button><button class="btn secondary" id="aiAskChatGPTBtn" type="button">Ask ChatGPT ↗</button></div><div class="ai-response" id="aiAssistantResponse" role="status" aria-live="polite"><strong>Ready when you are.</strong><p>Built-in tips work offline. Ask ChatGPT opens a separate ChatGPT page for open-ended help.</p></div><p class="ai-disclaimer">Built-in suggestions are local guides, not a live AI model. No artwork is uploaded. The external option sends only your question in the link.</p></section></div>
 
   <div class="welcome-overlay" id="creatorWelcome" role="dialog" aria-modal="true" aria-labelledby="creatorWelcomeTitle">
     <section class="welcome-card">
