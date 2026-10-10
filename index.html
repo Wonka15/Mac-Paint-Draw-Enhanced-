@@ -119,8 +119,16 @@
             <button class="btn secondary" id="fatBitsBtn" aria-pressed="false" title="Magnify the canvas to edit individual pixels">FatBits</button>
             <button class="btn secondary" id="canvasFocusBtn" aria-pressed="false" title="Give the canvas more room">Focus canvas</button>
             <button class="btn secondary" id="clearBtn">Clear</button>
-            <label class="crt-toggle" title="Apply a blue Macintosh SE CRT look to the canvas"><input type="checkbox" id="crtBlueToggle"><span>Blue CRT</span></label>
-            <label class="crt-toggle crt-green-toggle" title="Apply a green monochrome Macintosh CRT look"><input type="checkbox" id="crtGreenToggle"><span>Green CRT</span></label>
+            <details class="crt-menu" id="crtMenu">
+              <summary class="btn secondary" aria-label="CRT display effects">CRT <span aria-hidden="true">▾</span></summary>
+              <div class="crt-options" role="group" aria-label="Choose CRT color">
+                <button type="button" class="crt-option active" data-crt="off" aria-pressed="true"><span class="crt-dot crt-dot-off"></span>Off</button>
+                <button type="button" class="crt-option" data-crt="blue" aria-pressed="false"><span class="crt-dot crt-dot-blue"></span>Blue</button>
+                <button type="button" class="crt-option" data-crt="red" aria-pressed="false"><span class="crt-dot crt-dot-red"></span>Red</button>
+                <button type="button" class="crt-option" data-crt="green" aria-pressed="false"><span class="crt-dot crt-dot-green"></span>Green</button>
+                <button type="button" class="crt-option" data-crt="yellow" aria-pressed="false"><span class="crt-dot crt-dot-yellow"></span>Yellow</button>
+              </div>
+            </details>
           </div>
         </div>
 
