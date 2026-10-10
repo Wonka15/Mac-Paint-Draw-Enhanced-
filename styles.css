@@ -459,3 +459,7 @@
 .classic-bomb-icon{width:19px;height:19px;flex:0 0 19px;image-rendering:pixelated}
 .pattern-swatch[data-pattern="steve-icon"],.pattern-swatch[data-pattern="happy-mac"]{image-rendering:pixelated}
 .pattern-swatch[data-pattern="steve-icon"] span,.pattern-swatch[data-pattern="happy-mac"] span{font-size:8px}
+
+/* Small monochrome historical creator portraits in the welcome tribute. */
+.welcome-portrait .creator-photo{display:block;width:120px;height:120px;max-width:100%;object-fit:cover;object-position:center;border:1px solid #999;filter:grayscale(1) contrast(1.12);image-rendering:auto}
+.welcome-credit{font-size:10px}
