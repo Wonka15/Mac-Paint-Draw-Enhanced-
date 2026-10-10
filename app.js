@@ -24,7 +24,7 @@
     let drawing = false, startPoint = null, lastPoint = null;
     let history = [], redoStack = [], showGuides = false, showGrid = false;
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
-    let vectorPaths = [], activeVector = null, selectedVector = -1, selectedVectors = [], draggingAnchor = null, curveDragAnchor = null;
+    let vectorPaths = [], activeVector = null, selectedVector = -1, selectedVectors = [], draggingAnchor = null, draggingHandle = null, curveDragAnchor = null;
     let zoomLevel = 1, rulerDrag = null, vectorShapeStart = null, vectorShapeDragging = false;
     // Shape Builder selection is separate from anchor editing.
     let shapeBuilderDragging = false, shapeBuilderVisited = new Set();
@@ -65,7 +65,7 @@
       // User clicks can turn the current tool off; programmatic selection stays explicit.
       if (toggleIfActive && next === tool && next !== 'pencil') next = 'pencil';
       tool = next;
-      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'shapebuilder');
+      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'editpoints' || tool === 'shapebuilder');
       renderVectors();
       status();
       updateShapeBuilderStatus();
@@ -271,7 +271,7 @@
 
     // 🟩 HOW IT WORKS — Both raster and vector tools use the same snapping rules.
     // Snap only to visible guides/grid, so hidden helpers never pull artwork unexpectedly.
-    function snapPoint(x, y) {
+    function snapPoint(x, y, ignoreAnchor = null) {
       if (!$('snapCheck').checked) return { x, y };
       const tolerance = 14;
 
@@ -292,8 +292,11 @@
       // Vector anchors act like Illustrator smart guides when working with vector tools.
       if (tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'editpoints') {
         let nearest = null;
-        for (const vector of vectorPaths) {
-          for (const anchor of vector.points) {
+        for (let vectorIndex=0; vectorIndex<vectorPaths.length; vectorIndex++) {
+          const vector=vectorPaths[vectorIndex];
+          for (let pointIndex=0; pointIndex<vector.points.length; pointIndex++) {
+            if(ignoreAnchor&&ignoreAnchor.vector===vectorIndex&&ignoreAnchor.point===pointIndex)continue;
+            const anchor=vector.points[pointIndex];
             const distance = Math.hypot(anchor.x - x, anchor.y - y);
             if (distance <= tolerance && (!nearest || distance < nearest.distance)) {
               nearest = { x: anchor.x, y: anchor.y, distance };
@@ -334,11 +337,11 @@
     // 🟩 HOW IT WORKS — Raster pixels live on #paper; editable vector shapes live in the SVG layer.
     // 🟪 BEGINNER TIP — Keep vector edits in vectorPaths so users can still move anchors later.
     // VECTOR ENGINE: SVG paths are stored separately from the pixel paint canvas.
-    function svgPoint(event) {
+    function svgPoint(event, ignoreAnchor = null, shouldSnap = true) {
       const rect = vectorLayer.getBoundingClientRect();
       let x = (event.clientX - rect.left) * W() / rect.width;
       let y = (event.clientY - rect.top) * H() / rect.height;
-      ({ x, y } = snapPoint(x, y));
+      if(shouldSnap)({ x, y } = snapPoint(x, y, ignoreAnchor));
       return { x: Math.max(0, Math.min(W(), x)), y: Math.max(0, Math.min(H(), y)) };
     }
 
@@ -512,31 +515,66 @@
       }
       return d;
     }
+    // 🟩 HOW IT WORKS — Rectangles use corner anchors; ovals use four smooth Bézier anchors.
+    // 🟪 BEGINNER TIP — The 0.5523 constant makes the oval handles follow a near-perfect circle.
+    function vectorShapePoints(start, end, shapeType) {
+      const left=Math.min(start.x,end.x),right=Math.max(start.x,end.x);
+      const top=Math.min(start.y,end.y),bottom=Math.max(start.y,end.y);
+      const cx=(left+right)/2,cy=(top+bottom)/2,rx=(right-left)/2,ry=(bottom-top)/2;
+      if(shapeType==='vectorrect')return [{x:left,y:top},{x:right,y:top},{x:right,y:bottom},{x:left,y:bottom}];
+      const k=0.5522847498;
+      return [
+        {x:cx,y:top,in:{x:cx-k*rx,y:top},out:{x:cx+k*rx,y:top}},
+        {x:right,y:cy,in:{x:right,y:cy-k*ry},out:{x:right,y:cy+k*ry}},
+        {x:cx,y:bottom,in:{x:cx+k*rx,y:bottom},out:{x:cx-k*rx,y:bottom}},
+        {x:left,y:cy,in:{x:left,y:cy+k*ry},out:{x:left,y:cy-k*ry}}
+      ];
+    }
+
+    // 🟩 HOW IT WORKS — SVG paths stay editable; handles are lightweight controls layered above the artwork.
+    // 🟪 BEGINNER TIP — Each handle stores a canvas position. Moving an anchor shifts its handles along with it.
     function renderVectors() {
       vectorLayer.innerHTML = '';
-      const ns = 'http://www.w3.org/2000/svg';
-      const all = vectorPaths.map((v,i)=>({v,i}));
-      if (activeVector) all.push({v:activeVector,i:-1});
+      const ns='http://www.w3.org/2000/svg', all=vectorPaths.map((v,i)=>({v,i}));
+      if(activeVector)all.push({v:activeVector,i:-1});
+      const svgEl=(tag,attrs,className)=>{const node=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>node.setAttribute(k,String(v)));if(className)node.setAttribute('class',className);return node;};
       all.forEach(({v,i})=>{
-        const path=document.createElementNS(ns,'path');
-        path.setAttribute('d',pathData(v.points,v.closed));
-        path.setAttribute('fill',v.closed && v.fill ? v.color : 'none');
-        path.setAttribute('fill-opacity',v.closed && v.fill ? '0.35' : '1');
-        path.setAttribute('stroke',v.color); path.setAttribute('stroke-width',String(v.size));
-        path.setAttribute('class','vector-path');
-        path.setAttribute('data-vector',String(i));
-        // Let closed shapes be selected from their interior, even when unfilled.
-        path.setAttribute('pointer-events', v.closed ? 'visibleFill' : 'visiblePainted');
-        if ((tool==='editpoints' || tool==='shapebuilder') && (i===selectedVector || selectedVectors.includes(i))) {
-          path.setAttribute('stroke-dasharray','5 4');
-          path.setAttribute('stroke','#315cdb');
-        }
+        const path=svgEl('path',{d:pathData(v.points,v.closed),fill:v.closed&&v.fill?v.color:'none','fill-opacity':v.closed&&v.fill?'0.35':'1',stroke:v.color,'stroke-width':v.size,'data-vector':i},'vector-path');
+        path.setAttribute('pointer-events',v.closed?'visibleFill':'visiblePainted');
+        if((tool==='editpoints'||tool==='shapebuilder')&&(i===selectedVector||selectedVectors.includes(i))){path.setAttribute('stroke-dasharray','5 4');path.setAttribute('stroke','#315cdb');}
         vectorLayer.appendChild(path);
-        if (tool==='editpoints' && i===selectedVector) v.points.forEach((p,j)=>{
-          const c=document.createElementNS(ns,'circle'); c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); c.setAttribute('r','6');
-          c.setAttribute('class','vector-anchor'); c.setAttribute('data-anchor',`${i}:${j}`); c.setAttribute('aria-label',`Anchor point ${j+1}`); vectorLayer.appendChild(c);
-        });
+        if(tool!=='editpoints'||i!==selectedVector)return;
+        v.points.forEach((point,index)=>['in','out'].forEach(side=>{
+          const handle=point[side];if(!handle)return;
+          vectorLayer.appendChild(svgEl('line',{x1:point.x,y1:point.y,x2:handle.x,y2:handle.y,'pointer-events':'none'},'vector-handle-line'));
+          vectorLayer.appendChild(svgEl('circle',{cx:handle.x,cy:handle.y,r:5,'data-handle':i+':'+index+':'+side,'aria-label':side==='in'?'Incoming curve handle':'Outgoing curve handle'},'vector-handle '+(side==='in'?'handle-in':'handle-out')));
+        }));
+        v.points.forEach((point,index)=>vectorLayer.appendChild(svgEl('circle',{cx:point.x,cy:point.y,r:6,'data-anchor':i+':'+index,'aria-label':'Anchor point '+(index+1)},'vector-anchor')));
       });
+    }
+    // Split a straight or Bézier segment where the user clicks, preserving its original curve.
+    function insertVectorPoint(vectorIndex, segmentIndex, t) {
+      const vector=vectorPaths[vectorIndex];if(!vector||!vector.points.length)return false;
+      const points=vector.points,nextIndex=(segmentIndex+1)%points.length,start=points[segmentIndex],end=points[nextIndex];
+      const lerp=(a,b)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t}),curved=!!(start.out||end.in);
+      let inserted;
+      if(curved){
+        const c1=start.out||start,c2=end.in||end,a=lerp(start,c1),b=lerp(c1,c2),c=lerp(c2,end),d=lerp(a,b),e=lerp(b,c),mid=lerp(d,e);
+        start.out=a;end.in=c;inserted={x:mid.x,y:mid.y,in:d,out:e};
+      }else inserted=lerp(start,end);
+      if(vector.closed&&segmentIndex===points.length-1)points.push(inserted);else points.splice(segmentIndex+1,0,inserted);
+      selectedVector=vectorIndex;selectedVectors=[vectorIndex];renderVectors();saveSoon();toast('Point added — drag its handles to shape the curve');return true;
+    }
+    function addPointNear(vectorIndex,target) {
+      const vector=vectorPaths[vectorIndex],points=vector&&vector.points;if(!points||points.length<2)return false;
+      let best=null;const segmentCount=vector.closed?points.length:points.length-1;
+      const cubic=(p0,p1,p2,p3,t)=>{const u=1-t;return{x:u*u*u*p0.x+3*u*u*t*p1.x+3*u*t*t*p2.x+t*t*t*p3.x,y:u*u*u*p0.y+3*u*u*t*p1.y+3*u*t*t*p2.y+t*t*t*p3.y};};
+      for(let i=0;i<segmentCount;i++){
+        const p0=points[i],p3=points[(i+1)%points.length],isCurve=!!(p0.out||p3.in),p1=p0.out||p0,p2=p3.in||p3,samples=isCurve?32:1;
+        for(let step=0;step<=samples;step++){const t=step/samples,q=isCurve?cubic(p0,p1,p2,p3,t):{x:p0.x+(p3.x-p0.x)*t,y:p0.y+(p3.y-p0.y)*t},distance=Math.hypot(q.x-target.x,q.y-target.y);if(!best||distance<best.distance)best={segment:i,t,distance};}
+      }
+      if(!best||best.distance>24)return false;
+      return insertVectorPoint(vectorIndex,best.segment,Math.max(.02,Math.min(.98,best.t)));
     }
     // Commit the in-progress path to the vector object list.
     function finishVector(closed=false) {
@@ -545,142 +583,48 @@
       renderVectors(); saveSoon(); toast(closed?'Vector shape closed':'Vector path finished');
     }
     function vectorDown(event) {
-      if (tool!=='pen' && tool!=='bezier' && tool!=='vectorrect' && tool!=='vectoroval' && tool!=='editpoints' && tool!=='shapebuilder') return;
-      event.preventDefault(); event.stopPropagation();
-      const p=svgPoint(event);
-
-      // Shape Builder: click a shape or drag across several shapes to select them.
-      if (tool === 'shapebuilder') {
-        const pathHit = event.target.closest ? event.target.closest('[data-vector]') : null;
-        shapeBuilderDragging = true;
-        shapeBuilderVisited = new Set();
-        if (pathHit) {
-          const index = Number(pathHit.getAttribute('data-vector'));
-          if (vectorPaths[index] && vectorPaths[index].closed) {
-            if (event.shiftKey) {
-              selectedVectors = selectedVectors.includes(index)
-                ? selectedVectors.filter(item => item !== index)
-                : [...selectedVectors, index];
-            } else {
-              selectedVectors = [index];
-            }
-            selectedVector = selectedVectors.includes(index) ? index : (selectedVectors[0] ?? -1);
-            shapeBuilderVisited.add(index);
-          } else {
-            toast('Choose a closed vector shape.');
-            shapeBuilderDragging = false;
-          }
-        } else {
-          selectedVector = -1;
-          selectedVectors = [];
-        }
-        if (shapeBuilderDragging && vectorLayer.setPointerCapture) {
-          try { vectorLayer.setPointerCapture(event.pointerId); } catch (_) {}
-        }
-        renderVectors();
-        updateShapeBuilderStatus();
-        return;
+      if(!['pen','bezier','vectorrect','vectoroval','editpoints','shapebuilder'].includes(tool))return;
+      event.preventDefault();event.stopPropagation();const p=svgPoint(event);
+      if(tool==='shapebuilder'){
+        const pathHit=event.target.closest?event.target.closest('[data-vector]'):null;shapeBuilderDragging=true;shapeBuilderVisited=new Set();
+        if(pathHit){const index=Number(pathHit.getAttribute('data-vector'));if(vectorPaths[index]&&vectorPaths[index].closed){if(event.shiftKey)selectedVectors=selectedVectors.includes(index)?selectedVectors.filter(item=>item!==index):[...selectedVectors,index];else selectedVectors=[index];selectedVector=selectedVectors.includes(index)?index:(selectedVectors[0]??-1);shapeBuilderVisited.add(index);}else{toast('Choose a closed vector shape.');shapeBuilderDragging=false;}}
+        else{selectedVector=-1;selectedVectors=[];}
+        if(shapeBuilderDragging&&vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}
+        renderVectors();updateShapeBuilderStatus();return;
       }
-      if(tool==='vectorrect'||tool==='vectoroval'){
-        vectorShapeStart=p;vectorShapeDragging=true;
-        activeVector={points:vectorShapePoints(p,p,tool),color,size,fill,closed:true,curve:true};
-        if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}
-        renderVectors();return;
+      if(tool==='vectorrect'||tool==='vectoroval'){vectorShapeStart=p;vectorShapeDragging=true;activeVector={points:vectorShapePoints(p,p,tool),color,size,fill,closed:true,curve:true};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;}
+      if(tool==='bezier'){
+        if(activeVector&&activeVector.points.length>=3&&Math.hypot(p.x-activeVector.points[0].x,p.y-activeVector.points[0].y)<16){finishVector(true);return;}
+        if(!activeVector)activeVector={points:[],color,size,fill,closed:false,curve:true};
+        activeVector.points.push({x:p.x,y:p.y,in:null,out:null});curveDragAnchor=activeVector.points.length-1;
+        if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;
       }
-      if (tool==='bezier') {
-        if (activeVector && activeVector.points.length>=3) {
-          const first=activeVector.points[0];
-          if (Math.hypot(p.x-first.x,p.y-first.y)<16) { finishVector(true); return; }
-        }
-        if (!activeVector) activeVector={points:[],color,size,fill,closed:false,curve:true};
-        activeVector.points.push({x:p.x,y:p.y,in:null,out:null});
-        curveDragAnchor=activeVector.points.length-1;
-        if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}
-        renderVectors(); return;
+      if(tool==='pen'){
+        if(activeVector&&activeVector.points.length>=3&&Math.hypot(p.x-activeVector.points[0].x,p.y-activeVector.points[0].y)<16){finishVector(true);return;}
+        if(!activeVector)activeVector={points:[],color,size,fill,closed:false};activeVector.points.push({x:p.x,y:p.y});renderVectors();return;
       }
-      if (tool==='pen') {
-        if (activeVector && activeVector.points.length>=3) {
-          const first=activeVector.points[0];
-          if (Math.hypot(p.x-first.x,p.y-first.y)<16) { finishVector(true); return; }
-        }
-        if (!activeVector) activeVector={points:[],color,size,fill,closed:false};
-        activeVector.points.push(p); renderVectors(); return;
-      }
-      const hit=event.target.closest ? event.target.closest('[data-anchor]') : null;
-      if (hit) {
-        const bits=hit.getAttribute('data-anchor').split(':').map(Number);
-        selectedVector=bits[0]; draggingAnchor={vector:bits[0],point:bits[1]};
-        if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}
-        renderVectors(); return;
-      }
-      const pathHit=event.target.closest ? event.target.closest('[data-vector]') : null;
-      if(pathHit){const hitIndex=Number(pathHit.getAttribute('data-vector'));if(event.shiftKey){if(selectedVectors.includes(hitIndex))selectedVectors=selectedVectors.filter(i=>i!==hitIndex);else selectedVectors.push(hitIndex);}else selectedVectors=[hitIndex];selectedVector=hitIndex;renderVectors();return;}
+      const handleHit=event.target.closest?event.target.closest('[data-handle]'):null;
+      if(handleHit){const [vector,point,side]=handleHit.getAttribute('data-handle').split(':');selectedVector=Number(vector);selectedVectors=[selectedVector];draggingHandle={vector:Number(vector),point:Number(point),side,breakPair:!!event.altKey};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;}
+      const anchorHit=event.target.closest?event.target.closest('[data-anchor]'):null;
+      if(anchorHit){const [vector,point]=anchorHit.getAttribute('data-anchor').split(':').map(Number);selectedVector=vector;selectedVectors=[vector];draggingAnchor={vector,point,createHandles:!!(event.altKey||event.optionKey),original:{...vectorPaths[vector].points[point]}};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;}
+      const pathHit=event.target.closest?event.target.closest('[data-vector]'):null;
+      if(pathHit){const index=Number(pathHit.getAttribute('data-vector'));if(event.shiftKey){selectedVectors=selectedVectors.includes(index)?selectedVectors.filter(i=>i!==index):[...selectedVectors,index];selectedVector=index;renderVectors();return;}if(index===selectedVector&&addPointNear(index,p))return;selectedVector=index;selectedVectors=[index];renderVectors();return;}
       selectedVector=-1;selectedVectors=[];renderVectors();
     }
-    function vectorShapePoints(start,end,kind){
-      const x1=Math.min(start.x,end.x),y1=Math.min(start.y,end.y),x2=Math.max(start.x,end.x),y2=Math.max(start.y,end.y);
-      if(kind==='vectorrect')return [{x:x1,y:y1},{x:x2,y:y1},{x:x2,y:y2},{x:x1,y:y2}];
-      const cx=(x1+x2)/2,cy=(y1+y2)/2,rx=Math.max(0.5,(x2-x1)/2),ry=Math.max(0.5,(y2-y1)/2),points=[];
-      for(let i=0;i<48;i++){const angle=i*Math.PI*2/48;points.push({x:cx+Math.cos(angle)*rx,y:cy+Math.sin(angle)*ry});}
-      return points;
-    }
     function vectorMove(event) {
-      // Add each closed shape the pointer crosses during a Shape Builder drag.
-      if (shapeBuilderDragging && tool === 'shapebuilder') {
-        const element = document.elementFromPoint(event.clientX, event.clientY);
-        const pathHit = element && element.closest ? element.closest('[data-vector]') : null;
-        if (pathHit) {
-          const index = Number(pathHit.getAttribute('data-vector'));
-          if (vectorPaths[index] && vectorPaths[index].closed && !shapeBuilderVisited.has(index)) {
-            shapeBuilderVisited.add(index);
-            if (!selectedVectors.includes(index)) selectedVectors.push(index);
-            selectedVector = index;
-            renderVectors();
-            updateShapeBuilderStatus();
-          }
-        }
-        return;
-      }
-      if(vectorShapeDragging&&vectorShapeStart&&activeVector&&(tool==='vectorrect'||tool==='vectoroval')){
-        event.preventDefault();activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);renderVectors();return;
-      }
-      if (tool==='bezier' && curveDragAnchor!==null && activeVector) {
-        event.preventDefault();
-        const p=svgPoint(event), anchor=activeVector.points[curveDragAnchor];
-        if (anchor) {
-          const dx=p.x-anchor.x, dy=p.y-anchor.y;
-          anchor.out={x:p.x,y:p.y}; anchor.in={x:anchor.x-dx,y:anchor.y-dy};
-          renderVectors();
-        }
-        return;
-      }
-      if (!draggingAnchor || tool!=='editpoints') return;
-      event.preventDefault(); const p=svgPoint(event); const v=vectorPaths[draggingAnchor.vector];
-      if(v && v.points[draggingAnchor.point]){v.points[draggingAnchor.point]=p;renderVectors();}
+      if(shapeBuilderDragging&&tool==='shapebuilder'){const element=document.elementFromPoint(event.clientX,event.clientY),pathHit=element&&element.closest?element.closest('[data-vector]'):null;if(pathHit){const index=Number(pathHit.getAttribute('data-vector'));if(vectorPaths[index]&&vectorPaths[index].closed&&!shapeBuilderVisited.has(index)){shapeBuilderVisited.add(index);if(!selectedVectors.includes(index))selectedVectors.push(index);selectedVector=index;renderVectors();updateShapeBuilderStatus();}}return;}
+      if(vectorShapeDragging&&vectorShapeStart&&activeVector&&(tool==='vectorrect'||tool==='vectoroval')){event.preventDefault();activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);renderVectors();return;}
+      if(tool==='bezier'&&curveDragAnchor!==null&&activeVector){event.preventDefault();const p=svgPoint(event,null,false),anchor=activeVector.points[curveDragAnchor];if(anchor){const dx=p.x-anchor.x,dy=p.y-anchor.y;anchor.out={x:p.x,y:p.y};anchor.in={x:anchor.x-dx,y:anchor.y-dy};renderVectors();}return;}
+      if(draggingHandle&&tool==='editpoints'){event.preventDefault();const p=svgPoint(event,null,false),state=draggingHandle,v=vectorPaths[state.vector],anchor=v&&v.points[state.point];if(anchor){const dx=p.x-anchor.x,dy=p.y-anchor.y;anchor[state.side]={x:p.x,y:p.y};const other=state.side==='in'?'out':'in';if(!state.breakPair){const length=Math.hypot(dx,dy);anchor[other]=length?{x:anchor.x-dx,y:anchor.y-dy}:null;}renderVectors();}return;}
+      if(draggingAnchor&&tool==='editpoints'){event.preventDefault();const state=draggingAnchor,v=vectorPaths[state.vector],anchor=v&&v.points[state.point];if(!anchor)return;if(state.createHandles){const p=svgPoint(event,null,false),dx=p.x-state.original.x,dy=p.y-state.original.y;anchor.x=state.original.x;anchor.y=state.original.y;anchor.out={x:p.x,y:p.y};anchor.in={x:anchor.x-dx,y:anchor.y-dy};}else{const p=svgPoint(event,{vector:state.vector,point:state.point}),dx=p.x-anchor.x,dy=p.y-anchor.y;anchor.x=p.x;anchor.y=p.y;if(anchor.in)anchor.in={x:anchor.in.x+dx,y:anchor.in.y+dy};if(anchor.out)anchor.out={x:anchor.out.x+dx,y:anchor.out.y+dy};}renderVectors();}
     }
     function vectorUp(event) {
-      if (shapeBuilderDragging) {
-        if (event && vectorLayer.releasePointerCapture) {
-          try { vectorLayer.releasePointerCapture(event.pointerId); } catch (_) {}
-        }
-        shapeBuilderDragging = false;
-        shapeBuilderVisited.clear();
-        updateShapeBuilderStatus();
-        return;
-      }
-      if(vectorShapeDragging){
-        if(event&&vectorLayer.releasePointerCapture){try{vectorLayer.releasePointerCapture(event.pointerId);}catch(_){}}
-        if(event&&activeVector)activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);
-        if(activeVector){vectorPaths.push(activeVector);selectedVector=vectorPaths.length-1;selectedVectors=[selectedVector];}
-        activeVector=null;vectorShapeStart=null;vectorShapeDragging=false;renderVectors();saveSoon();return;
-      }
-      if(curveDragAnchor!==null){
-        if(event && vectorLayer.releasePointerCapture){try{vectorLayer.releasePointerCapture(event.pointerId);}catch(_){}}
-        curveDragAnchor=null;renderVectors();saveSoon();return;
-      }
-      if(!draggingAnchor)return;
-      if(event && vectorLayer.releasePointerCapture){try{vectorLayer.releasePointerCapture(event.pointerId);}catch(_){}}
-      draggingAnchor=null;saveSoon();
+      if(event&&vectorLayer.releasePointerCapture){try{vectorLayer.releasePointerCapture(event.pointerId);}catch(_){}}
+      if(shapeBuilderDragging){shapeBuilderDragging=false;shapeBuilderVisited.clear();updateShapeBuilderStatus();return;}
+      if(vectorShapeDragging){if(event&&activeVector)activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);if(activeVector){vectorPaths.push(activeVector);selectedVector=vectorPaths.length-1;selectedVectors=[selectedVector];}activeVector=null;vectorShapeStart=null;vectorShapeDragging=false;renderVectors();saveSoon();return;}
+      if(curveDragAnchor!==null){curveDragAnchor=null;renderVectors();saveSoon();return;}
+      if(draggingHandle){draggingHandle=null;renderVectors();saveSoon();return;}
+      if(draggingAnchor){draggingAnchor=null;renderVectors();saveSoon();return;}
     }
     function shape(p) {
       octx.clearRect(0,0,W(),H()); octx.save();
