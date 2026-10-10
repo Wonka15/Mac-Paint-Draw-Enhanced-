@@ -447,3 +447,10 @@
 #canvasWrap.crt-red{background:#f1cccc;filter:saturate(.78) contrast(1.06)}
 #canvasWrap.crt-yellow:before{background:linear-gradient(180deg,rgba(155,125,0,.12),rgba(105,80,0,.22)),repeating-linear-gradient(0deg,rgba(85,65,0,.16) 0 1px,transparent 1px 4px),radial-gradient(ellipse at center,rgba(255,244,160,.16),rgba(75,57,0,.25));box-shadow:inset 0 0 48px rgba(80,62,0,.3)}
 #canvasWrap.crt-yellow{background:#f2edc6;filter:saturate(.78) contrast(1.05)}
+
+
+/* Strong, reliable phosphor tint layered over the complete drawing surface. */
+#canvasWrap.crt-blue:before{background:linear-gradient(rgba(35,105,220,.28),rgba(8,45,135,.32)),repeating-linear-gradient(0deg,rgba(3,30,90,.18) 0 1px,transparent 1px 4px);mix-blend-mode:color;opacity:1}
+#canvasWrap.crt-red:before{background:linear-gradient(rgba(220,40,40,.27),rgba(120,8,8,.3)),repeating-linear-gradient(0deg,rgba(75,0,0,.16) 0 1px,transparent 1px 4px);mix-blend-mode:color;opacity:1}
+#canvasWrap.crt-green:before{background:linear-gradient(rgba(25,150,45,.28),rgba(0,75,20,.32)),repeating-linear-gradient(0deg,rgba(0,45,12,.18) 0 1px,transparent 1px 4px);mix-blend-mode:color;opacity:1}
+#canvasWrap.crt-yellow:before{background:linear-gradient(rgba(235,200,20,.3),rgba(150,115,0,.3)),repeating-linear-gradient(0deg,rgba(80,60,0,.16) 0 1px,transparent 1px 4px);mix-blend-mode:color;opacity:1}
