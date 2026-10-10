@@ -568,6 +568,19 @@
       setZoom(fit);
     });
     $('canvasFocusBtn').addEventListener('click',()=>applyCanvasFocus(!canvasFocus));
+
+    // Reversible animation-table focus: keep the canvas usable while the rest dims.
+    function setFrameStudioMode(enabled) {
+      const root = $('appRoot'), button = $('frameStudioModeBtn');
+      if (!root || !button) return;
+      root.classList.toggle('frame-studio-mode', enabled);
+      button.setAttribute('aria-pressed', String(enabled));
+      button.textContent = enabled ? '◉ Focus ON' : '◉ Studio Focus';
+      button.title = enabled ? 'Turn off animation-table spotlight and restore the full workspace' : 'Dim the workspace and spotlight the animation drawing table';
+      toast(enabled ? 'Frame Studio Focus on — lights down, animation table up' : 'Frame Studio Focus off — full workspace restored');
+    }
+    $('frameStudioModeBtn').addEventListener('click', () => setFrameStudioMode(!$('appRoot').classList.contains('frame-studio-mode')));
+    document.addEventListener('keydown', event => { if (event.key === 'Escape' && $('appRoot').classList.contains('frame-studio-mode')) setFrameStudioMode(false); });
     $('rulersBtn').addEventListener('click',()=>{
       const layout=$('rulerLayout'),hidden=layout.classList.toggle('rulers-hidden');
       setToggleButton('rulersBtn', !hidden);
