@@ -124,7 +124,8 @@
       if (tool === 'bezier') toast('Bezier: click-drag to shape handles; Enter finishes');
       if (tool === 'editpoints') toast('Edit Points: drag a blue anchor to reshape a vector');
       if (tool === 'shapebuilder') toast('Shape Builder: click or drag across closed shapes, then choose an operation');
-      if (tool === 'bucket') toast('Paint bucket: click a bounded area to fill it');
+      if (tool === 'bucket') toast('Paint bucket: fills only the connected region; patterns stay inside its boundary');
+      if (tool === 'lasso') toast('Lasso: draw around pixels, drag inside the selection to move, or use Fill selection');
     }
     function updateButtons() {
       $('undoBtn').disabled = history.length === 0;
@@ -301,14 +302,10 @@
         const idx=stack[--top],x=idx%w,y=(idx/w)|0,di=idx*4;
         const ink=solid||patternInkAt(x,y);
         data[di]=ink?rgb[0]:255;data[di+1]=ink?rgb[1]:255;data[di+2]=ink?rgb[2]:255;data[di+3]=255;
-        const neighbors=[];
-        if(x>0)neighbors.push(idx-1);
-        if(x<w-1)neighbors.push(idx+1);
-        if(y>0)neighbors.push(idx-w);
-        if(y<h-1)neighbors.push(idx+w);
-        for(const next of neighbors){
-          if(!seen[next]&&matches(next)){seen[next]=1;if(top<count)stack[top++]=next;}
-        }
+        if(x>0){const next=idx-1;if(!seen[next]&&matches(next)){seen[next]=1;stack[top++]=next;}}
+        if(x<w-1){const next=idx+1;if(!seen[next]&&matches(next)){seen[next]=1;stack[top++]=next;}}
+        if(y>0){const next=idx-w;if(!seen[next]&&matches(next)){seen[next]=1;stack[top++]=next;}}
+        if(y<h-1){const next=idx+w;if(!seen[next]&&matches(next)){seen[next]=1;stack[top++]=next;}}
       }
       ctx.putImageData(image,0,0);saveSoon();retroSound('fill');
     }
@@ -963,6 +960,7 @@
       octx.clearRect(0,0,W(),H());
       onionCtx.clearRect(0,0,W(),H());
       vectorPaths=[];activeVector=null;selectedVector=-1;selectedVectors=[];draggingAnchor=null;draggingHandle=null;curveDragAnchor=null;
+      selectionMask=null;selectionBitmap=null;selectionBase=null;selectionBounds=null;selectionMove=null;lassoPoints=[];lassoDrawing=false;sctx.clearRect(0,0,W(),H());
       vectorLayer.replaceChildren();
       renderVectors();
       // If Frame Studio is active, clear its current frame too so old vector art cannot return.
