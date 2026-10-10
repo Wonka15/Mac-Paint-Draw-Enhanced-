@@ -20,8 +20,8 @@
       </div>
       <div class="actions">
         <button class="btn secondary" id="newBtn">＋ New</button>
-        <button class="btn secondary" id="undoBtn" disabled>↶ Undo</button>
-        <button class="btn secondary" id="redoBtn" disabled>↷ Redo</button>
+        <button class="btn secondary" id="undoBtn" disabled title="Undo (⌘Z on Mac)">↶ Undo <span class="shortcut-hint">⌘Z</span></button>
+        <button class="btn secondary" id="redoBtn" disabled title="Redo (⇧⌘Z on Mac)">↷ Redo <span class="shortcut-hint">⇧⌘Z</span></button>
         <button class="btn secondary" id="exportSvgBtn">Export SVG · Vinyl</button>
         <button class="btn primary" id="exportBtn">Export PNG ↗</button>
       </div>
@@ -35,15 +35,16 @@
           <button class="tool" data-tool="eraser" aria-pressed="false"><span class="ico icon-eraser" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M3.8 14.2 11.9 5.9a2 2 0 0 1 2.8 0l5.5 5.5a2 2 0 0 1 0 2.8l-4.1 4.1H8.3z" fill="#f7b7c9" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m8.2 9.7 6.1 6.1M8.3 18.3h7.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>Eraser</button>
           <button class="tool" data-tool="bucket" aria-pressed="false"><span class="ico icon-bucket" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5.2 10.5 12 3.8l6.7 6.7-6.8 6.8z" fill="#dce6ff" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m8.2 7.7 6.7 6.7" stroke="currentColor" stroke-width="1.3"/><path d="M4.5 13.4h12.8l-1.5 6.1H6z" fill="#79a9e8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M17.4 14.8c1.4.7 2.1 1.8 2.1 3.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M20.3 7.7c0 1-.8 1.8-1.8 1.8s-1.8-.8-1.8-1.8 1.8-3.1 1.8-3.1 1.8 2.1 1.8 3.1z" fill="#438be0" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></span>Paint bucket</button>
           <button class="tool" data-tool="line"><span class="ico">／</span>Line</button>
-          <button class="tool" data-tool="rect"><span class="ico">▱</span>Rectangle</button>
+          <button class="tool" data-tool="rect"><span class="ico icon-rectangle" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3.5" y="5" width="17" height="14" rx=".5" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>Rectangle</button>
           <button class="tool" data-tool="ellipse"><span class="ico">◯</span>Oval</button>
           <button class="tool" data-tool="text"><span class="ico">T</span>Text</button>
           <button class="tool" data-tool="eyedropper"><span class="ico">◉</span>Pick color</button>
           <button class="tool" data-tool="hand"><span class="ico">✋</span>Pan / guide</button>
-          <button class="tool" data-tool="lasso" aria-pressed="false"><span class="ico">⌁</span>Lasso select</button>
-          <button class="tool" data-tool="pen"><span class="ico">⌁</span>Vector pen</button>
+          <button class="tool" data-tool="fingerpaint" aria-pressed="false" title="Fingerpaint with a soft, broad stroke on touchscreens"><span class="ico" aria-hidden="true">☝︎</span>Fingerpaint</button>
+          <button class="tool" data-tool="lasso" aria-pressed="false"><span class="ico icon-lasso" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M19.5 9.5c0-4-3.4-6.5-7.6-6.5S4 5.7 4 9.5s3.3 6.2 7.6 6.2 7.9-2.5 7.9-6.2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.2 1.4"/><path d="M15.8 13.8 20.5 20M18.3 17.4l-2.1 2.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>Lasso select</button>
+          <button class="tool" data-tool="pen"><span class="ico icon-vector-pen" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 19 10.5 4.5 15 9 5.5 20Z" fill="#f0c66e" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="m10.5 4.5 4.8 4.8M4 19l-1 2 2.5-.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 4v-2h3M3 4v3M21 20v2h-3M21 20v-3" fill="none" stroke="#426bd6" stroke-width="1.5" stroke-linecap="round"/></svg></span>Vector pen</button>
           <button class="tool" data-tool="bezier"><span class="ico">∿</span>Bezier curve</button>
-          <button class="tool" data-tool="vectorrect"><span class="ico">▱</span>Vector rect</button>
+          <button class="tool" data-tool="vectorrect"><span class="ico icon-rectangle" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3.5" y="5" width="17" height="14" rx=".5" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>Vector rect</button>
           <button class="tool" data-tool="vectoroval"><span class="ico">◯</span>Vector oval</button>
           <button class="tool" data-tool="editpoints" aria-pressed="false"><span class="ico">◇</span>Edit points</button>
           <button class="tool" data-tool="shapebuilder" aria-pressed="false"><span class="ico">⬡</span>Shape Builder</button>
@@ -120,7 +121,7 @@
           <div class="controlrow">
             <button class="btn secondary" id="guidesBtn" aria-pressed="false">Guides</button><button class="btn secondary" id="rulersBtn" aria-pressed="true">Rulers</button><button class="btn secondary" id="zoomOutBtn" aria-label="Zoom out">−</button><span class="zoom-readout" id="zoomReadout">100%</span><button class="btn secondary" id="zoomInBtn" aria-label="Zoom in">＋</button><button class="btn secondary" id="zoomFitBtn">Fit</button>
             <button class="btn secondary" id="gridBtn" aria-pressed="false">Grid</button>
-            <button class="btn secondary" id="fatBitsBtn" aria-pressed="false" title="Magnify individual pixels; hold Space and drag to pan">FatBits</button>
+            <button class="btn secondary" id="fatBitsBtn" aria-pressed="false" title="Magnify individual pixels; hold Space and drag to pan">FatBits</button><div class="fatbits-nav" role="group" aria-label="Move FatBits view"><button class="btn secondary" data-fatpan="up" aria-label="Pan FatBits up" title="Pan up">↑</button><button class="btn secondary" data-fatpan="left" aria-label="Pan FatBits left" title="Pan left">←</button><button class="btn secondary" data-fatpan="center" aria-label="Center FatBits view" title="Center view">◎</button><button class="btn secondary" data-fatpan="right" aria-label="Pan FatBits right" title="Pan right">→</button><button class="btn secondary" data-fatpan="down" aria-label="Pan FatBits down" title="Pan down">↓</button></div>
             <button class="btn secondary" id="canvasFocusBtn" aria-pressed="false" title="Give the canvas more room">Focus canvas</button>
             <button class="btn secondary clear-bomb-button" id="clearBtn" title="Clear the canvas" aria-label="Clear the canvas"><svg class="classic-bomb-icon" viewBox="0 0 32 32" aria-hidden="true" shape-rendering="crispEdges"><g fill="#111"><rect x="13" y="2" width="3" height="3"/><rect x="17" y="5" width="3" height="3"/><rect x="20" y="2" width="3" height="3"/><rect x="23" y="6" width="3" height="3"/><rect x="25" y="10" width="3" height="3"/><rect x="7" y="8" width="3" height="3"/><rect x="5" y="12" width="3" height="3"/><rect x="4" y="16" width="3" height="3"/><rect x="6" y="21" width="3" height="3"/><rect x="10" y="25" width="3" height="3"/><rect x="15" y="27" width="3" height="3"/><rect x="20" y="25" width="3" height="3"/><rect x="24" y="21" width="3" height="3"/><rect x="25" y="16" width="3" height="3"/><rect x="10" y="10" width="13" height="15"/><rect x="8" y="14" width="17" height="9"/></g><g fill="#fff"><rect x="11" y="13" width="3" height="3"/><rect x="17" y="17" width="3" height="3"/><rect x="13" y="21" width="3" height="2"/></g></svg><span>Clear</span></button>
             <details class="crt-menu" id="crtMenu">
