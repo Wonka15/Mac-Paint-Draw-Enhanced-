@@ -125,6 +125,7 @@
       renderVectors();
       status();
       updateShapeBuilderStatus();
+      if (next === 'eraser') retroSound('eraser'); else retroSound('select');
       if (tool === 'pen') toast('Vector Pen: click to add straight points; Enter finishes');
       if (tool === 'fingerpaint') toast('Fingerpaint: use your finger for soft, broad paint; Apple Pencil pressure is supported too');
       if (tool === 'bezier') toast('Bezier: click-drag to shape handles; Enter finishes');
