@@ -813,7 +813,6 @@
       if(currentFrame>=0 && frames[currentFrame]) {
         frames[currentFrame]=blankFrame();
         renderFrameStrip();
-        drawOnionSkin();
       }
       saveSoon();
       toast(message);
