@@ -353,7 +353,7 @@
       for(let y=0;y<=H();y+=100){const label=document.createElement('span');label.className='ruler-label';label.textContent=String(y);label.style.top=(y/H()*100)+'%';left.appendChild(label);}
     }
     function setZoom(next){
-      zoomLevel=Math.max(.25,Math.min(3,next));canvasWrap.style.zoom=String(zoomLevel);$('zoomReadout').textContent=Math.round(zoomLevel*100)+'%';
+      zoomLevel=Math.max(.25,Math.min(fatBitsMode?8:3,next));canvasWrap.style.zoom=String(zoomLevel);$('zoomReadout').textContent=Math.round(zoomLevel*100)+'%';
     }
     function setGuideFromRuler(event){
       const rect=canvas.getBoundingClientRect();
