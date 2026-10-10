@@ -1003,9 +1003,14 @@
     if(creatorAcknowledged)welcome.hidden=true;
     $('creatorWelcomeAck').addEventListener('click',()=>{
       try{localStorage.setItem('mpde-creator-tribute-ack','yes');}catch(_){}
-      welcome.hidden=true;
-      snapshot();drawCreatorTribute();saveSoon();
-      toast('Thank you, Bill Atkinson and Susan Kare');
+      // Let the acknowledgment gently fade away instead of vanishing instantly.
+      welcome.classList.add('is-closing');
+      setTimeout(()=>{
+        welcome.hidden=true;
+        welcome.classList.remove('is-closing');
+        snapshot();drawCreatorTribute();saveSoon();
+        toast('Thank you, Bill Atkinson and Susan Kare');
+      },1250);
     });
     setToggleButton('guidesBtn', showGuides);
     setToggleButton('gridBtn', showGrid);
