@@ -17,6 +17,8 @@
       return;
     }
 
+    // 🟩 HOW IT WORKS — State is the app's memory: selected tool, ink, and active gestures.
+    // 🟪 BEGINNER TIP — When adding a setting, define its default here and wire its UI control below.
     // APP STATE: selected tool, drawing style, and current interaction.
     let tool = 'pencil', color = '#20252b', size = 4, fill = false, selectedPattern = 'solid', textSize = 24, selectedBrush = 'round', roughPaper = false;
     let drawing = false, startPoint = null, lastPoint = null;
@@ -97,18 +99,87 @@
       }, 300);
     }
 
-    function makePattern(){
-      if(selectedPattern==='solid')return color;
-      const tile=document.createElement('canvas');tile.width=tile.height=12;
-      const t=tile.getContext('2d');t.fillStyle='#fff';t.fillRect(0,0,12,12);t.fillStyle=color;t.strokeStyle=color;
-      if(selectedPattern==='checker'){t.fillRect(0,0,6,6);t.fillRect(6,6,6,6);}
-      else if(selectedPattern==='dots'){t.beginPath();t.arc(3,3,1.5,0,Math.PI*2);t.arc(9,9,1.5,0,Math.PI*2);t.fill();}
-      else if(selectedPattern==='diagonal'){t.lineWidth=1;for(let x=-12;x<24;x+=4){t.beginPath();t.moveTo(x,0);t.lineTo(x+12,12);t.stroke();}}
-      else if(selectedPattern==='cross'){t.lineWidth=1;for(let x=-12;x<24;x+=6){t.beginPath();t.moveTo(x,0);t.lineTo(x+12,12);t.moveTo(x+12,0);t.lineTo(x,12);t.stroke();}}
-      else if(selectedPattern==='horizontal'){for(let y=0;y<12;y+=4)t.fillRect(0,y,12,1);}
-      else if(selectedPattern==='vertical'){for(let x=0;x<12;x+=4)t.fillRect(x,0,1,12);}
-      else if(selectedPattern==='brick'){t.lineWidth=1;t.strokeRect(0,0,12,6);t.beginPath();t.moveTo(6,0);t.lineTo(6,6);t.moveTo(0,6);t.lineTo(12,6);t.moveTo(3,6);t.lineTo(3,12);t.moveTo(9,6);t.lineTo(9,12);t.stroke();}
-      return ctx.createPattern(tile,'repeat');
+    // 🟩 HOW IT WORKS — Patterns are tiny repeating tiles; the browser repeats them as ink.
+    // 🟪 BEGINNER TIP — Add a new pattern here AND in patternInkAt() below so the bucket matches the brush.
+    function makePattern() {
+      if (selectedPattern === 'solid') return color;
+
+      const tile = document.createElement('canvas');
+      tile.width = tile.height = 16;
+      const patternCtx = tile.getContext('2d');
+      patternCtx.fillStyle = '#fff';
+      patternCtx.fillRect(0, 0, tile.width, tile.height);
+      patternCtx.fillStyle = color;
+      patternCtx.strokeStyle = color;
+      patternCtx.lineWidth = 1;
+
+      if (selectedPattern === 'checker') {
+        patternCtx.fillRect(0, 0, 8, 8);
+        patternCtx.fillRect(8, 8, 8, 8);
+      } else if (selectedPattern === 'fine-checker') {
+        patternCtx.fillRect(0, 0, 4, 4);
+        patternCtx.fillRect(4, 4, 4, 4);
+        patternCtx.fillRect(8, 8, 4, 4);
+        patternCtx.fillRect(12, 12, 4, 4);
+      } else if (selectedPattern === 'dots' || selectedPattern === 'stipple') {
+        const radius = selectedPattern === 'stipple' ? 0.8 : 1.5;
+        const step = selectedPattern === 'stipple' ? 4 : 8;
+        for (let y = step / 2; y < 16; y += step) {
+          for (let x = step / 2; x < 16; x += step) {
+            patternCtx.beginPath();
+            patternCtx.arc(x, y, radius, 0, Math.PI * 2);
+            patternCtx.fill();
+          }
+        }
+      } else if (selectedPattern === 'diagonal') {
+        for (let x = -16; x < 32; x += 4) {
+          patternCtx.beginPath(); patternCtx.moveTo(x, 0); patternCtx.lineTo(x + 16, 16); patternCtx.stroke();
+        }
+      } else if (selectedPattern === 'cross') {
+        for (let x = -16; x < 32; x += 6) {
+          patternCtx.beginPath();
+          patternCtx.moveTo(x, 0); patternCtx.lineTo(x + 16, 16);
+          patternCtx.moveTo(x + 16, 0); patternCtx.lineTo(x, 16);
+          patternCtx.stroke();
+        }
+      } else if (selectedPattern === 'horizontal') {
+        for (let y = 0; y < 16; y += 4) patternCtx.fillRect(0, y, 16, 1);
+      } else if (selectedPattern === 'vertical') {
+        for (let x = 0; x < 16; x += 4) patternCtx.fillRect(x, 0, 1, 16);
+      } else if (selectedPattern === 'brick') {
+        patternCtx.strokeRect(0, 0, 16, 8);
+        patternCtx.beginPath();
+        patternCtx.moveTo(8, 0); patternCtx.lineTo(8, 8);
+        patternCtx.moveTo(0, 8); patternCtx.lineTo(16, 8);
+        patternCtx.moveTo(4, 8); patternCtx.lineTo(4, 16);
+        patternCtx.moveTo(12, 8); patternCtx.lineTo(12, 16);
+        patternCtx.stroke();
+      } else if (selectedPattern === 'diamonds') {
+        patternCtx.beginPath();
+        patternCtx.moveTo(8, 0); patternCtx.lineTo(16, 8); patternCtx.lineTo(8, 16);
+        patternCtx.lineTo(0, 8); patternCtx.closePath(); patternCtx.stroke();
+      } else if (selectedPattern === 'zigzag') {
+        patternCtx.beginPath();
+        patternCtx.moveTo(0, 4); patternCtx.lineTo(4, 0); patternCtx.lineTo(8, 4);
+        patternCtx.lineTo(12, 0); patternCtx.lineTo(16, 4);
+        patternCtx.moveTo(0, 12); patternCtx.lineTo(4, 8); patternCtx.lineTo(8, 12);
+        patternCtx.lineTo(12, 8); patternCtx.lineTo(16, 12);
+        patternCtx.stroke();
+      } else if (selectedPattern === 'weave') {
+        for (let p = 0; p < 16; p += 4) {
+          patternCtx.fillRect(p, 0, 1, 16);
+          patternCtx.fillRect(0, p, 16, 1);
+        }
+        patternCtx.clearRect(4, 4, 2, 2);
+        patternCtx.clearRect(12, 12, 2, 2);
+      } else if (selectedPattern === 'speckle') {
+        // Fixed positions keep the tile stable between brush strokes.
+        [[2,3],[6,1],[12,4],[15,9],[4,12],[9,7],[11,14],[1,15]].forEach(([x,y]) => {
+          patternCtx.fillRect(x, y, 1, 1);
+        });
+      }
+
+      return ctx.createPattern(tile, 'repeat');
     }
     function drawingStyle(){return selectedPattern==='solid'?color:makePattern();}
     function retroSound(kind){
@@ -124,6 +195,26 @@
       }catch(_){}
     }
     function hexRgb(hex){return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];}
+    // 🟩 HOW IT WORKS — This mirrors makePattern() so bucket fills use the same texture family.
+    function patternInkAt(x, y) {
+      switch (selectedPattern) {
+        case 'checker': return (Math.floor(x / 8) + Math.floor(y / 8)) % 2 === 0;
+        case 'fine-checker': return (Math.floor(x / 4) + Math.floor(y / 4)) % 2 === 0;
+        case 'dots': return x % 8 < 3 && y % 8 < 3;
+        case 'stipple': return x % 4 === 1 && y % 4 === 1;
+        case 'horizontal': return y % 4 === 0;
+        case 'vertical': return x % 4 === 0;
+        case 'diagonal': return (x + y) % 4 === 0;
+        case 'cross': return (x + y) % 6 === 0 || ((x - y + 1200) % 6 === 0);
+        case 'diamonds': return Math.abs((x % 16) - 8) + Math.abs((y % 16) - 8) <= 1;
+        case 'zigzag': return (y % 8 < 4 ? (x + y) % 8 === 0 : (x - y + 1600) % 8 === 0);
+        case 'weave': return x % 4 === 0 || y % 4 === 0;
+        case 'speckle': return ((x * 13 + y * 7) % 29) < 2;
+        case 'brick': return x % 16 === 0 || y % 8 === 0 || ((Math.floor(y / 8) % 2 === 0 ? x : x + 8) % 16 === 0);
+        default: return true;
+      }
+    }
+
     function floodFill(seedX,seedY){
       const w=W(),h=H(),image=ctx.getImageData(0,0,w,h),data=image.data,original=new Uint8ClampedArray(data);
       const sx=Math.max(0,Math.min(w-1,Math.floor(seedX))),sy=Math.max(0,Math.min(h-1,Math.floor(seedY))),seed=(sy*w+sx)*4;
@@ -135,15 +226,7 @@
         const idx=stack[--top],px=idx%w,py=(idx/w)|0,di=idx*4;
         if(Math.abs(original[di]-target[0])>tol||Math.abs(original[di+1]-target[1])>tol||Math.abs(original[di+2]-target[2])>tol||Math.abs(original[di+3]-target[3])>tol)continue;
         let ink=true;
-        if(!solid){
-          if(selectedPattern==='checker')ink=(Math.floor(px/6)+Math.floor(py/6))%2===0;
-          else if(selectedPattern==='dots')ink=px%8<2&&py%8<2;
-          else if(selectedPattern==='horizontal')ink=py%4===0;
-          else if(selectedPattern==='vertical')ink=px%4===0;
-          else if(selectedPattern==='diagonal')ink=(px+py)%5===0;
-          else if(selectedPattern==='cross')ink=(px+py)%6===0||(px-py+1200)%6===0;
-          else ink=px%12<1||py%6<1||((Math.floor(py/6)%2===0?px%12:px+6)%12<1);
-        }
+        if (!solid) ink = patternInkAt(px, py);
         data[di]=ink?rgb[0]:255;data[di+1]=ink?rgb[1]:255;data[di+2]=ink?rgb[2]:255;data[di+3]=255;
         const neighbors=[px>0?idx-1:-1,px<w-1?idx+1:-1,py>0?idx-w:-1,py<h-1?idx+w:-1];
         for(const n of neighbors)if(n>=0&&!seen[n]){seen[n]=1;if(top<count)stack[top++]=n;}
@@ -183,15 +266,48 @@
       for(let i=0;i<=steps;i++){const t=i/steps;brushStamp(from.x+dx*t,from.y+dy*t,angle,erase);}
     }
 
+    // 🟩 HOW IT WORKS — Both raster and vector tools use the same snapping rules.
+    // Snap only to visible guides/grid, so hidden helpers never pull artwork unexpectedly.
+    function snapPoint(x, y) {
+      if (!$('snapCheck').checked) return { x, y };
+      const tolerance = 14;
+
+      if (showGuides) {
+        if (guideX !== null && Math.abs(x - guideX) <= tolerance) x = guideX;
+        if (guideY !== null && Math.abs(y - guideY) <= tolerance) y = guideY;
+      }
+
+      // 🟪 BEGINNER TIP — Turn on Grid to get gentle 50-pixel alignment; you do not need to place guides.
+      if (showGrid) {
+        const gridSize = 50;
+        const gridX = Math.round(x / gridSize) * gridSize;
+        const gridY = Math.round(y / gridSize) * gridSize;
+        if (Math.abs(x - gridX) <= 9) x = gridX;
+        if (Math.abs(y - gridY) <= 9) y = gridY;
+      }
+
+      // Vector anchors act like Illustrator smart guides when working with vector tools.
+      if (tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'editpoints') {
+        let nearest = null;
+        for (const vector of vectorPaths) {
+          for (const anchor of vector.points) {
+            const distance = Math.hypot(anchor.x - x, anchor.y - y);
+            if (distance <= tolerance && (!nearest || distance < nearest.distance)) {
+              nearest = { x: anchor.x, y: anchor.y, distance };
+            }
+          }
+        }
+        if (nearest) { x = nearest.x; y = nearest.y; }
+      }
+      return { x, y };
+    }
+
     function point(event) {
       const rect = canvas.getBoundingClientRect();
       let x = (event.clientX - rect.left) * W() / rect.width;
       let y = (event.clientY - rect.top) * H() / rect.height;
-      if ($('snapCheck').checked) {
-        if (guideX !== null && Math.abs(x - guideX) < 14) x = guideX;
-        if (guideY !== null && Math.abs(y - guideY) < 14) y = guideY;
-      }
-      return {x:Math.max(0,Math.min(W()-1,x)), y:Math.max(0,Math.min(H()-1,y))};
+      ({ x, y } = snapPoint(x, y));
+      return { x: Math.max(0, Math.min(W() - 1, x)), y: Math.max(0, Math.min(H() - 1, y)) };
     }
     function drawGuides() {
       gctx.clearRect(0,0,W(),H());
@@ -212,12 +328,15 @@
       rulers.style.display='none';
       renderRulerLabels();
     }
+    // 🟩 HOW IT WORKS — Raster pixels live on #paper; editable vector shapes live in the SVG layer.
+    // 🟪 BEGINNER TIP — Keep vector edits in vectorPaths so users can still move anchors later.
     // VECTOR ENGINE: SVG paths are stored separately from the pixel paint canvas.
     function svgPoint(event) {
-      const r = vectorLayer.getBoundingClientRect();
-      let x=(event.clientX-r.left)*W()/r.width, y=(event.clientY-r.top)*H()/r.height;
-      if($('snapCheck').checked){if(guideX!==null&&Math.abs(x-guideX)<14)x=guideX;if(guideY!==null&&Math.abs(y-guideY)<14)y=guideY;}
-      return {x:Math.max(0,Math.min(W(),x)),y:Math.max(0,Math.min(H(),y))};
+      const rect = vectorLayer.getBoundingClientRect();
+      let x = (event.clientX - rect.left) * W() / rect.width;
+      let y = (event.clientY - rect.top) * H() / rect.height;
+      ({ x, y } = snapPoint(x, y));
+      return { x: Math.max(0, Math.min(W(), x)), y: Math.max(0, Math.min(H(), y)) };
     }
 
     // RULERS + ZOOM: ruler coordinates always map to the original 1200 × 800 artboard.
@@ -286,6 +405,8 @@
     }
     document.querySelectorAll('[data-boolean]').forEach(button=>button.addEventListener('click',()=>runBoolean(button.dataset.boolean)));
 
+    // 🟩 HOW IT WORKS — Shape Builder currently combines whole closed shapes, not individual overlap regions.
+    // 🟪 BEGINNER TIP — Select two or more closed shapes, then choose an operation; Unite is the safest first test.
     // SHAPE BUILDER: combine any number of selected closed vector shapes.
     // The first selected shape is the base when Subtract is chosen.
     function updateShapeBuilderStatus() {
@@ -616,12 +737,12 @@
     $('colorInput').addEventListener('input',e=>color=e.target.value);
     $('sizeInput').addEventListener('input',e=>{size=Number(e.target.value);$('sizeValue').textContent=size+'px';});
     $('textSizeInput').addEventListener('input',e=>{textSize=Number(e.target.value);$('textSizeValue').textContent=textSize+'px';});
-    document.querySelectorAll('.pattern-swatch').forEach(b=>b.addEventListener('click',()=>{selectedPattern=b.dataset.pattern;document.querySelectorAll('.pattern-swatch').forEach(s=>s.classList.toggle('active',s===b));toast('Pattern: '+(selectedPattern==='solid'?'Solid ink':selectedPattern));}));
+    document.querySelectorAll('.pattern-swatch').forEach(button => button.addEventListener('click', () => { selectedPattern = button.dataset.pattern; document.querySelectorAll('.pattern-swatch').forEach(swatch => { const active = swatch === button; swatch.classList.toggle('active', active); swatch.setAttribute('aria-pressed', String(active)); }); toast('Pattern: ' + (selectedPattern === 'solid' ? 'Solid ink' : button.title || selectedPattern)); saveSoon(); }));
     document.addEventListener('pointermove',()=>{if(drawing){const now=performance.now();if(now-lastDragSound>90){lastDragSound=now;retroSound('tick');}}});
     document.querySelectorAll('.brush-option').forEach(b=>b.addEventListener('click',()=>{selectedBrush=b.dataset.brush;document.querySelectorAll('.brush-option').forEach(x=>x.classList.toggle('active',x===b));toast('Brush: '+b.dataset.brush);}));
     $('roughPaperToggle').addEventListener('change',e=>{roughPaper=e.target.checked;canvasWrap.classList.toggle('rough-paper',roughPaper);saveSoon();toast(roughPaper?'Rough paper texture on':'Rough paper texture off');});
     $('fillToggle').addEventListener('change',e=>{fill=e.target.checked;saveSoon();toast(fill?'Shape fill on':'Shape fill off');});
-    $('snapCheck').addEventListener('change',e=>toast(e.target.checked?'Snap to guides on':'Snap to guides off'));
+    $('snapCheck').addEventListener('change', e => toast(e.target.checked ? 'Smart snapping on: visible guides, grid, and vector anchors' : 'Smart snapping off'));
     // Snap-to-guides is a native checkbox; drawing reads its checked state.
     $('guidesBtn').addEventListener('click',()=>{showGuides=!showGuides;if(showGuides&&guideX===null){guideX=Math.round(W()/2);guideY=Math.round(H()/2);}setToggleButton('guidesBtn',showGuides);drawGuides();saveSoon();toast(showGuides?'Guides on':'Guides off');});
     $('gridBtn').addEventListener('click',()=>{showGrid=!showGrid;setToggleButton('gridBtn',showGrid);drawGuides();saveSoon();toast(showGrid?'Grid on':'Grid off');});
@@ -630,6 +751,8 @@
     $('undoBtn').addEventListener('click',()=>{if(!history.length)return;redoStack.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(history.pop(),0,0);updateButtons();saveSoon();toast('Undid action');});
     $('redoBtn').addEventListener('click',()=>{if(!redoStack.length)return;history.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(redoStack.pop(),0,0);updateButtons();saveSoon();toast('Redid action');});
 
+    // 🟩 HOW IT WORKS — Frame Studio composites the pixel canvas and SVG artwork for previews/exports.
+    // 🟪 BEGINNER TIP — Keep frame changes separate from ordinary paint tools to avoid breaking undo behavior.
     // FRAME STUDIO: compose raster and SVG layers for thumbnails, onion skin, and GIFs.
     function compositeDataURL(){
       return new Promise(resolve=>{
