@@ -784,8 +784,14 @@
     // Snap-to-guides is a native checkbox; drawing reads its checked state.
     $('guidesBtn').addEventListener('click',()=>{showGuides=!showGuides;if(showGuides&&guideX===null){guideX=Math.round(W()/2);guideY=Math.round(H()/2);}setToggleButton('guidesBtn',showGuides);drawGuides();saveSoon();toast(showGuides?'Guides on':'Guides off');});
     $('gridBtn').addEventListener('click',()=>{showGrid=!showGrid;setToggleButton('gridBtn',showGrid);drawGuides();saveSoon();toast(showGrid?'Grid on':'Grid off');});
-    $('clearBtn').addEventListener('click',()=>{if(!confirm('Clear the whole canvas?'))return;snapshot();ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());saveSoon();toast('Canvas cleared');});
-    $('newBtn').addEventListener('click',()=>{if(!confirm('Start a new drawing?'))return;snapshot();ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());saveSoon();toast('New drawing');});
+    function clearAllArtwork(message) {
+      snapshot();
+      ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());
+      vectorPaths=[];activeVector=null;selectedVector=-1;selectedVectors=[];
+      renderVectors();saveSoon();toast(message);
+    }
+    $('clearBtn').addEventListener('click',()=>{if(!confirm('Clear the whole canvas, including vector paths?'))return;clearAllArtwork('Canvas cleared');});
+    $('newBtn').addEventListener('click',()=>{if(!confirm('Start a new drawing?'))return;clearAllArtwork('New drawing');});
     $('undoBtn').addEventListener('click',()=>{if(!history.length)return;redoStack.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(history.pop(),0,0);updateButtons();saveSoon();toast('Undid action');});
     $('redoBtn').addEventListener('click',()=>{if(!redoStack.length)return;history.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(redoStack.pop(),0,0);updateButtons();saveSoon();toast('Redid action');});
 
@@ -949,7 +955,7 @@
     $('creatorWelcomeAck').addEventListener('click',()=>{
       try{localStorage.setItem('mpde-creator-tribute-ack','yes');}catch(_){}
       welcome.hidden=true;
-      drawCreatorTribute();snapshot();saveSoon();
+      snapshot();drawCreatorTribute();saveSoon();
       toast('Thank you, Bill Atkinson and Susan Kare');
     });
     setToggleButton('guidesBtn', showGuides);
