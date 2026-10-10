@@ -77,6 +77,12 @@
           <button class="pattern-swatch pattern-horizontal" data-pattern="horizontal" aria-label="Horizontal lines" title="Horizontal lines"></button>
           <button class="pattern-swatch pattern-vertical" data-pattern="vertical" aria-label="Vertical lines" title="Vertical lines"></button>
           <button class="pattern-swatch pattern-brick" data-pattern="brick" aria-label="Brick" title="Brick"></button>
+          <button class="pattern-swatch pattern-fine-checker" data-pattern="fine-checker" aria-label="Fine checker" title="Fine checker"></button>
+          <button class="pattern-swatch pattern-stipple" data-pattern="stipple" aria-label="Stipple" title="Stipple"></button>
+          <button class="pattern-swatch pattern-diamonds" data-pattern="diamonds" aria-label="Diamonds" title="Diamonds"></button>
+          <button class="pattern-swatch pattern-zigzag" data-pattern="zigzag" aria-label="Zigzag" title="Zigzag"></button>
+          <button class="pattern-swatch pattern-weave" data-pattern="weave" aria-label="Woven crosshatch" title="Woven crosshatch"></button>
+          <button class="pattern-swatch pattern-speckle" data-pattern="speckle" aria-label="Speckle" title="Speckle"></button>
         </div>
         <label class="check"><input type="checkbox" id="soundToggle" checked> Retro drawing sounds</label>
       </aside>
@@ -134,10 +140,11 @@
         </div>
         <label class="check"><input type="checkbox" id="roughPaperToggle"> Rough paper texture</label>
         <label class="check"><input type="checkbox" id="fillToggle"> Fill shapes</label>
-        <label class="check"><input type="checkbox" id="snapCheck"> Snap to guides</label>
+        <label class="check"><input type="checkbox" id="snapCheck"> Smart snapping</label>
+        <p class="snap-help">When enabled, points gently snap to visible guides, the 50 px grid, and nearby vector anchors. Turn on Guides or Grid first.</p>
         <div class="separator"></div>
         <h2>Shape Builder</h2>
-        <p class="shape-builder-help">Choose Shape Builder, then click or drag across closed vector shapes to select them. Select at least two shapes, then choose an operation.</p>
+        <p class="shape-builder-help"><strong>Quick workflow</strong><br>1. Make overlapping closed vector shapes.<br>2. Choose Shape Builder and click/Shift-click shapes to select them.<br>3. Choose Unite, Subtract, Keep overlap, or Remove overlap.<br><em>Note: this version combines whole shapes; it does not yet select individual overlap regions like Illustrator.</em></p>
         <div class="shape-builder-status" id="shapeBuilderStatus" role="status" aria-live="polite">0 shapes selected</div>
         <div class="shape-builder-grid">
           <button class="btn secondary" id="shapeBuilderUniteBtn">Build / Unite</button>
