@@ -244,18 +244,11 @@
     }
 
     function drawingStyle(){return selectedPattern==='solid'?color:makePattern();}
-    function retroSound(kind){
-      if(!$('soundToggle')||!$('soundToggle').checked)return;
-      try{
-        const AudioCtor=window.AudioContext||window.webkitAudioContext;if(!AudioCtor)return;
-        if(!audioContext)audioContext=new AudioCtor();if(audioContext.state==='suspended')audioContext.resume();
-        const now=audioContext.currentTime,osc=audioContext.createOscillator(),gain=audioContext.createGain();
-        osc.type='square';osc.frequency.setValueAtTime(kind==='start'?660:kind==='fill'?520:kind==='end'?440:740,now);
-        osc.frequency.exponentialRampToValueAtTime(kind==='end'?330:kind==='fill'?390:560,now+0.045);
-        gain.gain.setValueAtTime(0.0001,now);gain.gain.exponentialRampToValueAtTime(0.025,now+0.004);gain.gain.exponentialRampToValueAtTime(0.0001,now+0.055);
-        osc.connect(gain);gain.connect(audioContext.destination);osc.start(now);osc.stop(now+0.06);
-      }catch(_){}
-    }
+    // Locally synthesized 80s-style UI sound kit; no external audio downloads.
+    function retroSound(kind){if(!$('soundToggle')||!$('soundToggle').checked)return;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;if(!audioContext)audioContext=new A();if(audioContext.state==='suspended')audioContext.resume();const now=audioContext.currentTime;
+    const tone=(type,a,b,d,v,delay=0)=>{const o=audioContext.createOscillator(),g=audioContext.createGain(),t=now+delay;o.type=type;o.frequency.setValueAtTime(Math.max(1,a),t);o.frequency.exponentialRampToValueAtTime(Math.max(1,b),t+d);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(audioContext.destination);o.start(t);o.stop(t+d+.01);};
+    const noise=(d,v)=>{const n=Math.floor(audioContext.sampleRate*d),b=audioContext.createBuffer(1,n,audioContext.sampleRate),a=b.getChannelData(0);for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*(1-i/n);const s=audioContext.createBufferSource(),f=audioContext.createBiquadFilter(),g=audioContext.createGain();s.buffer=b;f.type='lowpass';f.frequency.value=850;g.gain.setValueAtTime(v,now);g.gain.exponentialRampToValueAtTime(.0001,now+d);s.connect(f);f.connect(g);g.connect(audioContext.destination);s.start(now);};
+    switch(kind){case'color':tone('sine',390,980,.095,.035);tone('triangle',780,540,.07,.018,.025);break;case'eraser':noise(.075,.035);tone('triangle',240,105,.105,.018);break;case'bomb':tone('sawtooth',125,38,.32,.075);noise(.25,.07);tone('square',420,65,.16,.025,.025);break;case'shape':tone('triangle',420,640,.075,.025);tone('sine',650,920,.07,.018,.055);break;case'select':tone('square',740,990,.035,.018);tone('square',990,740,.04,.014,.04);break;case'fill':tone('triangle',520,390,.11,.025);break;case'start':tone('square',660,560,.045,.018);break;case'end':tone('triangle',440,330,.055,.014);break;case'tick':tone('square',740,560,.022,.009);break;default:tone('square',740,560,.05,.016);}}catch(_){}}
     function hexRgb(hex){return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];}
     // 🟩 HOW IT WORKS — This mirrors makePattern() so bucket fills use the same texture family.
     // 🟩 HOW IT WORKS — The bucket uses the same pattern families as the brush and shape fills.
@@ -464,6 +457,9 @@
     }
 
     // RULERS + ZOOM: ruler coordinates always map to the original 1200 × 800 artboard.
+    let smartRulerLastPoint=null;
+    function updateSmartRulers(event){const r=$('canvasWrap').getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom){$('rulerTop').classList.remove('cursor-visible');$('rulerLeft').classList.remove('cursor-visible');smartRulerLastPoint=null;return;}const x=Math.max(0,Math.min(W(),(event.clientX-r.left)*W()/r.width)),y=Math.max(0,Math.min(H(),(event.clientY-r.top)*H()/r.height));$('rulerTop').style.setProperty('--cursor-x',(x/W()*100)+'%');$('rulerLeft').style.setProperty('--cursor-y',(y/H()*100)+'%');$('rulerTop').classList.add('cursor-visible');$('rulerLeft').classList.add('cursor-visible');const dx=smartRulerLastPoint?x-smartRulerLastPoint.x:0,dy=smartRulerLastPoint?y-smartRulerLastPoint.y:0;$('coordStatus').textContent='X '+Math.round(x)+' · Y '+Math.round(y)+' px'+(smartRulerLastPoint?'  |  Δ '+Math.round(Math.hypot(dx,dy))+' px · '+Math.round(Math.atan2(dy,dx)*180/Math.PI)+'°':'');smartRulerLastPoint={x,y};}
+    document.addEventListener('pointermove',updateSmartRulers,{passive:true});
     function renderRulerLabels(){
       const top=$('rulerTop'),left=$('rulerLeft');if(!top||!left)return;
       top.innerHTML='';left.innerHTML='';
@@ -626,6 +622,8 @@
     // 🟪 BEGINNER TIP — Select two or more closed shapes, then choose an operation; Unite is the safest first test.
     // SHAPE BUILDER: combine any number of selected closed vector shapes.
     // The first selected shape is the base when Subtract is chosen.
+    function updateShapeInspector(){const v=vectorPaths[selectedVector],card=$('shapeInspectorCard');if(!card)return;card.classList.toggle('has-selection',!!v);$('shapeInspectorStatus').textContent=v?'Selected shape '+(selectedVector+1)+' of '+vectorPaths.length:'No shape selected — choose Edit Points and click a shape';if(v){$('shapeStrokeColor').value=v.strokeColor||v.color||color;$('shapeStrokeWidth').value=v.strokeWidth||v.size||size;$('shapeStrokeWidthValue').textContent=(v.strokeWidth||v.size||size)+' px';}$('bringShapeFrontBtn').disabled=!v||selectedVector===vectorPaths.length-1;$('sendShapeBackBtn').disabled=!v||selectedVector===0;}
+    function moveSelectedShape(front){if(selectedVector<0||!vectorPaths[selectedVector]){toast('Select a vector shape with Edit Points first');return;}const item=vectorPaths.splice(selectedVector,1)[0],to=front?vectorPaths.length:0;vectorPaths.splice(to,0,item);selectedVector=to;selectedVectors=[to];renderVectors();updateShapeInspector();saveSoon();retroSound('select');toast(front?'Shape brought to front':'Shape sent to back');}
     function updateShapeBuilderStatus() {
       const count = selectedVectors.filter(index => index >= 0 && index < vectorPaths.length && vectorPaths[index].closed).length;
       const status = $('shapeBuilderStatus');
@@ -752,7 +750,7 @@
       if(activeVector)all.push({v:activeVector,i:-1});
       const svgEl=(tag,attrs,className)=>{const node=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>node.setAttribute(k,String(v)));if(className)node.setAttribute('class',className);return node;};
       all.forEach(({v,i})=>{
-        const path=svgEl('path',{d:pathData(v.points,v.closed),fill:v.closed&&v.fill?v.color:'none','fill-opacity':v.closed&&v.fill?'0.35':'1',stroke:v.color,'stroke-width':v.size,'data-vector':i},'vector-path');
+        const path=svgEl('path',{d:pathData(v.points,v.closed),fill:v.closed&&v.fill?v.color:'none','fill-opacity':v.closed&&v.fill?'0.35':'1',stroke:v.strokeColor||v.color,'stroke-width':v.strokeWidth||v.size,'data-vector':i},'vector-path');
         path.setAttribute('pointer-events',v.closed?'visibleFill':'visiblePainted');
         if((tool==='editpoints'||tool==='shapebuilder')&&(i===selectedVector||selectedVectors.includes(i))){path.setAttribute('stroke-dasharray','5 4');path.setAttribute('stroke','#315cdb');}
         vectorLayer.appendChild(path);
@@ -819,23 +817,23 @@
         if(shapeBuilderDragging&&vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}
         renderVectors();updateShapeBuilderStatus();return;
       }
-      if(tool==='vectorrect'||tool==='vectoroval'){vectorShapeStart=p;vectorShapeDragging=true;activeVector={points:vectorShapePoints(p,p,tool),color,size,fill,closed:true,curve:true};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;}
+      if(tool==='vectorrect'||tool==='vectoroval'){vectorShapeStart=p;vectorShapeDragging=true;activeVector={points:vectorShapePoints(p,p,tool),color,size,strokeColor:color,strokeWidth:size,fill,closed:true,curve:true};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;}
       if(tool==='bezier'){
         if(activeVector&&activeVector.points.length>=3&&Math.hypot(p.x-activeVector.points[0].x,p.y-activeVector.points[0].y)<16){finishVector(true);return;}
-        if(!activeVector)activeVector={points:[],color,size,fill,closed:false,curve:true};
+        if(!activeVector)activeVector={points:[],color,size,strokeColor:color,strokeWidth:size,fill,closed:false,curve:true};
         activeVector.points.push({x:p.x,y:p.y,in:null,out:null});curveDragAnchor=activeVector.points.length-1;
         if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;
       }
       if(tool==='pen'){
         if(activeVector&&activeVector.points.length>=3&&Math.hypot(p.x-activeVector.points[0].x,p.y-activeVector.points[0].y)<16){finishVector(true);return;}
-        if(!activeVector)activeVector={points:[],color,size,fill,closed:false};activeVector.points.push({x:p.x,y:p.y});renderVectors();return;
+        if(!activeVector)activeVector={points:[],color,size,strokeColor:color,strokeWidth:size,fill,closed:false};activeVector.points.push({x:p.x,y:p.y});renderVectors();return;
       }
       const handleHit=event.target.closest?event.target.closest('[data-handle]'):null;
       if(handleHit){const [vector,point,side]=handleHit.getAttribute('data-handle').split(':');selectedVector=Number(vector);selectedVectors=[selectedVector];draggingHandle={vector:Number(vector),point:Number(point),side,breakPair:!!event.altKey};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;}
       const anchorHit=event.target.closest?event.target.closest('[data-anchor]'):null;
       if(anchorHit){const [vector,point]=anchorHit.getAttribute('data-anchor').split(':').map(Number);selectedVector=vector;selectedVectors=[vector];draggingAnchor={vector,point,createHandles:!!(event.altKey||event.optionKey),original:{...vectorPaths[vector].points[point]}};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;}
       const pathHit=event.target.closest?event.target.closest('[data-vector]'):null;
-      if(pathHit){const index=Number(pathHit.getAttribute('data-vector'));if(event.shiftKey){selectedVectors=selectedVectors.includes(index)?selectedVectors.filter(i=>i!==index):[...selectedVectors,index];selectedVector=index;renderVectors();return;}if(index===selectedVector&&addPointNear(index,p))return;selectedVector=index;selectedVectors=[index];renderVectors();return;}
+      if(pathHit){const index=Number(pathHit.getAttribute('data-vector'));if(event.shiftKey){selectedVectors=selectedVectors.includes(index)?selectedVectors.filter(i=>i!==index):[...selectedVectors,index];selectedVector=index;renderVectors();updateShapeInspector();return;}if(index===selectedVector&&addPointNear(index,p))return;selectedVector=index;selectedVectors=[index];renderVectors();updateShapeInspector();retroSound('select');return;}
       selectedVector=-1;selectedVectors=[];renderVectors();
     }
     function vectorMove(event) {
@@ -850,7 +848,7 @@
       if(event&&vectorLayer.releasePointerCapture){try{vectorLayer.releasePointerCapture(event.pointerId);}catch(_){}}
       if(draggingText){draggingText=null;saveSoon();return;}
       if(shapeBuilderDragging){shapeBuilderDragging=false;shapeBuilderVisited.clear();updateShapeBuilderStatus();return;}
-      if(vectorShapeDragging){if(event&&activeVector)activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);if(activeVector){vectorPaths.push(activeVector);selectedVector=vectorPaths.length-1;selectedVectors=[selectedVector];}activeVector=null;vectorShapeStart=null;vectorShapeDragging=false;renderVectors();saveSoon();return;}
+      if(vectorShapeDragging){if(event&&activeVector)activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);if(activeVector){vectorPaths.push(activeVector);selectedVector=vectorPaths.length-1;selectedVectors=[selectedVector];}activeVector=null;vectorShapeStart=null;vectorShapeDragging=false;renderVectors();updateShapeInspector();saveSoon();retroSound('shape');return;}
       if(curveDragAnchor!==null){curveDragAnchor=null;renderVectors();saveSoon();return;}
       if(draggingHandle){draggingHandle=null;renderVectors();saveSoon();return;}
       if(draggingAnchor){draggingAnchor=null;renderVectors();saveSoon();return;}
@@ -1048,9 +1046,12 @@
       }else if(!typing&&event.ctrlKey&&event.key.toLowerCase()==='y'){event.preventDefault();$('redoBtn').click();}
     });
     document.addEventListener('keyup',event=>{if(event.key===' ')spaceHeld=false;});
-    document.querySelectorAll('.swatch').forEach(b=>b.addEventListener('click',()=>{color=b.dataset.color;$('colorInput').value=color;updateColorIndicator();toast('Color selected: '+color.toUpperCase());}));
-    $('colorInput').addEventListener('input',e=>{color=e.target.value;updateColorIndicator();});
+    document.querySelectorAll('.swatch').forEach(b=>b.addEventListener('click',()=>{color=b.dataset.color;$('colorInput').value=color;updateColorIndicator();retroSound('color');toast('Color selected: '+color.toUpperCase());}));
+    $('colorInput').addEventListener('input',e=>{color=e.target.value;updateColorIndicator();retroSound('color');});
     $('sizeInput').addEventListener('input',e=>{size=Number(e.target.value);$('sizeValue').textContent=size+'px';});
+    $('shapeStrokeColor').addEventListener('input',e=>{const v=vectorPaths[selectedVector];if(!v)return;v.strokeColor=e.target.value;renderVectors();saveSoon();retroSound('color');});
+    $('shapeStrokeWidth').addEventListener('input',e=>{const v=vectorPaths[selectedVector];$('shapeStrokeWidthValue').textContent=e.target.value+' px';if(!v)return;v.strokeWidth=Number(e.target.value);renderVectors();saveSoon();});
+    $('bringShapeFrontBtn').addEventListener('click',()=>moveSelectedShape(true));$('sendShapeBackBtn').addEventListener('click',()=>moveSelectedShape(false));
     $('textSizeInput').addEventListener('input',e=>{textSize=Number(e.target.value);$('textSizeValue').textContent=textSize+'px';});
     renderPatternPreviews();
     document.querySelectorAll('.pattern-swatch').forEach(button => button.addEventListener('click', () => { selectedPattern = button.dataset.pattern; document.querySelectorAll('.pattern-swatch').forEach(swatch => { const active = swatch === button; swatch.classList.toggle('active', active); swatch.setAttribute('aria-pressed', String(active)); }); toast('Pattern: ' + (selectedPattern === 'solid' ? 'Solid ink' : button.title || selectedPattern)); saveSoon(); }));
@@ -1142,7 +1143,7 @@
       saveSoon();
       toast(message);
     }
-    $('clearBtn').addEventListener('click',()=>{if(!confirm('Clear the whole canvas, including vector paths?'))return;clearAllArtwork('Canvas cleared');});
+    $('clearBtn').addEventListener('click',()=>{if(!confirm('Clear the whole canvas, including vector paths?'))return;retroSound('bomb');clearAllArtwork('Canvas cleared');});
     $('newBtn').addEventListener('click',()=>{if(!confirm('Start a new drawing?'))return;clearAllArtwork('New drawing');});
     $('undoBtn').addEventListener('click',()=>{if(!history.length)return;redoStack.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(history.pop(),0,0);updateButtons();saveSoon();toast('Undid action');});
     $('redoBtn').addEventListener('click',()=>{if(!redoStack.length)return;history.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(redoStack.pop(),0,0);updateButtons();saveSoon();toast('Redid action');});

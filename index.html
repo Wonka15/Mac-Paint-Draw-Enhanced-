@@ -192,10 +192,7 @@
           <label for="colorInput">Ink color</label>
           <input type="color" id="colorInput" value="#20252b">
           <div class="color-status" id="colorStatus" aria-live="polite"><span class="color-chip" id="colorChip"></span><span>Selected: <strong id="colorHex">#20252B</strong></span></div>
-        </div>
-
-        <div class="field">
-          <label for="sizeInput">Brush size</label>
+        </div><div class="shape-inspector-card" id="shapeInspectorCard"><h3>Selected shape</h3><p>Select a vector shape with <strong>Edit Points</strong> to adjust its outline and stacking order.</p><label for="shapeStrokeColor">Line color</label><input type="color" id="shapeStrokeColor" value="#20252b"><label for="shapeStrokeWidth">Line thickness</label><input type="range" id="shapeStrokeWidth" min="1" max="50" value="4"><div class="status"><strong id="shapeStrokeWidthValue">4 px</strong></div><div class="shape-order-buttons"><button class="btn secondary" id="sendShapeBackBtn" type="button" disabled>⇩ Send backward</button><button class="btn secondary" id="bringShapeFrontBtn" type="button" disabled>⇧ Bring to front</button></div><div id="shapeInspectorStatus" role="status">No shape selected</div></div><div class="field"><label for="sizeInput">Brush size</label>
           <input type="range" id="sizeInput" min="1" max="50" value="4">
           <div class="status"><strong id="sizeValue">4px</strong></div>
         </div>
