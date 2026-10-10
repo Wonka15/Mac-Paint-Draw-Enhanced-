@@ -105,7 +105,9 @@
 <button class="pattern-swatch" data-pattern="herringbone" aria-label="Herringbone" title="Herringbone" aria-pressed="false"><span>Herringbone</span></button>
 <button class="pattern-swatch" data-pattern="basket" aria-label="Basket weave" title="Basket weave" aria-pressed="false"><span>Basket weave</span></button>
 <button class="pattern-swatch" data-pattern="plus" aria-label="Plus signs" title="Plus signs" aria-pressed="false"><span>Plus signs</span></button>
-<button class="pattern-swatch" data-pattern="confetti" aria-label="Confetti" title="Confetti" aria-pressed="false"><span>Confetti</span></button></div></section>
+<button class="pattern-swatch" data-pattern="confetti" aria-label="Confetti" title="Confetti" aria-pressed="false"><span>Confetti</span></button>
+<button class="pattern-swatch" data-pattern="steve-icon" aria-label="Steve Jobs pixel portrait" title="Steve Jobs pixel portrait" aria-pressed="false"><span>Steve Jobs</span></button>
+<button class="pattern-swatch" data-pattern="happy-mac" aria-label="Happy Mac computer" title="Happy Mac computer" aria-pressed="false"><span>Happy Mac</span></button></div></section>
         </div>
         <label class="check"><input type="checkbox" id="soundToggle" checked> Retro drawing sounds</label>
       </aside>
@@ -118,7 +120,7 @@
             <button class="btn secondary" id="gridBtn" aria-pressed="false">Grid</button>
             <button class="btn secondary" id="fatBitsBtn" aria-pressed="false" title="Magnify the canvas to edit individual pixels">FatBits</button>
             <button class="btn secondary" id="canvasFocusBtn" aria-pressed="false" title="Give the canvas more room">Focus canvas</button>
-            <button class="btn secondary" id="clearBtn">Clear</button>
+            <button class="btn secondary clear-bomb-button" id="clearBtn" title="Clear the canvas" aria-label="Clear the canvas"><svg class="classic-bomb-icon" viewBox="0 0 32 32" aria-hidden="true" shape-rendering="crispEdges"><g fill="#111"><rect x="13" y="2" width="3" height="3"/><rect x="17" y="5" width="3" height="3"/><rect x="20" y="2" width="3" height="3"/><rect x="23" y="6" width="3" height="3"/><rect x="25" y="10" width="3" height="3"/><rect x="7" y="8" width="3" height="3"/><rect x="5" y="12" width="3" height="3"/><rect x="4" y="16" width="3" height="3"/><rect x="6" y="21" width="3" height="3"/><rect x="10" y="25" width="3" height="3"/><rect x="15" y="27" width="3" height="3"/><rect x="20" y="25" width="3" height="3"/><rect x="24" y="21" width="3" height="3"/><rect x="25" y="16" width="3" height="3"/><rect x="10" y="10" width="13" height="15"/><rect x="8" y="14" width="17" height="9"/></g><g fill="#fff"><rect x="11" y="13" width="3" height="3"/><rect x="17" y="17" width="3" height="3"/><rect x="13" y="21" width="3" height="2"/></g></svg><span>Clear</span></button>
             <details class="crt-menu" id="crtMenu">
               <summary class="btn secondary" aria-label="CRT display effects">CRT <span aria-hidden="true">▾</span></summary>
               <div class="crt-options" role="group" aria-label="Choose CRT color">
@@ -246,25 +248,44 @@
       <p class="welcome-intro">Before you start, meet two people who helped make drawing on a Macintosh feel natural, joyful, and accessible.</p>
       <div class="welcome-portraits">
         <div class="welcome-portrait">
-          <svg viewBox="0 0 120 120" role="img" aria-label="Original black and white pixel-art portrait icon representing Bill Atkinson">
+          <svg viewBox="0 0 120 120" role="img" aria-label="Black and white pixel-art portrait interpretation of Bill Atkinson">
             <rect width="120" height="120" fill="#fff"/>
-            <g fill="#111"><rect x="30" y="20" width="60" height="12"/><rect x="22" y="32" width="76" height="12"/><rect x="18" y="44" width="18" height="28"/><rect x="84" y="44" width="18" height="28"/><rect x="30" y="32" width="60" height="52"/><rect x="36" y="84" width="48" height="12"/><rect x="24" y="96" width="72" height="12"/><rect x="42" y="48" width="12" height="6"/><rect x="66" y="48" width="12" height="6"/><rect x="48" y="66" width="24" height="6"/></g>
-            <g fill="#aaa"><rect x="36" y="38" width="48" height="40"/><rect x="42" y="54" width="6" height="6"/><rect x="72" y="54" width="6" height="6"/><rect x="54" y="72" width="12" height="6"/><rect x="42" y="90" width="36" height="6"/></g>
+            <g shape-rendering="crispEdges">
+              <path fill="#111" d="M27 40V25h9V16h12V10h27v6h12v9h8v16h-8V31H36v9z"/>
+              <path fill="#777" d="M35 35h50v39H35z"/><path fill="#aaa" d="M41 38h38v31H41z"/>
+              <path fill="#777" d="M27 42h8v20h-8zM85 42h8v20h-8z"/>
+              <path fill="#111" d="M38 44h18v12H38zM64 44h18v12H64zM56 48h8v4h-8z"/>
+              <path fill="#fff" d="M42 47h10v6H42zM68 47h10v6H68z"/>
+              <path fill="#111" d="M45 49h4v4h-4zM71 49h4v4h-4z"/>
+              <path fill="#555" d="M57 54h7v13h-7zM51 67h19v4H51z"/>
+              <path fill="#111" d="M47 73h27v6H47zM42 79h37v5H42z"/>
+              <path fill="#111" d="M23 93h74v27H23z"/><path fill="#777" d="M39 85h42v14H39z"/>
+              <path fill="#fff" d="M48 89h24v4H48zM40 103h40v3H40z"/>
+            </g>
           </svg>
           <strong>Bill Atkinson</strong>
           <span>Creator and programmer of MacPaint</span>
         </div>
         <div class="welcome-portrait">
-          <svg viewBox="0 0 120 120" role="img" aria-label="Original black and white pixel-art portrait icon representing Susan Kare">
+          <svg viewBox="0 0 120 120" role="img" aria-label="Black and white pixel-art portrait interpretation of Susan Kare">
             <rect width="120" height="120" fill="#fff"/>
-            <g fill="#111"><rect x="30" y="16" width="60" height="12"/><rect x="22" y="28" width="76" height="12"/><rect x="16" y="40" width="24" height="48"/><rect x="80" y="40" width="24" height="48"/><rect x="34" y="28" width="52" height="56"/><rect x="28" y="84" width="64" height="12"/><rect x="22" y="96" width="76" height="12"/><rect x="40" y="46" width="12" height="6"/><rect x="68" y="46" width="12" height="6"/><rect x="48" y="66" width="24" height="6"/></g>
-            <g fill="#aaa"><rect x="40" y="34" width="40" height="44"/><rect x="44" y="52" width="6" height="6"/><rect x="70" y="52" width="6" height="6"/><rect x="54" y="72" width="12" height="6"/><rect x="36" y="90" width="48" height="6"/></g>
+            <g shape-rendering="crispEdges">
+              <path fill="#111" d="M27 38V22h10V14h12V9h24v5h13v9h8v21h-8v31h-8v13H42V80h-8V45h-7z"/>
+              <path fill="#777" d="M38 30h44v47H38z"/><path fill="#aaa" d="M43 34h34v39H43z"/>
+              <path fill="#111" d="M42 43h12v5H42zM67 43h12v5H67z"/>
+              <path fill="#fff" d="M45 44h6v3h-6zM70 44h6v3h-6z"/>
+              <path fill="#111" d="M47 45h3v3h-3zM72 45h3v3h-3z"/>
+              <path fill="#555" d="M57 48h6v13h-6zM52 62h17v4H52z"/>
+              <path fill="#111" d="M49 69h22v4H49zM43 76h34v7H43z"/>
+              <path fill="#111" d="M19 95h82v25H19z"/><path fill="#777" d="M38 85h44v15H38z"/>
+              <path fill="#fff" d="M47 89h26v4H47zM39 104h42v3H39z"/>
+            </g>
           </svg>
           <strong>Susan Kare</strong>
           <span>Designer of MacPaint's interface and graphics</span>
         </div>
       </div>
-      <p class="welcome-credit">This is a new, pixel-art tribute—not a reproduction of historical photographs. Thank you, Bill and Susan, for helping shape the creative tools we use today.</p>
+      <p class="welcome-credit">These small one-bit portraits are a MacPaint-style tribute, not historical photographs. Thank you, Bill and Susan, for helping shape the creative tools we use today.</p>
       <button class="btn primary welcome-ack" id="creatorWelcomeAck">I acknowledge the originals — start drawing</button>
     </section>
   </div>

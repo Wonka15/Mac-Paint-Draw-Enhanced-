@@ -150,6 +150,22 @@
     // 🟪 BEGINNER TIP — Add a new pattern here AND in patternInkAt() below so the bucket matches the brush.
     // 🟩 HOW IT WORKS — One tile generator powers paint strokes, shape fills, and the palette previews.
     // 🟪 BEGINNER TIP — When adding a pattern, also add its matching rule to patternInkAt() below.
+    // 🟩 HOW IT WORKS — These 16×16 one-bit tiles add tiny Macintosh-era portraits/icons to the pattern palette.
+    // 🟪 BEGINNER TIP — A # is an ink pixel; a . is paper. The bucket uses the same rows below.
+    const iconPatternRows = {
+      'steve-icon': [
+        '................','.....######.....','....########....','...##########...',
+        '..###......###..','..###.####.###..','..###.####.###..','..###......###..',
+        '...##..##..##...','...##..##..##...','...##..........','....##.####.##..',
+        '.....########...','......######....','.....##....##...','....##......##..'
+      ],
+      'happy-mac': [
+        '................','...##########...','..############..','..##........##..',
+        '..##.##..##.##..','..##.##..##.##..','..##..........##','..##..######..##',
+        '..##..........##','..############..','...##......##...','...##......##...',
+        '..###......###..','..###......###..','................','................'
+      ]
+    };
     function makePattern(patternName = selectedPattern, preview = false) {
       if (patternName === 'solid') return preview ? null : color;
       const tile = document.createElement('canvas');
@@ -192,6 +208,7 @@
         case 'basket': for(let n=0;n<16;n+=8){p.fillRect(n,0,3,8);p.fillRect(0,n,8,3);p.clearRect(n+3,n+3,2,2);}break;
         case 'plus': for(let y=2;y<16;y+=6)for(let x=2;x<16;x+=6){p.fillRect(x-1,y,3,1);p.fillRect(x,y-1,1,3);}break;
         case 'confetti': [[1,2],[5,5],[12,1],[14,7],[3,11],[9,14],[13,12],[7,9]].forEach(([x,y],i)=>{if(i%2)p.fillRect(x,y,2,1);else p.fillRect(x,y,1,2);});break;
+        case 'steve-icon': case 'happy-mac': iconPatternRows[patternName].forEach((row,y)=>[...row].forEach((pixel,x)=>{if(pixel==='#')p.fillRect(x,y,1,1);}));break;
       }
       return preview ? tile.toDataURL('image/png') : ctx.createPattern(tile, 'repeat');
     }
@@ -258,6 +275,7 @@
         case 'basket': return (px%8<3 && py%8<8) || (py%8<3 && px%8<8);
         case 'plus': return (px%6===2 && py%6<5)||(py%6===2&&px%6<5);
         case 'confetti': return ((Math.floor(x)*11+Math.floor(y)*17)%31)<3;
+        case 'steve-icon': case 'happy-mac': return iconPatternRows[selectedPattern][py][px] === '#';
         default: return true;
       }
     }
@@ -757,16 +775,9 @@
       const allowed = ['off','blue','red','green','yellow'];
       crtMode = allowed.includes(mode) ? mode : 'off';
       ['blue','red','green','yellow'].forEach(name => canvasWrap.classList.toggle('crt-' + name, crtMode === name));
-      // Apply the tint directly to the whole paper layer as well as its scanline overlay.
-      // This makes the CRT modes visible even when browser compositing handles pseudo-elements differently.
-      const crtFilters = {
-        off: 'none',
-        blue: 'sepia(.22) saturate(1.5) hue-rotate(175deg) contrast(1.08)',
-        red: 'sepia(.25) saturate(1.65) hue-rotate(315deg) contrast(1.08)',
-        green: 'sepia(.32) saturate(1.55) hue-rotate(65deg) contrast(1.1)',
-        yellow: 'sepia(.48) saturate(1.4) hue-rotate(5deg) contrast(1.06)'
-      };
-      canvasWrap.style.filter = crtFilters[crtMode];
+      // Tint the paper through the CSS multiply overlay. CSS color-blend leaves white paper white,
+      // and a filter on the wrapper can distort the tint twice, so keep the wrapper itself unfiltered.
+      canvasWrap.style.filter = 'none';
       canvasWrap.style.backgroundColor = ({off:'#ffffff',blue:'#a9cbf5',red:'#f3b5b5',green:'#b9e5bd',yellow:'#f3e69b'})[crtMode];
       document.querySelectorAll('[data-crt]').forEach(button => {
         const active = button.dataset.crt === crtMode;
