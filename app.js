@@ -124,7 +124,7 @@
       // User clicks can turn the current tool off; programmatic selection stays explicit.
       if (toggleIfActive && next === tool && next !== 'pencil') next = 'pencil';
       tool = next;
-      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'editpoints' || tool === 'shapebuilder' || tool === 'text');
+      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'editpoints' || tool === 'shapebuilder' || tool === 'text' || tool === 'select');
       renderVectors();
       status();
       updateShapeBuilderStatus();
@@ -823,12 +823,12 @@
       renderVectors(); saveSoon(); toast(closed?'Vector shape closed':'Vector path finished');
     }
     function vectorDown(event) {
-      if(!['pen','bezier','vectorrect','vectoroval','editpoints','shapebuilder','text'].includes(tool))return;
+      if(!['pen','bezier','vectorrect','vectoroval','editpoints','shapebuilder','text','select'].includes(tool))return;
       event.preventDefault();event.stopPropagation();const p=svgPoint(event);
-      if(tool==='text'){
+      if(tool==='text'||tool==='select'){
         const textHit=event.target.closest?event.target.closest('[data-text]'):null;
         if(textHit){selectedText=Number(textHit.getAttribute('data-text'));const item=textObjects[selectedText];if(item)draggingText={index:selectedText,start:p,x:item.x,y:item.y};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;}
-        const value=prompt('Type your text:');
+        if(tool==='select'){selectedVector=-1;selectedVectors=[];renderVectors();toast('Click a vector shape or text, then drag to move it');return;}\n        const value=prompt('Type your text:');
         if(value&&value.trim()){textObjects.push({text:value,x:p.x,y:p.y,font:currentFont,size:textSize,color});selectedText=textObjects.length-1;renderVectors();saveSoon();retroSound('tick');toast('Text added — drag it to reposition');}
         return;
       }
@@ -859,8 +859,8 @@
       selectedVector=-1;selectedVectors=[];updateShapeInspector();renderVectors();
     }
     function vectorMove(event) {
-      if(draggingVector&&tool==='editpoints'){event.preventDefault();const p=svgPoint(event,null,false),dx=p.x-draggingVector.start.x,dy=p.y-draggingVector.start.y,v=vectorPaths[draggingVector.vector];if(v){v.points=draggingVector.points.map(q=>({...q,x:q.x+dx,y:q.y+dy,in:q.in?{x:q.in.x+dx,y:q.in.y+dy}:null,out:q.out?{x:q.out.x+dx,y:q.out.y+dy}:null}));renderVectors();}return;}
-      if(draggingText&&tool==='text'){event.preventDefault();const p=svgPoint(event,null,false),item=textObjects[draggingText.index];if(item){item.x=draggingText.x+(p.x-draggingText.start.x);item.y=draggingText.y+(p.y-draggingText.start.y);renderVectors();}return;}
+      if(draggingVector&&(tool==='editpoints'||tool==='select')){event.preventDefault();const p=svgPoint(event,null,false),dx=p.x-draggingVector.start.x,dy=p.y-draggingVector.start.y,v=vectorPaths[draggingVector.vector];if(v){v.points=draggingVector.points.map(q=>({...q,x:q.x+dx,y:q.y+dy,in:q.in?{x:q.in.x+dx,y:q.in.y+dy}:null,out:q.out?{x:q.out.x+dx,y:q.out.y+dy}:null}));renderVectors();}return;}
+      if(draggingText&&(tool==='text'||tool==='select')){event.preventDefault();const p=svgPoint(event,null,false),item=textObjects[draggingText.index];if(item){item.x=draggingText.x+(p.x-draggingText.start.x);item.y=draggingText.y+(p.y-draggingText.start.y);renderVectors();}return;}
       if(shapeBuilderDragging&&tool==='shapebuilder'){const element=document.elementFromPoint(event.clientX,event.clientY),pathHit=element&&element.closest?element.closest('[data-vector]'):null;if(pathHit){const index=Number(pathHit.getAttribute('data-vector'));if(vectorPaths[index]&&vectorPaths[index].closed&&!shapeBuilderVisited.has(index)){shapeBuilderVisited.add(index);if(!selectedVectors.includes(index))selectedVectors.push(index);selectedVector=index;renderVectors();updateShapeBuilderStatus();}}return;}
       if(vectorShapeDragging&&vectorShapeStart&&activeVector&&(tool==='vectorrect'||tool==='vectoroval')){event.preventDefault();activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);renderVectors();return;}
       if(tool==='bezier'&&curveDragAnchor!==null&&activeVector){event.preventDefault();const p=svgPoint(event,null,false),anchor=activeVector.points[curveDragAnchor];if(anchor){const dx=p.x-anchor.x,dy=p.y-anchor.y;anchor.out={x:p.x,y:p.y};anchor.in={x:anchor.x-dx,y:anchor.y-dy};renderVectors();}return;}
