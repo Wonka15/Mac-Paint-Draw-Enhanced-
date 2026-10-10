@@ -116,7 +116,7 @@
       const line = (x1,y1,x2,y2) => { p.beginPath(); p.moveTo(x1,y1); p.lineTo(x2,y2); p.stroke(); };
       switch (patternName) {
         case 'checker': p.fillRect(0,0,8,8); p.fillRect(8,8,8,8); break;
-        case 'fine-checker': for(let y=0;y<16;y+=8) for(let x=0;x<16;x+=8) p.fillRect(x,y,4,4); break;
+        case 'fine-checker': for(let y=0;y<16;y+=8) for(let x=0;x<16;x+=8) if(((x+y)/8)%2===0) p.fillRect(x,y,4,4); break;
         case 'dots': case 'large-dots': case 'tiny-dots': case 'stipple': {
           const step = patternName==='stipple'||patternName==='tiny-dots'?4:patternName==='large-dots'?8:8;
           const radius = patternName==='stipple'?0.7:patternName==='tiny-dots'?0.55:patternName==='large-dots'?2.1:1.25;
@@ -154,11 +154,13 @@
         if (button.dataset.pattern === 'solid') {
           button.style.background = '#20252b';
           button.querySelector('span').style.color = '#fff';
+          button.querySelector('span').style.background = 'rgba(0,0,0,.72)';
           return;
         }
         button.style.backgroundImage = 'url("' + makePattern(button.dataset.pattern, true) + '")';
         button.style.backgroundSize = '16px 16px';
         button.querySelector('span').style.color = '#20252b';
+        button.querySelector('span').style.background = 'rgba(255,255,255,.9)';
       });
     }
 
@@ -182,7 +184,7 @@
       const px=((Math.floor(x)%16)+16)%16, py=((Math.floor(y)%16)+16)%16;
       switch (selectedPattern) {
         case 'checker': return (Math.floor(x/8)+Math.floor(y/8))%2===0;
-        case 'fine-checker': return (Math.floor(x/8)+Math.floor(y/8))%2===0 && px%8<4;
+        case 'fine-checker': return (Math.floor(x/8)+Math.floor(y/8))%2===0 && px%8<4 && py%8<4;
         case 'dots': return px%8<3 && py%8<3;
         case 'large-dots': return (px-4)**2+(py-4)**2<=4 || (px-12)**2+(py-12)**2<=4;
         case 'tiny-dots': case 'stipple': return px%4===1 && py%4===1;
@@ -226,8 +228,11 @@
         let ink=true;
         if (!solid) ink = patternInkAt(px, py);
         data[di]=ink?rgb[0]:255;data[di+1]=ink?rgb[1]:255;data[di+2]=ink?rgb[2]:255;data[di+3]=255;
-        const neighbors=[px>0?idx-1:-1,px<w-1?idx+1:-1,py>0?idx-w:-1,py<h-1?idx+w:-1];
-        for(const n of neighbors)if(n>=0&&!seen[n]){seen[n]=1;if(top<count)stack[top++]=n;}
+        // 🟩 HOW IT WORKS — Push neighbors directly to avoid allocating an array for every visited pixel.
+        if(px>0&&!seen[idx-1]){seen[idx-1]=1;if(top<count)stack[top++]=idx-1;}
+        if(px<w-1&&!seen[idx+1]){seen[idx+1]=1;if(top<count)stack[top++]=idx+1;}
+        if(py>0&&!seen[idx-w]){seen[idx-w]=1;if(top<count)stack[top++]=idx-w;}
+        if(py<h-1&&!seen[idx+w]){seen[idx+w]=1;if(top<count)stack[top++]=idx+w;}
       }
       ctx.putImageData(image,0,0);saveSoon();retroSound('fill');
     }
