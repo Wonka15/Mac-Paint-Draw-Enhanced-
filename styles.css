@@ -449,8 +449,13 @@
 #canvasWrap.crt-yellow{background:#f2edc6;filter:saturate(.78) contrast(1.05)}
 
 
-/* Strong, reliable phosphor tint layered over the complete drawing surface. */
-#canvasWrap.crt-blue:before{background:linear-gradient(rgba(35,105,220,.28),rgba(8,45,135,.32)),repeating-linear-gradient(0deg,rgba(3,30,90,.18) 0 1px,transparent 1px 4px);mix-blend-mode:color;opacity:1}
-#canvasWrap.crt-red:before{background:linear-gradient(rgba(220,40,40,.27),rgba(120,8,8,.3)),repeating-linear-gradient(0deg,rgba(75,0,0,.16) 0 1px,transparent 1px 4px);mix-blend-mode:color;opacity:1}
-#canvasWrap.crt-green:before{background:linear-gradient(rgba(25,150,45,.28),rgba(0,75,20,.32)),repeating-linear-gradient(0deg,rgba(0,45,12,.18) 0 1px,transparent 1px 4px);mix-blend-mode:color;opacity:1}
-#canvasWrap.crt-yellow:before{background:linear-gradient(rgba(235,200,20,.3),rgba(150,115,0,.3)),repeating-linear-gradient(0deg,rgba(80,60,0,.16) 0 1px,transparent 1px 4px);mix-blend-mode:color;opacity:1}
+/* 🟩 HOW IT WORKS — Multiply tints white paper while keeping black ink black. Color-blend alone leaves white pixels white.
+   🟪 BEGINNER TIP — Keep these layers above every canvas/SVG layer; the real drawing data remains untouched. */
+#canvasWrap.crt-blue:before{background:linear-gradient(rgba(75,145,245,.62),rgba(45,95,190,.56)),repeating-linear-gradient(0deg,rgba(10,45,100,.20) 0 1px,transparent 1px 4px);mix-blend-mode:multiply;opacity:1}
+#canvasWrap.crt-red:before{background:linear-gradient(rgba(245,100,100,.60),rgba(185,50,50,.54)),repeating-linear-gradient(0deg,rgba(90,0,0,.18) 0 1px,transparent 1px 4px);mix-blend-mode:multiply;opacity:1}
+#canvasWrap.crt-green:before{background:linear-gradient(rgba(110,220,125,.62),rgba(55,150,75,.56)),repeating-linear-gradient(0deg,rgba(0,55,12,.19) 0 1px,transparent 1px 4px);mix-blend-mode:multiply;opacity:1}
+#canvasWrap.crt-yellow:before{background:linear-gradient(rgba(255,235,95,.66),rgba(220,185,45,.58)),repeating-linear-gradient(0deg,rgba(85,65,0,.17) 0 1px,transparent 1px 4px);mix-blend-mode:multiply;opacity:1}
+.clear-bomb-button{display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.classic-bomb-icon{width:19px;height:19px;flex:0 0 19px;image-rendering:pixelated}
+.pattern-swatch[data-pattern="steve-icon"],.pattern-swatch[data-pattern="happy-mac"]{image-rendering:pixelated}
+.pattern-swatch[data-pattern="steve-icon"] span,.pattern-swatch[data-pattern="happy-mac"] span{font-size:8px}
