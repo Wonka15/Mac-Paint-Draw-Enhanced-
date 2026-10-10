@@ -157,7 +157,7 @@
       'steve-icon': [
         '................','....########....','...#........#...','...#........#...',
         '...#..####..#...','...#........#...','...#........#...','...#........#...',
-        '...#........#...','...############..','......####......','.....######.....',
+        '...#........#...','...##########...','......####......','.....######.....',
         '....########....','................','................','................'
       ],
       'happy-mac': [
@@ -425,6 +425,9 @@
       const cellWidth=canvas.offsetWidth/Math.max(1,W());
       const cellHeight=canvas.offsetHeight/Math.max(1,H());
       grid.style.backgroundSize=cellWidth+'px '+cellHeight+'px';
+      // CSS zoom scales the grid too, so keep its visible strokes about one screen pixel wide.
+      const lineWidth=1/Math.max(1,zoomLevel);
+      grid.style.backgroundImage='linear-gradient(to right, rgba(32,37,43,.58) '+lineWidth+'px, transparent '+lineWidth+'px), linear-gradient(to bottom, rgba(32,37,43,.58) '+lineWidth+'px, transparent '+lineWidth+'px)';
     }
     function setZoom(next){
       zoomLevel=Math.max(.25,Math.min(fatBitsMode?12:3,next));
