@@ -50,6 +50,17 @@
           <button class="tool" data-tool="shapebuilder" aria-pressed="false"><span class="ico">⬡</span>Shape Builder</button>
         </div>
 
+        <section class="pixel-navigator" aria-label="Pixel Mode navigator">
+          <div class="pixel-navigator-heading"><h2>Pixel Mode</h2><span class="pixel-navigator-led" aria-hidden="true"></span></div>
+          <p class="pixel-navigator-help">A tiny map of your whole drawing. Click anywhere to move the magnified view.</p>
+          <button class="pixel-mode-toggle" id="pixelModeBtn" type="button" aria-pressed="false"><span aria-hidden="true">▦</span> Toggle FatBits</button>
+          <div class="pixel-navigator-screen" id="pixelNavigatorScreen" role="button" tabindex="0" aria-label="Drawing overview. Click or press Enter to move the FatBits view.">
+            <canvas id="pixelNavigatorCanvas" width="240" height="160" aria-hidden="true"></canvas>
+            <div class="pixel-navigator-viewport" id="pixelNavigatorViewport" aria-hidden="true"></div>
+          </div>
+          <div class="pixel-navigator-readout" id="pixelNavigatorReadout">FULL CANVAS · 1200 × 800</div>
+        </section>
+
         <div class="selection-actions" aria-label="Selection actions"><button class="btn secondary" id="fillSelectionBtn" type="button">Fill selection</button><button class="btn secondary" id="clearSelectionBtn" type="button">Clear selection</button></div>
         <div class="separator"></div>
 
