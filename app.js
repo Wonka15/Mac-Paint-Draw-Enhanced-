@@ -10,9 +10,11 @@
     const gctx = guides.getContext('2d');
     const rulers = $('rulers');
     const rctx = rulers.getContext('2d');
+    const selectionLayer = $('selectionLayer');
+    const sctx = selectionLayer.getContext('2d');
     const vectorLayer = $('vectorLayer');
     const canvasWrap = $('canvasWrap');
-    if (!ctx || !octx || !gctx || !rctx) {
+    if (!ctx || !octx || !gctx || !rctx || !sctx) {
       alert('Mac Paint could not start: your browser could not create a canvas. Try refreshing or using a current browser.');
       return;
     }
@@ -23,6 +25,7 @@
     let tool = 'pencil', color = '#20252b', size = 4, fill = false, selectedPattern = 'solid', textSize = 24, selectedBrush = 'round', roughPaper = false, crtMode = 'off', fatBitsMode = false, zoomBeforeFatBits = 1, lastFatBit = null;
     let drawing = false, startPoint = null, lastPoint = null;
     let fatBitsOffsetX = 0, fatBitsOffsetY = 0, fatBitsPanning = false, fatBitsPanStart = null, spaceHeld = false;
+    let lassoPoints = [], lassoDrawing = false, selectionMask = null, selectionBitmap = null, selectionBase = null, selectionBounds = null, selectionMove = null;
     let history = [], redoStack = [], showGuides = false, showGrid = false;
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
     let vectorPaths = [], activeVector = null, selectedVector = -1, selectedVectors = [], draggingAnchor = null, draggingHandle = null, curveDragAnchor = null;
@@ -46,7 +49,7 @@
       toast.timer = setTimeout(() => node.classList.remove('show'), 1800);
     }
     function status() {
-      const names = {pencil:'Paintbrush',eraser:'Eraser',bucket:'Paint bucket',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',pen:'Vector pen',bezier:'Bezier curve',vectorrect:'Vector rectangle',vectoroval:'Vector oval',editpoints:'Edit points',shapebuilder:'Shape Builder'};
+      const names = {pencil:'Paintbrush',eraser:'Eraser',bucket:'Paint bucket',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',lasso:'Lasso select',pen:'Vector pen',bezier:'Bezier curve',vectorrect:'Vector rectangle',vectoroval:'Vector oval',editpoints:'Edit points',shapebuilder:'Shape Builder'};
       $('toolStatus').innerHTML = '<strong>Tool:</strong> ' + (names[tool] || tool);
       document.querySelectorAll('.tool').forEach(b => {
         const active = b.dataset.tool === tool;
@@ -432,7 +435,7 @@
       grid.style.backgroundImage='linear-gradient(to right, rgba(32,37,43,.62) 1px, transparent 1px), linear-gradient(to bottom, rgba(32,37,43,.62) 1px, transparent 1px)';
     }
     function updateFatBitsView(){
-      const layers=['paper','onion','overlay','vectorLayer','guides','rulers','fatBitsGrid'];
+      const layers=['paper','onion','overlay','vectorLayer','guides','rulers','selectionLayer','fatBitsGrid'];
       if(fatBitsMode){
         canvasWrap.style.zoom='1';
         layers.forEach(id=>{const layer=$(id);if(layer){layer.style.transformOrigin='0 0';layer.style.transform='translate('+fatBitsOffsetX+'px, '+fatBitsOffsetY+'px) scale('+zoomLevel+')';}});
@@ -732,6 +735,56 @@
     }
     // 🟩 HOW IT WORKS — FatBits magnifies the artboard and writes one real canvas pixel per click/drag.
     // 🟪 BEGINNER TIP — Turn FatBits off to return to normal freehand drawing; the pixels stay in your artwork.
+    function selectionContains(x,y){
+      if(!selectionMask||x<0||y<0||x>=W()||y>=H())return false;
+      return selectionMask[Math.floor(y)*W()+Math.floor(x)]===1;
+    }
+    function drawSelectionOutline(close=false){
+      sctx.clearRect(0,0,W(),H());
+      if(!lassoPoints.length)return;
+      sctx.save();sctx.strokeStyle='#111';sctx.lineWidth=1;sctx.setLineDash([4,3]);sctx.beginPath();
+      sctx.moveTo(lassoPoints[0].x,lassoPoints[0].y);
+      for(let i=1;i<lassoPoints.length;i++)sctx.lineTo(lassoPoints[i].x,lassoPoints[i].y);
+      if(close)sctx.closePath();
+      sctx.stroke();sctx.restore();
+    }
+    function rebuildSelectionLayers(){
+      if(!selectionMask){selectionBitmap=null;selectionBase=null;return;}
+      const w=W(),h=H(),current=ctx.getImageData(0,0,w,h),base=new ImageData(new Uint8ClampedArray(current.data),w,h),picked=new ImageData(w,h);
+      let minX=w,minY=h,maxX=0,maxY=0,any=false;
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+        const idx=y*w+x;if(!selectionMask[idx])continue;any=true;minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);
+        const k=idx*4;picked.data[k]=current.data[k];picked.data[k+1]=current.data[k+1];picked.data[k+2]=current.data[k+2];picked.data[k+3]=current.data[k+3];
+        base.data[k]=255;base.data[k+1]=255;base.data[k+2]=255;base.data[k+3]=255;
+      }
+      if(!any){selectionMask=null;selectionBase=null;selectionBitmap=null;selectionBounds=null;return;}
+      selectionBase=base;selectionBounds={x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1};
+      selectionBitmap=document.createElement('canvas');selectionBitmap.width=w;selectionBitmap.height=h;selectionBitmap.getContext('2d').putImageData(picked,0,0);
+    }
+    function makeLassoSelection(){
+      const w=W(),h=H();if(lassoPoints.length<3){lassoPoints=[];drawSelectionOutline();return;}
+      const maskCanvas=document.createElement('canvas');maskCanvas.width=w;maskCanvas.height=h;const mctx=maskCanvas.getContext('2d');
+      mctx.fillStyle='#fff';mctx.beginPath();mctx.moveTo(lassoPoints[0].x,lassoPoints[0].y);
+      for(let i=1;i<lassoPoints.length;i++)mctx.lineTo(lassoPoints[i].x,lassoPoints[i].y);
+      mctx.closePath();mctx.fill();
+      const pixels=mctx.getImageData(0,0,w,h).data;selectionMask=new Uint8Array(w*h);
+      for(let i=0;i<selectionMask.length;i++)if(pixels[i*4+3]>0)selectionMask[i]=1;
+      rebuildSelectionLayers();drawSelectionOutline(true);
+      $('toolStatus').innerHTML='<strong>Tool:</strong> Lasso select';
+      toast('Selection made — drag inside it to move, or fill it with the active pattern');
+    }
+    function clearSelection(){
+      selectionMask=null;selectionBitmap=null;selectionBase=null;selectionBounds=null;selectionMove=null;lassoPoints=[];lassoDrawing=false;sctx.clearRect(0,0,W(),H());toast('Selection cleared');
+    }
+    function fillSelection(){
+      if(!selectionMask){toast('Make a lasso selection first');return;}
+      snapshot();const image=ctx.getImageData(0,0,W(),H()),data=image.data,rgb=hexRgb(color);
+      for(let idx=0;idx<selectionMask.length;idx++)if(selectionMask[idx]){
+        const x=idx%W(),y=(idx/W)|0,k=idx*4,ink=selectedPattern==='solid'||patternInkAt(x,y);
+        data[k]=ink?rgb[0]:255;data[k+1]=ink?rgb[1]:255;data[k+2]=ink?rgb[2]:255;data[k+3]=255;
+      }
+      ctx.putImageData(image,0,0);rebuildSelectionLayers();saveSoon();retroSound('fill');toast('Selection filled with '+(selectedPattern==='solid'?'solid ink':'active pattern'));
+    }
     function drawFatBit(event) {
       const rect=canvasWrap.getBoundingClientRect();
       const x=Math.max(0,Math.min(W()-1,Math.floor((event.clientX-rect.left-fatBitsOffsetX)/zoomLevel)));
@@ -744,6 +797,16 @@
     }
     function down(event) {
       event.preventDefault();
+      if(tool==='lasso'){
+        const p=point(event);
+        if(selectionContains(p.x,p.y)){
+          snapshot();selectionMove={start:p,dx:0,dy:0};if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}
+        }else{
+          selectionMask=null;selectionBitmap=null;selectionBase=null;selectionBounds=null;lassoPoints=[p];lassoDrawing=true;drawSelectionOutline(false);
+          if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}
+        }
+        return;
+      }
       if(fatBitsMode&&(spaceHeld||event.button===1)){
         fatBitsPanning=true;fatBitsPanStart={x:event.clientX,y:event.clientY,offsetX:fatBitsOffsetX,offsetY:fatBitsOffsetY};
         if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}
@@ -771,6 +834,16 @@
       if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}
     }
     function move(event) {
+      if(lassoDrawing&&tool==='lasso'){
+        const p=point(event),last=lassoPoints[lassoPoints.length-1];
+        if(!last||Math.hypot(p.x-last.x,p.y-last.y)>=2){lassoPoints.push(p);drawSelectionOutline(false);}
+        return;
+      }
+      if(selectionMove&&tool==='lasso'){
+        const p=point(event);selectionMove.dx=Math.round(p.x-selectionMove.start.x);selectionMove.dy=Math.round(p.y-selectionMove.start.y);
+        ctx.putImageData(selectionBase,0,0);ctx.drawImage(selectionBitmap,selectionMove.dx,selectionMove.dy);
+        sctx.clearRect(0,0,W(),H());sctx.save();sctx.translate(selectionMove.dx,selectionMove.dy);sctx.strokeStyle='#111';sctx.lineWidth=1;sctx.setLineDash([4,3]);sctx.beginPath();sctx.moveTo(lassoPoints[0].x,lassoPoints[0].y);for(let i=1;i<lassoPoints.length;i++)sctx.lineTo(lassoPoints[i].x,lassoPoints[i].y);sctx.closePath();sctx.stroke();sctx.restore();return;
+      }
       if(fatBitsPanning&&fatBitsPanStart){
         fatBitsOffsetX=fatBitsPanStart.offsetX+(event.clientX-fatBitsPanStart.x);
         fatBitsOffsetY=fatBitsPanStart.offsetY+(event.clientY-fatBitsPanStart.y);
@@ -784,6 +857,19 @@
       else if(['line','rect','ellipse'].includes(tool)) shape(p);
     }
     function up(event) {
+      if(lassoDrawing&&tool==='lasso'){
+        lassoDrawing=false;makeLassoSelection();if(event&&event.pointerId!==undefined&&canvas.releasePointerCapture){try{canvas.releasePointerCapture(event.pointerId);}catch(_){}}
+        return;
+      }
+      if(selectionMove&&tool==='lasso'){
+        const moveState=selectionMove;selectionMove=null;
+        ctx.putImageData(selectionBase,0,0);ctx.drawImage(selectionBitmap,moveState.dx,moveState.dy);
+        const moved=new Uint8Array(W()*H());
+        for(let y=0;y<H();y++)for(let x=0;x<W();x++){const nx=x+moveState.dx,ny=y+moveState.dy;if(selectionMask[y*W()+x]&&nx>=0&&ny>=0&&nx<W()&&ny<H())moved[ny*W()+nx]=1;}
+        selectionMask=moved;lassoPoints=lassoPoints.map(p=>({x:p.x+moveState.dx,y:p.y+moveState.dy}));rebuildSelectionLayers();drawSelectionOutline(true);saveSoon();
+        if(event&&event.pointerId!==undefined&&canvas.releasePointerCapture){try{canvas.releasePointerCapture(event.pointerId);}catch(_){}}
+        return;
+      }
       if(fatBitsPanning){
         fatBitsPanning=false;fatBitsPanStart=null;canvasWrap.style.cursor='crosshair';
         if(event&&event.pointerId!==undefined&&canvas.releasePointerCapture){try{canvas.releasePointerCapture(event.pointerId);}catch(_){}}
@@ -796,6 +882,8 @@
       if(event){const p=point(event);$('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';}
     }
     document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>selectTool(b.dataset.tool, true)));
+    $('fillSelectionBtn').addEventListener('click',fillSelection);
+    $('clearSelectionBtn').addEventListener('click',clearSelection);
     vectorLayer.addEventListener('pointerdown',vectorDown);
     vectorLayer.addEventListener('pointermove',vectorMove);
     vectorLayer.addEventListener('pointerup',vectorUp);
