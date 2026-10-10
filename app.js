@@ -515,6 +515,22 @@
       }
       return d;
     }
+    // 🟩 HOW IT WORKS — Rectangles use corner anchors; ovals use four smooth Bézier anchors.
+    // 🟪 BEGINNER TIP — The 0.5523 constant makes the oval handles follow a near-perfect circle.
+    function vectorShapePoints(start, end, shapeType) {
+      const left=Math.min(start.x,end.x),right=Math.max(start.x,end.x);
+      const top=Math.min(start.y,end.y),bottom=Math.max(start.y,end.y);
+      const cx=(left+right)/2,cy=(top+bottom)/2,rx=(right-left)/2,ry=(bottom-top)/2;
+      if(shapeType==='vectorrect')return [{x:left,y:top},{x:right,y:top},{x:right,y:bottom},{x:left,y:bottom}];
+      const k=0.5522847498;
+      return [
+        {x:cx,y:top,in:{x:cx-k*rx,y:top},out:{x:cx+k*rx,y:top}},
+        {x:right,y:cy,in:{x:right,y:cy-k*ry},out:{x:right,y:cy+k*ry}},
+        {x:cx,y:bottom,in:{x:cx+k*rx,y:bottom},out:{x:cx-k*rx,y:bottom}},
+        {x:left,y:cy,in:{x:left,y:cy+k*ry},out:{x:left,y:cy-k*ry}}
+      ];
+    }
+
     // 🟩 HOW IT WORKS — SVG paths stay editable; handles are lightweight controls layered above the artwork.
     // 🟪 BEGINNER TIP — Each handle stores a canvas position. Moving an anchor shifts its handles along with it.
     function renderVectors() {
