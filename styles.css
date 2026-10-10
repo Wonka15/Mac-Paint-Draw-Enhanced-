@@ -357,3 +357,6 @@
 #canvasWrap.crt-blue{background:#c8def6;filter:saturate(.88) contrast(1.02)}
 @media(max-width:700px){.pattern-group .pattern-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.crt-toggle{padding:5px 6px}}
 @media(prefers-reduced-motion:reduce){.pattern-swatch{transition:none}}
+
+/* Keep selected pattern labels readable over the tile preview. */
+.pattern-swatch span{z-index:1;}
