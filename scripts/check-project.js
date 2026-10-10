@@ -1,0 +1,11 @@
+const fs=require('node:fs');const assert=require('node:assert/strict');
+const html=fs.readFileSync('index.html','utf8'),js=fs.readFileSync('app.js','utf8'),css=fs.readFileSync('styles.css','utf8');
+const ids=[...html.matchAll(/\bid=["']([^"']+)["']/g)].map(m=>m[1]),dupes=ids.filter((id,i)=>ids.indexOf(id)!==i);
+assert.deepEqual([...new Set(dupes)],[],'HTML IDs must be unique');
+const refs=[...js.matchAll(/\$\(['"]([^'"]+)['"]\)/g)].map(m=>m[1]),missing=[...new Set(refs.filter(id=>!ids.includes(id)))];
+assert.deepEqual(missing,[],'JS ID lookups must exist in HTML');
+for(const id of ['traceLogoUpload','traceLogoBtn','convertShapeBtn','vectorLayer'])assert.ok(ids.includes(id),'Missing control: '+id);
+assert.ok(js.includes("document.querySelector('.stage')"),'Focus Canvas class selector should be correct');
+assert.ok(js.includes('function traceLogo()')&&js.includes('draggingVector'),'Tracing and vector movement must be present');
+assert.ok(css.includes('#traceLogoCard'),'Trace UI must be styled');
+console.log('Static checks passed.');

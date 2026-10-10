@@ -1,0 +1,15 @@
+name: Code quality
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --check app.js
+      - run: node scripts/check-project.js
