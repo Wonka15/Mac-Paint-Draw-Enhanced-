@@ -116,8 +116,10 @@
           <div class="controlrow">
             <button class="btn secondary" id="guidesBtn" aria-pressed="false">Guides</button><button class="btn secondary" id="rulersBtn" aria-pressed="true">Rulers</button><button class="btn secondary" id="zoomOutBtn" aria-label="Zoom out">−</button><span class="zoom-readout" id="zoomReadout">100%</span><button class="btn secondary" id="zoomInBtn" aria-label="Zoom in">＋</button><button class="btn secondary" id="zoomFitBtn">Fit</button>
             <button class="btn secondary" id="gridBtn" aria-pressed="false">Grid</button>
+            <button class="btn secondary" id="fatBitsBtn" aria-pressed="false" title="Magnify the canvas to edit individual pixels">FatBits</button>
             <button class="btn secondary" id="clearBtn">Clear</button>
             <label class="crt-toggle" title="Apply a blue Macintosh SE CRT look to the canvas"><input type="checkbox" id="crtBlueToggle"><span>Blue CRT</span></label>
+            <label class="crt-toggle crt-green-toggle" title="Apply a green monochrome Macintosh CRT look"><input type="checkbox" id="crtGreenToggle"><span>Green CRT</span></label>
           </div>
         </div>
 
@@ -129,6 +131,7 @@
             <svg id="vectorLayer" viewBox="0 0 1200 800" preserveAspectRatio="none" aria-label="Editable vector artwork"></svg>
             <canvas id="guides" width="1200" height="800"></canvas>
             <canvas id="rulers" width="1200" height="800"></canvas>
+            <div id="fatBitsGrid" aria-hidden="true"></div>
             </div>
           </div>
         </div>
@@ -200,9 +203,11 @@
         <div class="field">
           <label for="fontSelect">Font</label>
           <select id="fontSelect">
-            <option value="sans-serif">Default</option>
-            <option value="serif">Serif</option>
-            <option value="monospace">Monospace</option>
+            <option value="Geneva, Arial, sans-serif">Classic Mac Sans</option>
+            <option value="Georgia, 'Times New Roman', serif">Book Serif</option>
+            <option value="Menlo, Monaco, monospace">Monaco Mono</option>
+            <option value="'Comic Sans MS', cursive">Handwritten</option>
+            <option value="Impact, fantasy">Display</option>
           </select>
         </div>
 
