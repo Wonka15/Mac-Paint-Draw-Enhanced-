@@ -1149,8 +1149,8 @@
 
     // Export editable vector paths as SVG cut outlines. Raster pencil marks are intentionally excluded.
     function exportVectorSvg() {
-      if (!vectorPaths.length) {
-        toast('Draw a vector path first');
+      if (!vectorPaths.length && !textObjects.length) {
+        toast('Add a vector shape or text first');
         selectTool('pen');
         return;
       }
@@ -1173,6 +1173,13 @@
         path.setAttribute('stroke-linecap', 'round');
         path.setAttribute('stroke-linejoin', 'round');
         svg.appendChild(path);
+      });
+      // Include editable text in SVG exports too, not only the on-screen preview.
+      textObjects.forEach(function (item) {
+        const textNode = document.createElementNS(ns, 'text');
+        textNode.setAttribute('x', String(item.x));textNode.setAttribute('y', String(item.y));
+        textNode.setAttribute('font-family', item.font);textNode.setAttribute('font-size', String(item.size));
+        textNode.setAttribute('fill', item.color);textNode.textContent = item.text;svg.appendChild(textNode);
       });
       const source = '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(svg);
       const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
