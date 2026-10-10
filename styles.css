@@ -526,3 +526,10 @@
 
 /* Pointer events support finger and Apple Pencil input. */
 @media (pointer: coarse){.tool{min-height:68px}.tool .ico svg{width:28px;height:28px}#paper,#overlay,#vectorLayer{touch-action:none;user-select:none;-webkit-user-select:none}}
+
+
+/* Beginner-friendly canvas navigation and editable text objects. */
+.canvas-text{cursor:move;user-select:none;-webkit-user-select:none}
+#vectorLayer.vector-active .canvas-text{pointer-events:all}
+.shape-builder-grid .btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+#canvasWrap{cursor:crosshair}
