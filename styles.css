@@ -338,3 +338,22 @@
 @media(max-width:900px){.frame-glass-settings{grid-template-columns:repeat(2,minmax(0,1fr))}.glass-toggle{grid-column:1/-1}}
 @media(max-width:560px){.animation-panel{padding:12px;border-radius:16px}.frame-glass-settings{grid-template-columns:minmax(0,1fr)}.glass-toggle{grid-column:auto}.frame-glass-controls .glass-action{padding:8px 11px!important;font-size:12px}.animation-badge{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.animation-panel,.frame-thumb.active{animation:none!important}.glass-action,.frame-card,.frame-thumb,.glass-toggle,.glass-toggle-track,.glass-toggle-track:after{transition:none!important}}
+
+
+/* 🟩 HOW IT WORKS — The palette is grouped like a compact classic MacPaint pattern drawer. */
+.pattern-palette{display:grid;gap:11px}
+.pattern-group h3{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 6px}
+.pattern-group .pattern-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.pattern-swatch{position:relative;min-height:44px;height:auto;aspect-ratio:1.15;border:1px solid #a8a39b;border-radius:5px;background-color:#fff;background-repeat:repeat;box-shadow:inset 0 1px rgba(255,255,255,.7);transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease}
+.pattern-swatch span{position:absolute;left:2px;right:2px;bottom:2px;padding:2px 1px;border-radius:2px;background:rgba(255,255,255,.88);font-size:8px;line-height:1.1;text-align:center;overflow-wrap:anywhere}
+.pattern-swatch.active{border:2px solid var(--blue);box-shadow:0 0 0 2px rgba(49,92,219,.17),inset 0 1px rgba(255,255,255,.8);transform:translateY(-1px)}
+.pattern-swatch:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.pattern-help{line-height:1.45}
+.crt-toggle{display:inline-flex;align-items:center;gap:5px;padding:6px 8px;border:1px solid #b9c6f7;border-radius:8px;background:linear-gradient(145deg,#f8fbff,#dce8ff);font-size:11px;font-weight:750;white-space:nowrap}
+.crt-toggle input{accent-color:#2673db}
+#canvasWrap{isolation:isolate;overflow:hidden}
+#canvasWrap.rough-paper:after{content:"";position:absolute;inset:0;z-index:7;pointer-events:none;opacity:.34;background-color:rgba(213,190,148,.12);background-image:radial-gradient(ellipse at 18% 23%,rgba(110,83,48,.22) 0 .55px,transparent 1.4px),radial-gradient(ellipse at 72% 68%,rgba(90,65,37,.2) 0 .6px,transparent 1.5px),repeating-linear-gradient(2deg,rgba(118,91,55,.09) 0 1px,transparent 1px 3px),repeating-linear-gradient(91deg,rgba(255,255,255,.3) 0 1px,transparent 1px 5px);background-size:7px 9px,11px 13px,100% 4px,8px 100%;background-position:0 0,3px 4px,0 0,2px 0;mix-blend-mode:multiply}
+#canvasWrap.crt-blue:before{content:"";position:absolute;inset:0;z-index:8;pointer-events:none;background:linear-gradient(180deg,rgba(27,91,170,.10),rgba(34,103,190,.2)),repeating-linear-gradient(0deg,rgba(5,37,95,.16) 0 1px,transparent 1px 4px),radial-gradient(ellipse at center,rgba(125,190,255,.12) 0%,rgba(8,38,93,.28) 100%);box-shadow:inset 0 0 45px rgba(0,25,78,.35);mix-blend-mode:multiply;opacity:.88}
+#canvasWrap.crt-blue{background:#c8def6;filter:saturate(.88) contrast(1.02)}
+@media(max-width:700px){.pattern-group .pattern-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.crt-toggle{padding:5px 6px}}
+@media(prefers-reduced-motion:reduce){.pattern-swatch{transition:none}}
