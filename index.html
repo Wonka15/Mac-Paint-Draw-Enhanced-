@@ -283,7 +283,8 @@
         </div>
       </div>
       <p class="welcome-credit">Thank you, Bill and Susan, for helping shape the creative tools we use today. Portraits: Bill Atkinson via EG Conference; Susan Kare via Mac-History.net.</p>
-      <button class="btn primary welcome-ack" id="creatorWelcomeAck">I acknowledge the originals — start drawing</button>
+      <button class="btn primary welcome-ack" id="creatorWelcomeAck" type="button" onclick="try{localStorage.setItem('mpde-creator-tribute-ack','yes')}catch(e){};document.getElementById('creatorWelcome').hidden=true">I acknowledge the originals — start drawing</button>
+      <button class="btn secondary welcome-skip" id="creatorWelcomeSkip" type="button" onclick="try{localStorage.setItem('mpde-creator-tribute-ack','yes')}catch(e){};document.getElementById('creatorWelcome').hidden=true">Skip for now and enter the canvas</button>
     </section>
   </div>
 
