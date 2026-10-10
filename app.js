@@ -65,7 +65,7 @@
       // User clicks can turn the current tool off; programmatic selection stays explicit.
       if (toggleIfActive && next === tool && next !== 'pencil') next = 'pencil';
       tool = next;
-      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'editpoints' || tool === 'shapebuilder');
+      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'shapebuilder');
       renderVectors();
       status();
       updateShapeBuilderStatus();
