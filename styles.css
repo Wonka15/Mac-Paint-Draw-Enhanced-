@@ -463,3 +463,41 @@
 /* Small monochrome historical creator portraits in the welcome tribute. */
 .welcome-portrait .creator-photo{display:block;width:120px;height:120px;max-width:100%;object-fit:cover;object-position:center;border:1px solid #999;filter:grayscale(1) contrast(1.12);image-rendering:auto}
 .welcome-credit{font-size:10px}
+
+
+/* Creator acknowledgment: deliberately gentle entrance and exit for Bill Atkinson and Susan Kare. */
+.welcome-overlay {
+  animation: creatorWelcomeFadeIn 1.8s ease-out both;
+}
+.welcome-card {
+  animation: creatorWelcomeCardIn 1.8s cubic-bezier(.2,.8,.2,1) .15s both;
+}
+.welcome-overlay.is-closing {
+  animation: creatorWelcomeFadeOut 1.25s ease-in both;
+  pointer-events: none;
+}
+.welcome-overlay.is-closing .welcome-card {
+  animation: creatorWelcomeCardOut 1.1s ease-in both;
+}
+@keyframes creatorWelcomeFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes creatorWelcomeCardIn {
+  from { opacity: 0; transform: translateY(18px) scale(.975); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes creatorWelcomeFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes creatorWelcomeCardOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(10px) scale(.985); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-overlay, .welcome-card, .welcome-overlay.is-closing, .welcome-overlay.is-closing .welcome-card {
+    animation-duration: .01ms;
+    animation-delay: 0ms;
+  }
+}
