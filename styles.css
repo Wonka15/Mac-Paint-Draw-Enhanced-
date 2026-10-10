@@ -360,3 +360,21 @@
 
 /* Keep selected pattern labels readable over the tile preview. */
 .pattern-swatch span{z-index:1;}
+
+
+/* 🟩 HOW IT WORKS — A small set of high-contrast controls keeps Edit Points approachable. */
+#vectorLayer.vector-active{pointer-events:auto;touch-action:none}
+.vector-path{cursor:pointer}
+.vector-anchor{fill:#fff;stroke:#2860df;stroke-width:2;vector-effect:non-scaling-stroke;cursor:grab;filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
+.vector-anchor:active{cursor:grabbing}
+.vector-handle-line{stroke:#3677ee;stroke-width:1.4;stroke-dasharray:3 3;vector-effect:non-scaling-stroke}
+.vector-handle{fill:#fff;stroke:#2674ef;stroke-width:2;vector-effect:non-scaling-stroke;cursor:grab;filter:drop-shadow(0 1px 1px rgba(0,0,0,.22));transition:r .1s ease,fill .1s ease}
+.vector-handle:hover{fill:#dceaff}
+.vector-handle.handle-in{stroke:#8156d9}
+.edit-points-card{padding:11px;border:1px solid #c9d5ff;border-radius:10px;background:linear-gradient(150deg,#f9fbff,#edf2ff);color:#293b68}
+.edit-points-card h2{margin:0 0 6px;font-size:13px}
+.edit-points-card p,.edit-points-card li{font-size:11px;line-height:1.45}
+.edit-points-card p{margin:0 0 6px}
+.edit-points-card ul{padding-left:16px;margin:5px 0 8px}
+.edit-points-hint{display:block;font-size:10px;line-height:1.4;color:#596b91}
+@media(prefers-reduced-motion:reduce){.vector-handle{transition:none}}
