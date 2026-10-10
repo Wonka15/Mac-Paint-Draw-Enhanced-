@@ -66,23 +66,39 @@
           <button class="swatch" style="background:#f1d4c5" data-color="#f1d4c5" aria-label="Pink"></button>
         </div>
         <div class="separator"></div>
-        <h2>Classic patterns</h2>
-        <p class="pattern-help">Choose a pattern for pencil, shapes, or the paint bucket.</p>
-        <div class="pattern-grid" id="patternGrid" aria-label="Paint patterns">
-          <button class="pattern-swatch active" data-pattern="solid" aria-label="Solid ink" title="Solid ink"><span>Solid</span></button>
-          <button class="pattern-swatch pattern-checker" data-pattern="checker" aria-label="Checkerboard" title="Checkerboard"></button>
-          <button class="pattern-swatch pattern-dots" data-pattern="dots" aria-label="Dots" title="Dots"></button>
-          <button class="pattern-swatch pattern-diagonal" data-pattern="diagonal" aria-label="Diagonal lines" title="Diagonal lines"></button>
-          <button class="pattern-swatch pattern-cross" data-pattern="cross" aria-label="Crosshatch" title="Crosshatch"></button>
-          <button class="pattern-swatch pattern-horizontal" data-pattern="horizontal" aria-label="Horizontal lines" title="Horizontal lines"></button>
-          <button class="pattern-swatch pattern-vertical" data-pattern="vertical" aria-label="Vertical lines" title="Vertical lines"></button>
-          <button class="pattern-swatch pattern-brick" data-pattern="brick" aria-label="Brick" title="Brick"></button>
-          <button class="pattern-swatch pattern-fine-checker" data-pattern="fine-checker" aria-label="Fine checker" title="Fine checker"></button>
-          <button class="pattern-swatch pattern-stipple" data-pattern="stipple" aria-label="Stipple" title="Stipple"></button>
-          <button class="pattern-swatch pattern-diamonds" data-pattern="diamonds" aria-label="Diamonds" title="Diamonds"></button>
-          <button class="pattern-swatch pattern-zigzag" data-pattern="zigzag" aria-label="Zigzag" title="Zigzag"></button>
-          <button class="pattern-swatch pattern-weave" data-pattern="weave" aria-label="Woven crosshatch" title="Woven crosshatch"></button>
-          <button class="pattern-swatch pattern-speckle" data-pattern="speckle" aria-label="Speckle" title="Speckle"></button>
+        <h2>MacPaint pattern palette</h2>
+        <p class="pattern-help">30 repeating patterns for brush marks, shape fills, and the paint bucket. Pick a swatch to make it the active ink.</p>
+        <div class="pattern-palette" id="patternPalette" aria-label="MacPaint pattern palette">
+          <section class="pattern-group" aria-label="MacPaint basics"><h3>MacPaint basics</h3><div class="pattern-grid"><button class="pattern-swatch active" data-pattern="solid" aria-label="Solid ink" title="Solid ink" aria-pressed="true"><span>Solid ink</span></button>
+<button class="pattern-swatch" data-pattern="checker" aria-label="Checkerboard" title="Checkerboard" aria-pressed="false"><span>Checkerboard</span></button>
+<button class="pattern-swatch" data-pattern="dots" aria-label="Dots" title="Dots" aria-pressed="false"><span>Dots</span></button>
+<button class="pattern-swatch" data-pattern="diagonal" aria-label="Diagonal lines" title="Diagonal lines" aria-pressed="false"><span>Diagonal lines</span></button>
+<button class="pattern-swatch" data-pattern="cross" aria-label="Crosshatch" title="Crosshatch" aria-pressed="false"><span>Crosshatch</span></button>
+<button class="pattern-swatch" data-pattern="horizontal" aria-label="Horizontal lines" title="Horizontal lines" aria-pressed="false"><span>Horizontal lines</span></button>
+<button class="pattern-swatch" data-pattern="vertical" aria-label="Vertical lines" title="Vertical lines" aria-pressed="false"><span>Vertical lines</span></button>
+<button class="pattern-swatch" data-pattern="brick" aria-label="Brick" title="Brick" aria-pressed="false"><span>Brick</span></button></div></section>
+          <section class="pattern-group" aria-label="Halftones & grain"><h3>Halftones & grain</h3><div class="pattern-grid"><button class="pattern-swatch" data-pattern="fine-checker" aria-label="Fine checker" title="Fine checker" aria-pressed="false"><span>Fine checker</span></button>
+<button class="pattern-swatch" data-pattern="stipple" aria-label="Stipple" title="Stipple" aria-pressed="false"><span>Stipple</span></button>
+<button class="pattern-swatch" data-pattern="speckle" aria-label="Speckle" title="Speckle" aria-pressed="false"><span>Speckle</span></button>
+<button class="pattern-swatch" data-pattern="gray-25" aria-label="25% gray" title="25% gray" aria-pressed="false"><span>25% gray</span></button>
+<button class="pattern-swatch" data-pattern="gray-50" aria-label="50% gray" title="50% gray" aria-pressed="false"><span>50% gray</span></button>
+<button class="pattern-swatch" data-pattern="large-dots" aria-label="Large dots" title="Large dots" aria-pressed="false"><span>Large dots</span></button>
+<button class="pattern-swatch" data-pattern="tiny-dots" aria-label="Tiny dots" title="Tiny dots" aria-pressed="false"><span>Tiny dots</span></button></div></section>
+          <section class="pattern-group" aria-label="Lines & grids"><h3>Lines & grids</h3><div class="pattern-grid"><button class="pattern-swatch" data-pattern="diamonds" aria-label="Diamonds" title="Diamonds" aria-pressed="false"><span>Diamonds</span></button>
+<button class="pattern-swatch" data-pattern="zigzag" aria-label="Zigzag" title="Zigzag" aria-pressed="false"><span>Zigzag</span></button>
+<button class="pattern-swatch" data-pattern="weave" aria-label="Woven crosshatch" title="Woven crosshatch" aria-pressed="false"><span>Woven crosshatch</span></button>
+<button class="pattern-swatch" data-pattern="grid" aria-label="Square grid" title="Square grid" aria-pressed="false"><span>Square grid</span></button>
+<button class="pattern-swatch" data-pattern="horizontal-dash" aria-label="Dashed horizontal" title="Dashed horizontal" aria-pressed="false"><span>Dashed horizontal</span></button>
+<button class="pattern-swatch" data-pattern="vertical-dash" aria-label="Dashed vertical" title="Dashed vertical" aria-pressed="false"><span>Dashed vertical</span></button>
+<button class="pattern-swatch" data-pattern="cross-dot" aria-label="Cross dots" title="Cross dots" aria-pressed="false"><span>Cross dots</span></button></div></section>
+          <section class="pattern-group" aria-label="Decorative"><h3>Decorative</h3><div class="pattern-grid"><button class="pattern-swatch" data-pattern="rings" aria-label="Rings" title="Rings" aria-pressed="false"><span>Rings</span></button>
+<button class="pattern-swatch" data-pattern="circles" aria-label="Circles" title="Circles" aria-pressed="false"><span>Circles</span></button>
+<button class="pattern-swatch" data-pattern="triangles" aria-label="Triangles" title="Triangles" aria-pressed="false"><span>Triangles</span></button>
+<button class="pattern-swatch" data-pattern="waves" aria-label="Waves" title="Waves" aria-pressed="false"><span>Waves</span></button>
+<button class="pattern-swatch" data-pattern="herringbone" aria-label="Herringbone" title="Herringbone" aria-pressed="false"><span>Herringbone</span></button>
+<button class="pattern-swatch" data-pattern="basket" aria-label="Basket weave" title="Basket weave" aria-pressed="false"><span>Basket weave</span></button>
+<button class="pattern-swatch" data-pattern="plus" aria-label="Plus signs" title="Plus signs" aria-pressed="false"><span>Plus signs</span></button>
+<button class="pattern-swatch" data-pattern="confetti" aria-label="Confetti" title="Confetti" aria-pressed="false"><span>Confetti</span></button></div></section>
         </div>
         <label class="check"><input type="checkbox" id="soundToggle" checked> Retro drawing sounds</label>
       </aside>
@@ -94,6 +110,7 @@
             <button class="btn secondary" id="guidesBtn" aria-pressed="false">Guides</button><button class="btn secondary" id="rulersBtn" aria-pressed="true">Rulers</button><button class="btn secondary" id="zoomOutBtn" aria-label="Zoom out">−</button><span class="zoom-readout" id="zoomReadout">100%</span><button class="btn secondary" id="zoomInBtn" aria-label="Zoom in">＋</button><button class="btn secondary" id="zoomFitBtn">Fit</button>
             <button class="btn secondary" id="gridBtn" aria-pressed="false">Grid</button>
             <button class="btn secondary" id="clearBtn">Clear</button>
+            <label class="crt-toggle" title="Apply a blue Macintosh SE CRT look to the canvas"><input type="checkbox" id="crtBlueToggle"><span>Blue CRT</span></label>
           </div>
         </div>
 
