@@ -932,7 +932,7 @@
         updateFatBitsGrid();
         $('fatBitsGrid').classList.add('active');
         canvasWrap.classList.add('fatbits-active');
-        toast('FatBits on — click or drag to edit single pixels');
+        toast('FatBits on — edit single pixels; hold Space and drag to pan');
       }else{
         $('fatBitsGrid').classList.remove('active');
         canvasWrap.classList.remove('fatbits-active');
