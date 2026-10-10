@@ -30,6 +30,10 @@
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
     let vectorPaths = [], activeVector = null, selectedVector = -1, selectedVectors = [], draggingAnchor = null, draggingHandle = null, curveDragAnchor = null;
     let zoomLevel = 1, rulerDrag = null, vectorShapeStart = null, vectorShapeDragging = false;
+    // Pan moves the whole artboard view without changing artwork coordinates.
+    let panX = 0, panY = 0, panDragStart = null;
+    // Text stays as editable SVG objects, so it can be moved after typing.
+    let textObjects = [], draggingText = null, selectedText = -1;
     let canvasFocus = false;
     // Shape Builder selection is separate from anchor editing.
     let shapeBuilderDragging = false, shapeBuilderVisited = new Set();
@@ -49,7 +53,7 @@
       toast.timer = setTimeout(() => node.classList.remove('show'), 1800);
     }
     function status() {
-      const names = {pencil:'Paintbrush',eraser:'Eraser',bucket:'Paint bucket',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text',eyedropper:'Pick color',hand:'Pan / guide',lasso:'Lasso select',pen:'Vector pen',bezier:'Bezier curve',vectorrect:'Vector rectangle',vectoroval:'Vector oval',editpoints:'Edit points',shapebuilder:'Shape Builder'};
+      const names = {pencil:'Paintbrush',eraser:'Eraser',bucket:'Paint bucket',line:'Line',rect:'Rectangle',ellipse:'Oval',text:'Text / move text',eyedropper:'Pick color',hand:'Pan canvas',lasso:'Lasso select',pen:'Vector pen',bezier:'Bezier curve',vectorrect:'Vector rectangle',vectoroval:'Vector oval',editpoints:'Edit points',shapebuilder:'Shape Builder'};
       $('toolStatus').innerHTML = '<strong>Tool:</strong> ' + (names[tool] || tool);
       document.querySelectorAll('.tool').forEach(b => {
         const active = b.dataset.tool === tool;
@@ -116,7 +120,7 @@
       // User clicks can turn the current tool off; programmatic selection stays explicit.
       if (toggleIfActive && next === tool && next !== 'pencil') next = 'pencil';
       tool = next;
-      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'editpoints' || tool === 'shapebuilder');
+      vectorLayer.classList.toggle('vector-active', tool === 'pen' || tool === 'bezier' || tool === 'vectorrect' || tool === 'vectoroval' || tool === 'editpoints' || tool === 'shapebuilder' || tool === 'text');
       renderVectors();
       status();
       updateShapeBuilderStatus();
@@ -124,7 +128,9 @@
       if (tool === 'fingerpaint') toast('Fingerpaint: use your finger for soft, broad paint; Apple Pencil pressure is supported too');
       if (tool === 'bezier') toast('Bezier: click-drag to shape handles; Enter finishes');
       if (tool === 'editpoints') toast('Edit Points: drag a blue anchor to reshape a vector');
-      if (tool === 'shapebuilder') toast('Shape Builder: click or drag across closed shapes, then choose an operation');
+      if (tool === 'shapebuilder') toast('Shape Builder: click one closed shape, then Shift-click another');
+      if (tool === 'hand') toast('Pan canvas: drag to move the whole page; drag from a ruler to add a guide');
+      if (tool === 'text') toast('Text: click to add text, then drag existing text to move it');
       if (tool === 'bucket') toast('Paint bucket: fills only the connected region; patterns stay inside its boundary');
       if (tool === 'lasso') toast('Lasso: draw around pixels, drag inside the selection to move, or use Fill selection');
     }
@@ -146,7 +152,7 @@
         try {
           localStorage.setItem('mpde-art', JSON.stringify({
             w: W(), h: H(), image: canvas.toDataURL('image/png'),
-            color, size, textSize, currentFont, selectedPattern, selectedBrush, roughPaper, crtMode, tool, guideX, guideY, showGuides, showGrid, vectors: vectorPaths
+            color, size, textSize, currentFont, selectedPattern, selectedBrush, roughPaper, crtMode, tool, guideX, guideY, showGuides, showGrid, vectors: vectorPaths, texts: textObjects
           }));
         } catch (error) { console.warn('Autosave unavailable:', error); }
       }, 300);
@@ -549,7 +555,9 @@
     function updateShapeBuilderStatus() {
       const count = selectedVectors.filter(index => index >= 0 && index < vectorPaths.length && vectorPaths[index].closed).length;
       const status = $('shapeBuilderStatus');
-      if (status) status.textContent = count + (count === 1 ? ' closed shape selected' : ' closed shapes selected');
+      if (status) status.textContent = count < 2 ? `${count} selected — click a closed shape, then Shift-click another` : `${count} shapes selected — choose what to do below`;
+      // Disable actions until they can work, guiding beginners toward the next step.
+      ['shapeBuilderUniteBtn','shapeBuilderSubtractBtn','shapeBuilderIntersectBtn','shapeBuilderExcludeBtn'].forEach(id => { const button=$(id); if(button)button.disabled=count<2; });
     }
 
     function runShapeBuilder(operation) {
@@ -682,6 +690,13 @@
         }));
         v.points.forEach((point,index)=>vectorLayer.appendChild(svgEl('circle',{cx:point.x,cy:point.y,r:6,'data-anchor':i+':'+index,'aria-label':'Anchor point '+(index+1)},'vector-anchor')));
       });
+      // Text is drawn as real SVG text, not baked into the paint pixels.
+      textObjects.forEach((item,index)=>{
+        const node=svgEl('text',{x:item.x,y:item.y,'font-family':item.font,'font-size':item.size,fill:item.color,'data-text':index,'aria-label':'Text: '+item.text},'canvas-text');
+        node.textContent=item.text;
+        if(index===selectedText){node.setAttribute('paint-order','stroke');node.setAttribute('stroke','#fff');node.setAttribute('stroke-width','3');node.setAttribute('stroke-linejoin','round');node.setAttribute('filter','drop-shadow(0 0 1px #315cdb)');}
+        vectorLayer.appendChild(node);
+      });
     }
     // Split a straight or Bézier segment where the user clicks, preserving its original curve.
     function insertVectorPoint(vectorIndex, segmentIndex, t) {
@@ -714,8 +729,15 @@
       renderVectors(); saveSoon(); toast(closed?'Vector shape closed':'Vector path finished');
     }
     function vectorDown(event) {
-      if(!['pen','bezier','vectorrect','vectoroval','editpoints','shapebuilder'].includes(tool))return;
+      if(!['pen','bezier','vectorrect','vectoroval','editpoints','shapebuilder','text'].includes(tool))return;
       event.preventDefault();event.stopPropagation();const p=svgPoint(event);
+      if(tool==='text'){
+        const textHit=event.target.closest?event.target.closest('[data-text]'):null;
+        if(textHit){selectedText=Number(textHit.getAttribute('data-text'));const item=textObjects[selectedText];if(item)draggingText={index:selectedText,start:p,x:item.x,y:item.y};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;}
+        const value=prompt('Type your text:');
+        if(value&&value.trim()){textObjects.push({text:value,x:p.x,y:p.y,font:currentFont,size:textSize,color});selectedText=textObjects.length-1;renderVectors();saveSoon();retroSound('tick');toast('Text added — drag it to reposition');}
+        return;
+      }
       if(tool==='shapebuilder'){
         const pathHit=event.target.closest?event.target.closest('[data-vector]'):null;shapeBuilderDragging=true;shapeBuilderVisited=new Set();
         if(pathHit){const index=Number(pathHit.getAttribute('data-vector'));if(vectorPaths[index]&&vectorPaths[index].closed){if(event.shiftKey)selectedVectors=selectedVectors.includes(index)?selectedVectors.filter(item=>item!==index):[...selectedVectors,index];else selectedVectors=[index];selectedVector=selectedVectors.includes(index)?index:(selectedVectors[0]??-1);shapeBuilderVisited.add(index);}else{toast('Choose a closed vector shape.');shapeBuilderDragging=false;}}
@@ -743,6 +765,7 @@
       selectedVector=-1;selectedVectors=[];renderVectors();
     }
     function vectorMove(event) {
+      if(draggingText&&tool==='text'){event.preventDefault();const p=svgPoint(event,null,false),item=textObjects[draggingText.index];if(item){item.x=draggingText.x+(p.x-draggingText.start.x);item.y=draggingText.y+(p.y-draggingText.start.y);renderVectors();}return;}
       if(shapeBuilderDragging&&tool==='shapebuilder'){const element=document.elementFromPoint(event.clientX,event.clientY),pathHit=element&&element.closest?element.closest('[data-vector]'):null;if(pathHit){const index=Number(pathHit.getAttribute('data-vector'));if(vectorPaths[index]&&vectorPaths[index].closed&&!shapeBuilderVisited.has(index)){shapeBuilderVisited.add(index);if(!selectedVectors.includes(index))selectedVectors.push(index);selectedVector=index;renderVectors();updateShapeBuilderStatus();}}return;}
       if(vectorShapeDragging&&vectorShapeStart&&activeVector&&(tool==='vectorrect'||tool==='vectoroval')){event.preventDefault();activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);renderVectors();return;}
       if(tool==='bezier'&&curveDragAnchor!==null&&activeVector){event.preventDefault();const p=svgPoint(event,null,false),anchor=activeVector.points[curveDragAnchor];if(anchor){const dx=p.x-anchor.x,dy=p.y-anchor.y;anchor.out={x:p.x,y:p.y};anchor.in={x:anchor.x-dx,y:anchor.y-dy};renderVectors();}return;}
@@ -751,6 +774,7 @@
     }
     function vectorUp(event) {
       if(event&&vectorLayer.releasePointerCapture){try{vectorLayer.releasePointerCapture(event.pointerId);}catch(_){}}
+      if(draggingText){draggingText=null;saveSoon();return;}
       if(shapeBuilderDragging){shapeBuilderDragging=false;shapeBuilderVisited.clear();updateShapeBuilderStatus();return;}
       if(vectorShapeDragging){if(event&&activeVector)activeVector.points=vectorShapePoints(vectorShapeStart,svgPoint(event),tool);if(activeVector){vectorPaths.push(activeVector);selectedVector=vectorPaths.length-1;selectedVectors=[selectedVector];}activeVector=null;vectorShapeStart=null;vectorShapeDragging=false;renderVectors();saveSoon();return;}
       if(curveDragAnchor!==null){curveDragAnchor=null;renderVectors();saveSoon();return;}
@@ -863,11 +887,7 @@
       if(fatBitsMode){snapshot();drawing=true;lastFatBit=null;drawFatBit(event);if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}return;}
       const p=point(event);
       $('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';
-      if(tool==='text'){
-        const text=prompt('What would you like to write?');
-        if(text){snapshot();ctx.fillStyle=color;ctx.font=textSize+'px '+currentFont;ctx.fillText(text,p.x,p.y);saveSoon();retroSound('tick');}
-        return;
-      }
+      if(tool==='text')return; // SVG text creation is handled by vectorDown so each label stays movable.
       if(tool==='eyedropper'){
         const d=ctx.getImageData(Math.floor(p.x),Math.floor(p.y),1,1).data;
         color='#'+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
@@ -875,13 +895,19 @@
       }
       if(tool==='bucket'){snapshot();floodFill(p.x,p.y);return;}
       if(tool==='hand'){
-        guideX=p.x;guideY=p.y;showGuides=true;drawGuides();toast('Guide placed');return;
+        panDragStart={x:event.clientX,y:event.clientY,panX,panY};
+        if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}
+        canvasWrap.style.cursor='grabbing';return;
       }
       drawing=true;startPoint=p;lastPoint=p;snapshot();retroSound('start');
       if(tool==='pencil'||tool==='eraser'||tool==='fingerpaint'){paintInputSegment(p,p,event,tool==='eraser');}
       if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}
     }
     function move(event) {
+      if(panDragStart&&tool==='hand'){
+        panX=panDragStart.panX+(event.clientX-panDragStart.x);panY=panDragStart.panY+(event.clientY-panDragStart.y);
+        $('rulerLayout').style.transform=`translate(${panX}px, ${panY}px)`;return;
+      }
       if(lassoDrawing&&tool==='lasso'){
         const p=point(event),last=lassoPoints[lassoPoints.length-1];
         if(!last||Math.hypot(p.x-last.x,p.y-last.y)>=2){lassoPoints.push(p);drawSelectionOutline(false);}
@@ -905,6 +931,7 @@
       else if(['line','rect','ellipse'].includes(tool)) shape(p);
     }
     function up(event) {
+      if(panDragStart){panDragStart=null;canvasWrap.style.cursor='grab';if(event&&event.pointerId!==undefined&&canvas.releasePointerCapture){try{canvas.releasePointerCapture(event.pointerId);}catch(_){}}return;}
       if(lassoDrawing&&tool==='lasso'){
         lassoDrawing=false;makeLassoSelection();if(event&&event.pointerId!==undefined&&canvas.releasePointerCapture){try{canvas.releasePointerCapture(event.pointerId);}catch(_){}}
         return;
@@ -1184,7 +1211,7 @@
         const saved=JSON.parse(localStorage.getItem('mpde-art')||'null');
         if(!saved||!saved.image)return;
         const img=new Image();
-        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;currentFont=saved.currentFont||currentFont;selectedPattern=saved.selectedPattern||selectedPattern;selectedBrush=saved.selectedBrush||selectedBrush;roughPaper=!!saved.roughPaper;crtMode=saved.crtMode||((saved.crtBlue)?'blue':(saved.crtGreen)?'green':'off');tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;updateColorIndicator();$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush===selectedBrush));$('roughPaperToggle').checked=roughPaper;canvasWrap.classList.toggle('rough-paper',roughPaper);setCrtMode(crtMode,false);$('fontSelect').value=currentFont;selectTool(tool);setToggleButton('guidesBtn',showGuides);setToggleButton('gridBtn',showGrid);setToggleButton('rulersBtn',!$('rulerLayout').classList.contains('rulers-hidden'));drawGuides();renderVectors();updateShapeBuilderStatus();};
+        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;currentFont=saved.currentFont||currentFont;selectedPattern=saved.selectedPattern||selectedPattern;selectedBrush=saved.selectedBrush||selectedBrush;roughPaper=!!saved.roughPaper;crtMode=saved.crtMode||((saved.crtBlue)?'blue':(saved.crtGreen)?'green':'off');tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];textObjects=Array.isArray(saved.texts)?saved.texts:[];selectedText=-1;activeVector=null;selectedVectors=[];$('colorInput').value=color;updateColorIndicator();$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush===selectedBrush));$('roughPaperToggle').checked=roughPaper;canvasWrap.classList.toggle('rough-paper',roughPaper);setCrtMode(crtMode,false);$('fontSelect').value=currentFont;selectTool(tool);setToggleButton('guidesBtn',showGuides);setToggleButton('gridBtn',showGrid);setToggleButton('rulersBtn',!$('rulerLayout').classList.contains('rulers-hidden'));drawGuides();renderVectors();updateShapeBuilderStatus();};
         img.src=saved.image;
       } catch(error) { console.warn('Could not restore drawing:',error); }
     }
