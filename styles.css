@@ -533,3 +533,5 @@
 #vectorLayer.vector-active .canvas-text{pointer-events:all}
 .shape-builder-grid .btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
 #canvasWrap{cursor:crosshair}
+
+.text-move-help{margin:0 0 8px;padding:8px 9px;border:1px solid #cbd7ff;border-radius:7px;background:#f1f5ff;color:#31509d;font-size:11px;line-height:1.45}
