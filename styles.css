@@ -268,3 +268,15 @@
 .tool .ico{display:inline-flex;align-items:center;justify-content:center;flex:0 0 24px;width:24px;height:24px}
 .tool .ico svg{display:block;width:23px;height:23px;overflow:visible}
 .tool .icon-eraser svg,.tool .icon-bucket svg{filter:drop-shadow(0 1px 0 rgba(0,0,0,.08))}
+
+
+/* 🟩 HOW IT WORKS — Each swatch preview mirrors one repeating pattern in app.js. */
+/* 🟪 BEGINNER TIP — Add a preview class when you add a new data-pattern button in index.html. */
+.pattern-fine-checker{background-color:#fff;background-image:conic-gradient(#20252b 25%,#fff 0 50%,#20252b 0 75%,#fff 0);background-size:8px 8px}
+.pattern-stipple{background-image:radial-gradient(#20252b .8px,transparent 1px);background-size:4px 4px}
+.pattern-diamonds{background-image:repeating-linear-gradient(45deg,transparent 0 7px,#20252b 7px 8px),repeating-linear-gradient(-45deg,transparent 0 7px,#20252b 7px 8px)}
+.pattern-zigzag{background-image:linear-gradient(135deg,transparent 43%,#20252b 45% 52%,transparent 54%),linear-gradient(45deg,transparent 43%,#20252b 45% 52%,transparent 54%);background-size:12px 12px}
+.pattern-weave{background-image:repeating-linear-gradient(0deg,#20252b 0 1px,transparent 1px 4px),repeating-linear-gradient(90deg,#20252b 0 1px,transparent 1px 4px)}
+.pattern-speckle{background-image:radial-gradient(#20252b 1px,transparent 1.3px),radial-gradient(#20252b .7px,transparent 1px);background-size:13px 13px,9px 9px;background-position:0 0,4px 6px}
+.snap-help{font-size:11px;line-height:1.45;color:var(--muted);margin:-5px 0 10px}
+.pattern-swatch[aria-pressed="true"]{outline:2px solid var(--blue);outline-offset:1px}
