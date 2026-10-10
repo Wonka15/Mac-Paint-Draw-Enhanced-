@@ -121,6 +121,7 @@
       status();
       updateShapeBuilderStatus();
       if (tool === 'pen') toast('Vector Pen: click to add straight points; Enter finishes');
+      if (tool === 'fingerpaint') toast('Fingerpaint: use your finger for soft, broad paint; Apple Pencil pressure is supported too');
       if (tool === 'bezier') toast('Bezier: click-drag to shape handles; Enter finishes');
       if (tool === 'editpoints') toast('Edit Points: drag a blue anchor to reshape a vector');
       if (tool === 'shapebuilder') toast('Shape Builder: click or drag across closed shapes, then choose an operation');
@@ -784,6 +785,19 @@
       }
       ctx.putImageData(image,0,0);rebuildSelectionLayers();saveSoon();retroSound('fill');toast('Selection filled with '+(selectedPattern==='solid'?'solid ink':'active pattern'));
     }
+    function paintInputSegment(from,to,event,erase=false){
+      const originalSize=size;
+      if(event&&event.pointerType==='pen'&&event.pressure>0)size=Math.max(1,originalSize*(.35+event.pressure*1.65));
+      if(tool==='fingerpaint'&&!erase){
+        const width=Math.max(12,size*1.8);
+        ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=color;
+        ctx.globalAlpha=.28;ctx.lineWidth=width*1.45;ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.lineTo(to.x,to.y);ctx.stroke();
+        ctx.globalAlpha=.62;ctx.lineWidth=width*.72;ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.lineTo(to.x,to.y);ctx.stroke();
+        ctx.globalAlpha=.22;ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(to.x,to.y,Math.max(2,width*.12),0,Math.PI*2);ctx.fill();ctx.restore();
+      }else paintBrushSegment(from,to,erase);
+      size=originalSize;
+    }
+
     function drawFatBit(event) {
       const rect=canvasWrap.getBoundingClientRect();
       const x=Math.max(0,Math.min(W()-1,Math.floor((event.clientX-rect.left-fatBitsOffsetX)/zoomLevel)));
@@ -829,7 +843,7 @@
         guideX=p.x;guideY=p.y;showGuides=true;drawGuides();toast('Guide placed');return;
       }
       drawing=true;startPoint=p;lastPoint=p;snapshot();retroSound('start');
-      if(tool==='pencil'||tool==='eraser'){paintBrushSegment(p,p,tool==='eraser');}
+      if(tool==='pencil'||tool==='eraser'||tool==='fingerpaint'){paintInputSegment(p,p,event,tool==='eraser');}
       if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}
     }
     function move(event) {
@@ -852,7 +866,7 @@
       if(fatBitsMode){drawFatBit(event);return;}
       const p=point(event);
       $('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';
-      if(tool==='pencil'||tool==='eraser'){paintBrushSegment(lastPoint,p,tool==='eraser');lastPoint=p;}
+      if(tool==='pencil'||tool==='eraser'||tool==='fingerpaint'){paintInputSegment(lastPoint,p,event,tool==='eraser');lastPoint=p;}
       else if(['line','rect','ellipse'].includes(tool)) shape(p);
     }
     function up(event) {
@@ -888,7 +902,15 @@
     vectorLayer.addEventListener('pointerup',vectorUp);
     vectorLayer.addEventListener('pointercancel',vectorUp);
     vectorLayer.addEventListener('dblclick',event=>{if((tool==='pen'||tool==='bezier')&&activeVector){event.preventDefault();finishVector(false);}});
-    document.addEventListener('keydown',event=>{if(event.key===' '&&fatBitsMode){spaceHeld=true;event.preventDefault();}if(event.key==='Enter'&&(tool==='pen'||tool==='bezier')&&activeVector)finishVector(false);if(event.key==='Escape'&&activeVector){activeVector=null;renderVectors();toast('Path cancelled');}});
+    document.addEventListener('keydown',event=>{
+      if(event.key===' '&&fatBitsMode){spaceHeld=true;event.preventDefault();}
+      if(event.key==='Enter'&&(tool==='pen'||tool==='bezier')&&activeVector)finishVector(false);
+      if(event.key==='Escape'&&activeVector){activeVector=null;renderVectors();toast('Path cancelled');}
+      const target=event.target,typing=target&&(target.matches('input,textarea,select')||target.isContentEditable);
+      if(!typing&&(event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='z'){
+        event.preventDefault();if(event.shiftKey)$('redoBtn').click();else $('undoBtn').click();
+      }else if(!typing&&event.ctrlKey&&event.key.toLowerCase()==='y'){event.preventDefault();$('redoBtn').click();}
+    });
     document.addEventListener('keyup',event=>{if(event.key===' ')spaceHeld=false;});
     document.querySelectorAll('.swatch').forEach(b=>b.addEventListener('click',()=>{color=b.dataset.color;$('colorInput').value=color;updateColorIndicator();toast('Color selected: '+color.toUpperCase());}));
     $('colorInput').addEventListener('input',e=>{color=e.target.value;updateColorIndicator();});
@@ -926,22 +948,25 @@
     $('fatBitsBtn').addEventListener('click',()=>{
       fatBitsMode=!fatBitsMode;
       if(fatBitsMode){
-        zoomBeforeFatBits=zoomLevel;
-        fatBitsOffsetX=0;fatBitsOffsetY=0;
-        setZoom(12);
-        updateFatBitsGrid();
-        $('fatBitsGrid').classList.add('active');
-        canvasWrap.classList.add('fatbits-active');
-        toast('FatBits on — edit single pixels; hold Space and drag to pan');
+        zoomBeforeFatBits=zoomLevel;fatBitsOffsetX=0;fatBitsOffsetY=0;setZoom(12);updateFatBitsGrid();
+        $('fatBitsGrid').classList.add('active');canvasWrap.classList.add('fatbits-active');
+        toast('FatBits on — drag with Space, or use the arrow pad to move around the canvas');
       }else{
-        $('fatBitsGrid').classList.remove('active');
-        canvasWrap.classList.remove('fatbits-active');
-        fatBitsOffsetX=0;fatBitsOffsetY=0;
-        setZoom(zoomBeforeFatBits);
-        toast('FatBits off — normal drawing restored');
+        $('fatBitsGrid').classList.remove('active');canvasWrap.classList.remove('fatbits-active');
+        fatBitsOffsetX=0;fatBitsOffsetY=0;setZoom(zoomBeforeFatBits);toast('FatBits off — normal drawing restored');
       }
       setToggleButton('fatBitsBtn',fatBitsMode);
     });
+    document.querySelectorAll('[data-fatpan]').forEach(button=>button.addEventListener('click',()=>{
+      if(!fatBitsMode){toast('Turn on FatBits first to move the magnified view');return;}
+      const direction=button.dataset.fatpan,step=Math.max(120,canvasWrap.clientWidth*.35);
+      if(direction==='left')fatBitsOffsetX+=step;
+      if(direction==='right')fatBitsOffsetX-=step;
+      if(direction==='up')fatBitsOffsetY+=step;
+      if(direction==='down')fatBitsOffsetY-=step;
+      if(direction==='center'){fatBitsOffsetX=0;fatBitsOffsetY=0;}
+      updateFatBitsView();
+    }));
     $('fillToggle').addEventListener('change',e=>{fill=e.target.checked;saveSoon();toast(fill?'Shape fill on':'Shape fill off');});
     $('snapCheck').addEventListener('change', e => toast(e.target.checked ? 'Smart snapping on: visible guides, grid, and vector anchors' : 'Smart snapping off'));
     // Snap-to-guides is a native checkbox; drawing reads its checked state.
