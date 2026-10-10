@@ -501,3 +501,13 @@
     animation-delay: 0ms;
   }
 }
+
+
+/* FatBits: make the overlay grid match the displayed size of one source pixel. */
+#fatBitsGrid.active {
+  background-image: linear-gradient(to right, rgba(32,37,43,.58) 1px, transparent 1px), linear-gradient(to bottom, rgba(32,37,43,.58) 1px, transparent 1px);
+}
+#canvasWrap.fatbits-active #paper,
+#canvasWrap.fatbits-active #overlay {
+  image-rendering: pixelated;
+}
