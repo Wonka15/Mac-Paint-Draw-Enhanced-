@@ -40,6 +40,7 @@
           <button class="tool" data-tool="text"><span class="ico">T</span>Text</button>
           <button class="tool" data-tool="eyedropper"><span class="ico">◉</span>Pick color</button>
           <button class="tool" data-tool="hand"><span class="ico">✋</span>Pan / guide</button>
+          <button class="tool" data-tool="lasso" aria-pressed="false"><span class="ico">⌁</span>Lasso select</button>
           <button class="tool" data-tool="pen"><span class="ico">⌁</span>Vector pen</button>
           <button class="tool" data-tool="bezier"><span class="ico">∿</span>Bezier curve</button>
           <button class="tool" data-tool="vectorrect"><span class="ico">▱</span>Vector rect</button>
@@ -48,6 +49,7 @@
           <button class="tool" data-tool="shapebuilder" aria-pressed="false"><span class="ico">⬡</span>Shape Builder</button>
         </div>
 
+        <div class="selection-actions" aria-label="Selection actions"><button class="btn secondary" id="fillSelectionBtn" type="button">Fill selection</button><button class="btn secondary" id="clearSelectionBtn" type="button">Clear selection</button></div>
         <div class="separator"></div>
 
         <section class="edit-points-card" aria-label="Edit Points help">
@@ -142,6 +144,7 @@
             <svg id="vectorLayer" viewBox="0 0 1200 800" preserveAspectRatio="none" aria-label="Editable vector artwork"></svg>
             <canvas id="guides" width="1200" height="800"></canvas>
             <canvas id="rulers" width="1200" height="800"></canvas>
+            <canvas id="selectionLayer" width="1200" height="800" aria-hidden="true"></canvas>
             <div id="fatBitsGrid" aria-hidden="true"></div>
             </div>
           </div>
