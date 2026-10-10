@@ -26,6 +26,7 @@
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
     let vectorPaths = [], activeVector = null, selectedVector = -1, selectedVectors = [], draggingAnchor = null, draggingHandle = null, curveDragAnchor = null;
     let zoomLevel = 1, rulerDrag = null, vectorShapeStart = null, vectorShapeDragging = false;
+    let canvasFocus = false;
     // Shape Builder selection is separate from anchor editing.
     let shapeBuilderDragging = false, shapeBuilderVisited = new Set();
     let saveTimer = null, audioContext = null, lastDragSound = 0;
@@ -59,6 +60,52 @@
       if (!button) return;
       button.setAttribute('aria-pressed', String(isOn));
       button.classList.toggle('primary', isOn);
+    }
+
+    // 🟩 HOW IT WORKS — The current-ink chip and palette outline always mirror the active color.
+    // 🟪 BEGINNER TIP — If you add a new way to choose colors, call updateColorIndicator() afterwards.
+    function updateColorIndicator() {
+      const chip=$('colorChip'),hex=$('colorHex');
+      if(chip)chip.style.backgroundColor=color;
+      if(hex)hex.textContent=color.toUpperCase();
+      document.querySelectorAll('.swatch').forEach(button=>{
+        const active=(button.dataset.color||'').toLowerCase()===color.toLowerCase();
+        button.classList.toggle('selected',active);
+        button.setAttribute('aria-pressed',String(active));
+      });
+    }
+
+    function drawCreatorTribute() {
+      // 🟩 HOW IT WORKS — A one-bit pixel tribute is drawn onto the real canvas, so users can keep or clear it.
+      // 🟪 BEGINNER TIP — New and Clear still work normally; this is just the first-launch starting artwork.
+      ctx.save();ctx.fillStyle='#fff';ctx.fillRect(0,0,W(),H());
+      const portraits=[
+        {x:255,y:205,name:'BILL ATKINSON',role:'MACPAINT CREATOR',rows:[
+          '....########....','...##########...','..############..','.###++++++++###.','###++++++++++###','##++##++++##++##','##++##++++##++##','##++++++++++++##','##+++######+++##','##++++++++++++##','.##+++####+++##.','..##++++++++##..','...##########...','....##++++##....','...###++++###...','..####++++####..','.################.','##################','..##..........##..','..##..........##..']},
+        {x:665,y:205,name:'SUSAN KARE',role:'INTERFACE & ICON DESIGN',rows:[
+          '....############....','...##############...','..################..','.####++++++++++####.','####++++++++++++####','####++##++++##++####','####++##++++##++####','####++++++++++++####','####++++####++++####','####++++++++++++####','####++++++++++++####','..##++++++++++++##..','...##############...','....##++++++++##....','...###++++++++###...','..####++++++++####..','.##################.','####################','...##..........##...','...##..........##...']}
+      ];
+      const px=13;
+      portraits.forEach(person=>{
+        person.rows.forEach((row,ry)=>[...row].forEach((mark,rx)=>{
+          if(mark==='#'){ctx.fillStyle='#111';ctx.fillRect(person.x+rx*px,person.y+ry*px,px,px);}
+          else if(mark==='+'){ctx.fillStyle='#aaa';ctx.fillRect(person.x+rx*px,person.y+ry*px,px,px);}
+        }));
+        ctx.fillStyle='#111';ctx.textAlign='center';ctx.font='bold 22px monospace';ctx.fillText(person.name,person.x+130,person.y+315);
+        ctx.font='13px monospace';ctx.fillText(person.role,person.x+130,person.y+340);
+      });
+      ctx.textAlign='center';ctx.fillStyle='#111';ctx.font='bold 36px monospace';ctx.fillText('THANK YOU, BILL & SUSAN',W()/2,110);
+      ctx.font='16px monospace';ctx.fillText('For making computer art feel possible for everyone.',W()/2,145);
+      ctx.font='12px monospace';ctx.fillText('A pixel-art thank-you to the people behind the original MacPaint spirit.',W()/2,650);
+      ctx.restore();
+    }
+
+    function applyCanvasFocus(enabled) {
+      canvasFocus=!!enabled;
+      $('appRoot').classList.toggle('canvas-focus',canvasFocus);
+      setToggleButton('canvasFocusBtn',canvasFocus);
+      $('canvasFocusBtn').textContent=canvasFocus?'Exit focus':'Focus canvas';
+      setTimeout(()=>{if(canvasFocus){const stage=$('.stage');const availableWidth=Math.max(240,stage.clientWidth-50);const availableHeight=Math.max(240,stage.clientHeight-48);setZoom(Math.min(1.4,availableWidth/W(),availableHeight/H()));}else setZoom(zoomLevel);},0);
     }
 
     function selectTool(next, toggleIfActive = false) {
@@ -365,11 +412,12 @@
     $('zoomOutBtn').addEventListener('click',()=>setZoom(zoomLevel-.25));
     $('zoomFitBtn').addEventListener('click',()=>{
       const stage=document.querySelector('.stage');
-      const availableWidth=Math.max(240,stage.clientWidth-70);
-      const availableHeight=Math.max(240,stage.clientHeight-70);
-      const fit=Math.min(1,availableWidth/Math.max(1,canvasWrap.offsetWidth),availableHeight/Math.max(1,canvasWrap.offsetHeight));
+      const availableWidth=Math.max(240,stage.clientWidth-48);
+      const availableHeight=Math.max(240,stage.clientHeight-48);
+      const fit=Math.min(1.4,availableWidth/Math.max(1,1200),availableHeight/Math.max(1,800));
       setZoom(fit);
     });
+    $('canvasFocusBtn').addEventListener('click',()=>applyCanvasFocus(!canvasFocus));
     $('rulersBtn').addEventListener('click',()=>{
       const layout=$('rulerLayout'),hidden=layout.classList.toggle('rulers-hidden');
       setToggleButton('rulersBtn', !hidden);
@@ -662,7 +710,7 @@
       if(tool==='eyedropper'){
         const d=ctx.getImageData(Math.floor(p.x),Math.floor(p.y),1,1).data;
         color='#'+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
-        $('colorInput').value=color;toast('Color picked');return;
+        $('colorInput').value=color;updateColorIndicator();toast('Color picked: '+color.toUpperCase());return;
       }
       if(tool==='bucket'){snapshot();floodFill(p.x,p.y);return;}
       if(tool==='hand'){
@@ -694,8 +742,8 @@
     vectorLayer.addEventListener('pointercancel',vectorUp);
     vectorLayer.addEventListener('dblclick',event=>{if((tool==='pen'||tool==='bezier')&&activeVector){event.preventDefault();finishVector(false);}});
     document.addEventListener('keydown',event=>{if(event.key==='Enter'&&(tool==='pen'||tool==='bezier')&&activeVector)finishVector(false);if(event.key==='Escape'&&activeVector){activeVector=null;renderVectors();toast('Path cancelled');}});
-    document.querySelectorAll('.swatch').forEach(b=>b.addEventListener('click',()=>{color=b.dataset.color;$('colorInput').value=color;toast('Color selected');}));
-    $('colorInput').addEventListener('input',e=>color=e.target.value);
+    document.querySelectorAll('.swatch').forEach(b=>b.addEventListener('click',()=>{color=b.dataset.color;$('colorInput').value=color;updateColorIndicator();toast('Color selected: '+color.toUpperCase());}));
+    $('colorInput').addEventListener('input',e=>{color=e.target.value;updateColorIndicator();});
     $('sizeInput').addEventListener('input',e=>{size=Number(e.target.value);$('sizeValue').textContent=size+'px';});
     $('textSizeInput').addEventListener('input',e=>{textSize=Number(e.target.value);$('textSizeValue').textContent=textSize+'px';});
     renderPatternPreviews();
@@ -887,12 +935,23 @@
         const saved=JSON.parse(localStorage.getItem('mpde-art')||'null');
         if(!saved||!saved.image)return;
         const img=new Image();
-        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;currentFont=saved.currentFont||currentFont;selectedPattern=saved.selectedPattern||selectedPattern;selectedBrush=saved.selectedBrush||selectedBrush;roughPaper=!!saved.roughPaper;crtBlue=!!saved.crtBlue;crtGreen=!!saved.crtGreen;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush===selectedBrush));$('roughPaperToggle').checked=roughPaper;canvasWrap.classList.toggle('rough-paper',roughPaper);$('crtBlueToggle').checked=crtBlue;$('crtGreenToggle').checked=crtGreen;canvasWrap.classList.toggle('crt-blue',crtBlue);canvasWrap.classList.toggle('crt-green',crtGreen);$('fontSelect').value=currentFont;selectTool(tool);setToggleButton('guidesBtn',showGuides);setToggleButton('gridBtn',showGrid);setToggleButton('rulersBtn',!$('rulerLayout').classList.contains('rulers-hidden'));drawGuides();renderVectors();updateShapeBuilderStatus();};
+        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;currentFont=saved.currentFont||currentFont;selectedPattern=saved.selectedPattern||selectedPattern;selectedBrush=saved.selectedBrush||selectedBrush;roughPaper=!!saved.roughPaper;crtBlue=!!saved.crtBlue;crtGreen=!!saved.crtGreen;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;updateColorIndicator();$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush===selectedBrush));$('roughPaperToggle').checked=roughPaper;canvasWrap.classList.toggle('rough-paper',roughPaper);$('crtBlueToggle').checked=crtBlue;$('crtGreenToggle').checked=crtGreen;canvasWrap.classList.toggle('crt-blue',crtBlue);canvasWrap.classList.toggle('crt-green',crtGreen);$('fontSelect').value=currentFont;selectTool(tool);setToggleButton('guidesBtn',showGuides);setToggleButton('gridBtn',showGrid);setToggleButton('rulersBtn',!$('rulerLayout').classList.contains('rulers-hidden'));drawGuides();renderVectors();updateShapeBuilderStatus();};
         img.src=saved.image;
       } catch(error) { console.warn('Could not restore drawing:',error); }
     }
     ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());
-    updateButtons();status();drawGuides();renderRulerLabels();renderFrameStrip();
+    updateButtons();status();drawGuides();renderRulerLabels();renderFrameStrip();updateColorIndicator();
+    // Show the creator acknowledgment once per browser profile. Accepting it leaves a pixel-art thank-you on the canvas.
+    const welcome=$('creatorWelcome');
+    let creatorAcknowledged=false;
+    try{creatorAcknowledged=localStorage.getItem('mpde-creator-tribute-ack')==='yes';}catch(_){}
+    if(creatorAcknowledged)welcome.hidden=true;
+    $('creatorWelcomeAck').addEventListener('click',()=>{
+      try{localStorage.setItem('mpde-creator-tribute-ack','yes');}catch(_){}
+      welcome.hidden=true;
+      drawCreatorTribute();snapshot();saveSoon();
+      toast('Thank you, Bill Atkinson and Susan Kare');
+    });
     setToggleButton('guidesBtn', showGuides);
     setToggleButton('gridBtn', showGrid);
     setToggleButton('rulersBtn', !$('rulerLayout').classList.contains('rulers-hidden'));
