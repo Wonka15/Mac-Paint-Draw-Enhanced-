@@ -20,7 +20,7 @@
     // 🟩 HOW IT WORKS — State is the app's memory: selected tool, ink, and active gestures.
     // 🟪 BEGINNER TIP — When adding a setting, define its default here and wire its UI control below.
     // APP STATE: selected tool, drawing style, and current interaction.
-    let tool = 'pencil', color = '#20252b', size = 4, fill = false, selectedPattern = 'solid', textSize = 24, selectedBrush = 'round', roughPaper = false;
+    let tool = 'pencil', color = '#20252b', size = 4, fill = false, selectedPattern = 'solid', textSize = 24, selectedBrush = 'round', roughPaper = false, crtBlue = false;
     let drawing = false, startPoint = null, lastPoint = null;
     let history = [], redoStack = [], showGuides = false, showGrid = false;
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
@@ -93,7 +93,7 @@
         try {
           localStorage.setItem('mpde-art', JSON.stringify({
             w: W(), h: H(), image: canvas.toDataURL('image/png'),
-            color, size, textSize, selectedPattern, selectedBrush, roughPaper, tool, guideX, guideY, showGuides, showGrid, vectors: vectorPaths
+            color, size, textSize, selectedPattern, selectedBrush, roughPaper, crtBlue, tool, guideX, guideY, showGuides, showGrid, vectors: vectorPaths
           }));
         } catch (error) { console.warn('Autosave unavailable:', error); }
       }, 300);
@@ -101,86 +101,67 @@
 
     // 🟩 HOW IT WORKS — Patterns are tiny repeating tiles; the browser repeats them as ink.
     // 🟪 BEGINNER TIP — Add a new pattern here AND in patternInkAt() below so the bucket matches the brush.
-    function makePattern() {
-      if (selectedPattern === 'solid') return color;
-
+    // 🟩 HOW IT WORKS — One tile generator powers paint strokes, shape fills, and the palette previews.
+    // 🟪 BEGINNER TIP — When adding a pattern, also add its matching rule to patternInkAt() below.
+    function makePattern(patternName = selectedPattern, preview = false) {
+      if (patternName === 'solid') return preview ? null : color;
       const tile = document.createElement('canvas');
       tile.width = tile.height = 16;
-      const patternCtx = tile.getContext('2d');
-      patternCtx.fillStyle = '#fff';
-      patternCtx.fillRect(0, 0, tile.width, tile.height);
-      patternCtx.fillStyle = color;
-      patternCtx.strokeStyle = color;
-      patternCtx.lineWidth = 1;
-
-      if (selectedPattern === 'checker') {
-        patternCtx.fillRect(0, 0, 8, 8);
-        patternCtx.fillRect(8, 8, 8, 8);
-      } else if (selectedPattern === 'fine-checker') {
-        patternCtx.fillRect(0, 0, 4, 4);
-        patternCtx.fillRect(4, 4, 4, 4);
-        patternCtx.fillRect(8, 8, 4, 4);
-        patternCtx.fillRect(12, 12, 4, 4);
-      } else if (selectedPattern === 'dots' || selectedPattern === 'stipple') {
-        const radius = selectedPattern === 'stipple' ? 0.8 : 1.5;
-        const step = selectedPattern === 'stipple' ? 4 : 8;
-        for (let y = step / 2; y < 16; y += step) {
-          for (let x = step / 2; x < 16; x += step) {
-            patternCtx.beginPath();
-            patternCtx.arc(x, y, radius, 0, Math.PI * 2);
-            patternCtx.fill();
-          }
+      const p = tile.getContext('2d');
+      p.fillStyle = '#fff';
+      p.fillRect(0, 0, 16, 16);
+      p.fillStyle = color;
+      p.strokeStyle = color;
+      p.lineWidth = 1;
+      const line = (x1,y1,x2,y2) => { p.beginPath(); p.moveTo(x1,y1); p.lineTo(x2,y2); p.stroke(); };
+      switch (patternName) {
+        case 'checker': p.fillRect(0,0,8,8); p.fillRect(8,8,8,8); break;
+        case 'fine-checker': for(let y=0;y<16;y+=8) for(let x=0;x<16;x+=8) p.fillRect(x,y,4,4); break;
+        case 'dots': case 'large-dots': case 'tiny-dots': case 'stipple': {
+          const step = patternName==='stipple'||patternName==='tiny-dots'?4:patternName==='large-dots'?8:8;
+          const radius = patternName==='stipple'?0.7:patternName==='tiny-dots'?0.55:patternName==='large-dots'?2.1:1.25;
+          for(let y=step/2;y<16;y+=step) for(let x=step/2;x<16;x+=step){p.beginPath();p.arc(x,y,radius,0,Math.PI*2);p.fill();}
+          break;
         }
-      } else if (selectedPattern === 'diagonal') {
-        for (let x = -16; x < 32; x += 4) {
-          patternCtx.beginPath(); patternCtx.moveTo(x, 0); patternCtx.lineTo(x + 16, 16); patternCtx.stroke();
-        }
-      } else if (selectedPattern === 'cross') {
-        for (let x = -16; x < 32; x += 6) {
-          patternCtx.beginPath();
-          patternCtx.moveTo(x, 0); patternCtx.lineTo(x + 16, 16);
-          patternCtx.moveTo(x + 16, 0); patternCtx.lineTo(x, 16);
-          patternCtx.stroke();
-        }
-      } else if (selectedPattern === 'horizontal') {
-        for (let y = 0; y < 16; y += 4) patternCtx.fillRect(0, y, 16, 1);
-      } else if (selectedPattern === 'vertical') {
-        for (let x = 0; x < 16; x += 4) patternCtx.fillRect(x, 0, 1, 16);
-      } else if (selectedPattern === 'brick') {
-        patternCtx.strokeRect(0, 0, 16, 8);
-        patternCtx.beginPath();
-        patternCtx.moveTo(8, 0); patternCtx.lineTo(8, 8);
-        patternCtx.moveTo(0, 8); patternCtx.lineTo(16, 8);
-        patternCtx.moveTo(4, 8); patternCtx.lineTo(4, 16);
-        patternCtx.moveTo(12, 8); patternCtx.lineTo(12, 16);
-        patternCtx.stroke();
-      } else if (selectedPattern === 'diamonds') {
-        patternCtx.beginPath();
-        patternCtx.moveTo(8, 0); patternCtx.lineTo(16, 8); patternCtx.lineTo(8, 16);
-        patternCtx.lineTo(0, 8); patternCtx.closePath(); patternCtx.stroke();
-      } else if (selectedPattern === 'zigzag') {
-        patternCtx.beginPath();
-        patternCtx.moveTo(0, 4); patternCtx.lineTo(4, 0); patternCtx.lineTo(8, 4);
-        patternCtx.lineTo(12, 0); patternCtx.lineTo(16, 4);
-        patternCtx.moveTo(0, 12); patternCtx.lineTo(4, 8); patternCtx.lineTo(8, 12);
-        patternCtx.lineTo(12, 8); patternCtx.lineTo(16, 12);
-        patternCtx.stroke();
-      } else if (selectedPattern === 'weave') {
-        for (let p = 0; p < 16; p += 4) {
-          patternCtx.fillRect(p, 0, 1, 16);
-          patternCtx.fillRect(0, p, 16, 1);
-        }
-        patternCtx.clearRect(4, 4, 2, 2);
-        patternCtx.clearRect(12, 12, 2, 2);
-      } else if (selectedPattern === 'speckle') {
-        // Fixed positions keep the tile stable between brush strokes.
-        [[2,3],[6,1],[12,4],[15,9],[4,12],[9,7],[11,14],[1,15]].forEach(([x,y]) => {
-          patternCtx.fillRect(x, y, 1, 1);
-        });
+        case 'diagonal': for(let x=-16;x<32;x+=4) line(x,0,x+16,16); break;
+        case 'cross': for(let x=-16;x<32;x+=6){line(x,0,x+16,16);line(x+16,0,x,16);} break;
+        case 'horizontal': for(let y=0;y<16;y+=4)p.fillRect(0,y,16,1); break;
+        case 'vertical': for(let x=0;x<16;x+=4)p.fillRect(x,0,1,16); break;
+        case 'brick': p.strokeRect(0,0,16,8);line(8,0,8,8);line(0,8,16,8);line(4,8,4,16);line(12,8,12,16);break;
+        case 'diamonds': line(8,0,16,8);line(16,8,8,16);line(8,16,0,8);line(0,8,8,0);break;
+        case 'zigzag': for(let y=0;y<16;y+=8){line(0,y+4,4,y);line(4,y,8,y+4);line(8,y+4,12,y);line(12,y,16,y+4);}break;
+        case 'weave': for(let n=0;n<16;n+=4){p.fillRect(n,0,1,16);p.fillRect(0,n,16,1);}p.clearRect(4,4,2,2);p.clearRect(12,12,2,2);break;
+        case 'speckle': [[2,3],[6,1],[12,4],[15,9],[4,12],[9,7],[11,14],[1,15]].forEach(([x,y])=>p.fillRect(x,y,1,1));break;
+        case 'gray-25': for(let y=0;y<16;y+=4)for(let x=(y/4%2)*2;x<16;x+=4)p.fillRect(x,y,1,1);break;
+        case 'gray-50': for(let y=0;y<16;y+=4)for(let x=0;x<16;x+=4)p.fillRect(x,y,2,2);break;
+        case 'grid': for(let n=0;n<=16;n+=4){line(n,0,n,16);line(0,n,16,n);}break;
+        case 'horizontal-dash': for(let y=2;y<16;y+=4)for(let x=0;x<16;x+=6)p.fillRect(x,y,3,1);break;
+        case 'vertical-dash': for(let x=2;x<16;x+=4)for(let y=0;y<16;y+=6)p.fillRect(x,y,1,3);break;
+        case 'cross-dot': for(let y=2;y<16;y+=6)for(let x=2;x<16;x+=6){line(x-1,y,x+1,y);line(x,y-1,x,y+1);}break;
+        case 'rings': case 'circles': for(let y=0;y<16;y+=8)for(let x=0;x<16;x+=8){p.beginPath();p.arc(x+4,y+4,patternName==='rings'?3:2,0,Math.PI*2);if(patternName==='rings')p.stroke();else p.fill();}break;
+        case 'triangles': for(let y=0;y<16;y+=8)for(let x=0;x<16;x+=8){p.beginPath();p.moveTo(x+4,y+1);p.lineTo(x+7,y+7);p.lineTo(x+1,y+7);p.closePath();p.stroke();}break;
+        case 'waves': for(let y=2;y<16;y+=5){p.beginPath();for(let x=0;x<=16;x++){const yy=y+Math.sin(x*Math.PI/4)*1.5;x===0?p.moveTo(x,yy):p.lineTo(x,yy);}p.stroke();}break;
+        case 'herringbone': for(let y=0;y<16;y+=8){line(0,y+4,4,y);line(4,y,8,y+4);line(8,y+4,12,y+8);line(12,y+8,16,y+4);}break;
+        case 'basket': for(let n=0;n<16;n+=8){p.fillRect(n,0,3,8);p.fillRect(0,n,8,3);p.clearRect(n+3,n+3,2,2);}break;
+        case 'plus': for(let y=2;y<16;y+=6)for(let x=2;x<16;x+=6){p.fillRect(x-1,y,3,1);p.fillRect(x,y-1,1,3);}break;
+        case 'confetti': [[1,2],[5,5],[12,1],[14,7],[3,11],[9,14],[13,12],[7,9]].forEach(([x,y],i)=>{if(i%2)p.fillRect(x,y,2,1);else p.fillRect(x,y,1,2);});break;
       }
-
-      return ctx.createPattern(tile, 'repeat');
+      return preview ? tile.toDataURL('image/png') : ctx.createPattern(tile, 'repeat');
     }
+    // 🟩 HOW IT WORKS — Render tiny live previews from the same tiles used by the drawing engine.
+    function renderPatternPreviews() {
+      document.querySelectorAll('.pattern-swatch').forEach(button => {
+        if (button.dataset.pattern === 'solid') {
+          button.style.background = '#20252b';
+          button.querySelector('span').style.color = '#fff';
+          return;
+        }
+        button.style.backgroundImage = 'url("' + makePattern(button.dataset.pattern, true) + '")';
+        button.style.backgroundSize = '16px 16px';
+        button.querySelector('span').style.color = '#20252b';
+      });
+    }
+
     function drawingStyle(){return selectedPattern==='solid'?color:makePattern();}
     function retroSound(kind){
       if(!$('soundToggle')||!$('soundToggle').checked)return;
@@ -196,21 +177,38 @@
     }
     function hexRgb(hex){return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];}
     // 🟩 HOW IT WORKS — This mirrors makePattern() so bucket fills use the same texture family.
+    // 🟩 HOW IT WORKS — The bucket uses the same pattern families as the brush and shape fills.
     function patternInkAt(x, y) {
+      const px=((Math.floor(x)%16)+16)%16, py=((Math.floor(y)%16)+16)%16;
       switch (selectedPattern) {
-        case 'checker': return (Math.floor(x / 8) + Math.floor(y / 8)) % 2 === 0;
-        case 'fine-checker': return (Math.floor(x / 4) + Math.floor(y / 4)) % 2 === 0;
-        case 'dots': return x % 8 < 3 && y % 8 < 3;
-        case 'stipple': return x % 4 === 1 && y % 4 === 1;
-        case 'horizontal': return y % 4 === 0;
-        case 'vertical': return x % 4 === 0;
-        case 'diagonal': return (x + y) % 4 === 0;
-        case 'cross': return (x + y) % 6 === 0 || ((x - y + 1200) % 6 === 0);
-        case 'diamonds': return Math.abs((x % 16) - 8) + Math.abs((y % 16) - 8) <= 1;
-        case 'zigzag': return (y % 8 < 4 ? (x + y) % 8 === 0 : (x - y + 1600) % 8 === 0);
-        case 'weave': return x % 4 === 0 || y % 4 === 0;
-        case 'speckle': return ((x * 13 + y * 7) % 29) < 2;
-        case 'brick': return x % 16 === 0 || y % 8 === 0 || ((Math.floor(y / 8) % 2 === 0 ? x : x + 8) % 16 === 0);
+        case 'checker': return (Math.floor(x/8)+Math.floor(y/8))%2===0;
+        case 'fine-checker': return (Math.floor(x/8)+Math.floor(y/8))%2===0 && px%8<4;
+        case 'dots': return px%8<3 && py%8<3;
+        case 'large-dots': return (px-4)**2+(py-4)**2<=4 || (px-12)**2+(py-12)**2<=4;
+        case 'tiny-dots': case 'stipple': return px%4===1 && py%4===1;
+        case 'horizontal': return py%4===0;
+        case 'vertical': return px%4===0;
+        case 'diagonal': return (px+py)%4===0;
+        case 'cross': return (px+py)%6===0 || (px-py+16)%6===0;
+        case 'diamonds': return Math.abs(px-8)+Math.abs(py-8)<=1;
+        case 'zigzag': return py%8<4?(px+py)%8===0:(px-py+16)%8===0;
+        case 'weave': return px%4===0 || py%4===0;
+        case 'speckle': return ((Math.floor(x)*13+Math.floor(y)*7)%29)<2;
+        case 'brick': return px===0 || py%8===0 || ((Math.floor(y/8)%2===0?px:px+8)%16===0);
+        case 'gray-25': return px%4===0 && py%4===0;
+        case 'gray-50': return px%4<2 && py%4<2;
+        case 'grid': return px%4===0 || py%4===0;
+        case 'horizontal-dash': return py%4===2 && px%6<3;
+        case 'vertical-dash': return px%4===2 && py%6<3;
+        case 'cross-dot': return px%6===2 && py%6===2;
+        case 'rings': {const dx=px%8-4,dy=py%8-4;return Math.abs(dx*dx+dy*dy-9)<=3;}
+        case 'circles': {const dx=px%8-4,dy=py%8-4;return dx*dx+dy*dy<=4;}
+        case 'triangles': return py%8>=1 && py%8<=6 && Math.abs(px%8-4)<=Math.floor((py%8)/2);
+        case 'waves': return Math.abs((py%5)-Math.round(2+Math.sin(px*Math.PI/4)*1.5))<=0;
+        case 'herringbone': return (px+py)%8===0 || (px-py+16)%8===0;
+        case 'basket': return (px%8<3 && py%8<8) || (py%8<3 && px%8<8);
+        case 'plus': return (px%6===2 && py%6<5)||(py%6===2&&px%6<5);
+        case 'confetti': return ((Math.floor(x)*11+Math.floor(y)*17)%31)<3;
         default: return true;
       }
     }
@@ -737,10 +735,13 @@
     $('colorInput').addEventListener('input',e=>color=e.target.value);
     $('sizeInput').addEventListener('input',e=>{size=Number(e.target.value);$('sizeValue').textContent=size+'px';});
     $('textSizeInput').addEventListener('input',e=>{textSize=Number(e.target.value);$('textSizeValue').textContent=textSize+'px';});
+    renderPatternPreviews();
     document.querySelectorAll('.pattern-swatch').forEach(button => button.addEventListener('click', () => { selectedPattern = button.dataset.pattern; document.querySelectorAll('.pattern-swatch').forEach(swatch => { const active = swatch === button; swatch.classList.toggle('active', active); swatch.setAttribute('aria-pressed', String(active)); }); toast('Pattern: ' + (selectedPattern === 'solid' ? 'Solid ink' : button.title || selectedPattern)); saveSoon(); }));
     document.addEventListener('pointermove',()=>{if(drawing){const now=performance.now();if(now-lastDragSound>90){lastDragSound=now;retroSound('tick');}}});
     document.querySelectorAll('.brush-option').forEach(b=>b.addEventListener('click',()=>{selectedBrush=b.dataset.brush;document.querySelectorAll('.brush-option').forEach(x=>x.classList.toggle('active',x===b));toast('Brush: '+b.dataset.brush);}));
     $('roughPaperToggle').addEventListener('change',e=>{roughPaper=e.target.checked;canvasWrap.classList.toggle('rough-paper',roughPaper);saveSoon();toast(roughPaper?'Rough paper texture on':'Rough paper texture off');});
+    // 🟩 HOW IT WORKS — The CRT effect is a visual overlay, so it never alters saved artwork pixels.
+    $('crtBlueToggle').addEventListener('change',e=>{crtBlue=e.target.checked;canvasWrap.classList.toggle('crt-blue',crtBlue);saveSoon();toast(crtBlue?'Blue Macintosh SE CRT look on':'Blue CRT look off');});
     $('fillToggle').addEventListener('change',e=>{fill=e.target.checked;saveSoon();toast(fill?'Shape fill on':'Shape fill off');});
     $('snapCheck').addEventListener('change', e => toast(e.target.checked ? 'Smart snapping on: visible guides, grid, and vector anchors' : 'Smart snapping off'));
     // Snap-to-guides is a native checkbox; drawing reads its checked state.
@@ -897,7 +898,7 @@
         const saved=JSON.parse(localStorage.getItem('mpde-art')||'null');
         if(!saved||!saved.image)return;
         const img=new Image();
-        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;selectedPattern=saved.selectedPattern||selectedPattern;selectedBrush=saved.selectedBrush||selectedBrush;roughPaper=!!saved.roughPaper;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush===selectedBrush));$('roughPaperToggle').checked=roughPaper;canvasWrap.classList.toggle('rough-paper',roughPaper);selectTool(tool);setToggleButton('guidesBtn',showGuides);setToggleButton('gridBtn',showGrid);setToggleButton('rulersBtn',!$('rulerLayout').classList.contains('rulers-hidden'));drawGuides();renderVectors();updateShapeBuilderStatus();};
+        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;selectedPattern=saved.selectedPattern||selectedPattern;selectedBrush=saved.selectedBrush||selectedBrush;roughPaper=!!saved.roughPaper;crtBlue=!!saved.crtBlue;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush===selectedBrush));$('roughPaperToggle').checked=roughPaper;canvasWrap.classList.toggle('rough-paper',roughPaper);$('crtBlueToggle').checked=crtBlue;canvasWrap.classList.toggle('crt-blue',crtBlue);selectTool(tool);setToggleButton('guidesBtn',showGuides);setToggleButton('gridBtn',showGrid);setToggleButton('rulersBtn',!$('rulerLayout').classList.contains('rulers-hidden'));drawGuides();renderVectors();updateShapeBuilderStatus();};
         img.src=saved.image;
       } catch(error) { console.warn('Could not restore drawing:',error); }
     }
