@@ -757,6 +757,17 @@
       const allowed = ['off','blue','red','green','yellow'];
       crtMode = allowed.includes(mode) ? mode : 'off';
       ['blue','red','green','yellow'].forEach(name => canvasWrap.classList.toggle('crt-' + name, crtMode === name));
+      // Apply the tint directly to the whole paper layer as well as its scanline overlay.
+      // This makes the CRT modes visible even when browser compositing handles pseudo-elements differently.
+      const crtFilters = {
+        off: 'none',
+        blue: 'sepia(.22) saturate(1.5) hue-rotate(175deg) contrast(1.08)',
+        red: 'sepia(.25) saturate(1.65) hue-rotate(315deg) contrast(1.08)',
+        green: 'sepia(.32) saturate(1.55) hue-rotate(65deg) contrast(1.1)',
+        yellow: 'sepia(.48) saturate(1.4) hue-rotate(5deg) contrast(1.06)'
+      };
+      canvasWrap.style.filter = crtFilters[crtMode];
+      canvasWrap.style.backgroundColor = ({off:'#ffffff',blue:'#a9cbf5',red:'#f3b5b5',green:'#b9e5bd',yellow:'#f3e69b'})[crtMode];
       document.querySelectorAll('[data-crt]').forEach(button => {
         const active = button.dataset.crt === crtMode;
         button.classList.toggle('active', active);
