@@ -317,10 +317,45 @@
       if(selectedBrush==='calligraphy'){
         ctx.save();ctx.translate(x,y);ctx.rotate(angle-0.45);ctx.fillStyle=ink;ctx.beginPath();ctx.ellipse(0,0,Math.max(1,radius*1.3),Math.max(.6,radius*.24),0,0,Math.PI*2);ctx.fill();ctx.restore();return;
       }
+      if(selectedBrush==='oil'){
+        if(erase){ctx.save();ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fill();ctx.restore();return;}
+        // Blend the chosen pigment with existing canvas color for a buttery oil-paint effect.
+        const pad=Math.min(44,Math.ceil(radius*1.25)),left=Math.max(0,Math.floor(x-pad)),top=Math.max(0,Math.floor(y-pad));
+        const right=Math.min(W(),Math.ceil(x+pad)),bottom=Math.min(H(),Math.ceil(y+pad));
+        if(right>left&&bottom>top){
+          const image=ctx.getImageData(left,top,right-left,bottom-top),d=image.data,[nr,ng,nb]=hexRgb(color);
+          for(let py=0;py<image.height;py++)for(let px=0;px<image.width;px++){
+            const dx=(left+px+.5-x)/Math.max(1,radius),dy=(top+py+.5-y)/Math.max(1,radius),dist=Math.sqrt(dx*dx+dy*dy);
+            if(dist>1.12)continue;
+            const k=(py*image.width+px)*4,edge=Math.max(0,Math.min(1,(1.08-dist)*7));
+            const oldR=d[k],oldG=d[k+1],oldB=d[k+2],nearPaper=oldR>238&&oldG>238&&oldB>238;
+            const mix=nearPaper?.88:.48,a=edge*mix;
+            d[k]=oldR*(1-a)+nr*a;d[k+1]=oldG*(1-a)+ng*a;d[k+2]=oldB*(1-a)+nb*a;d[k+3]=255;
+          }
+          ctx.putImageData(image,left,top);
+        }
+        // A raised ridge, glossy highlight and pigment body suggest thick impasto.
+        ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.lineCap='round';ctx.lineJoin='round';
+        ctx.globalAlpha=.2;ctx.strokeStyle='#17120d';ctx.lineWidth=Math.max(1,radius*.42);ctx.beginPath();ctx.moveTo(-radius*.72,radius*.18);ctx.lineTo(radius*.78,radius*.18);ctx.stroke();
+        ctx.globalAlpha=.16;ctx.strokeStyle='#fff7d7';ctx.lineWidth=Math.max(1,radius*.24);ctx.beginPath();ctx.moveTo(-radius*.65,-radius*.18);ctx.lineTo(radius*.4,-radius*.18);ctx.stroke();
+        ctx.globalAlpha=.28;ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(0,0,radius*.88,radius*.62,0,0,Math.PI*2);ctx.fill();ctx.restore();return;
+      }
       if(selectedBrush==='watercolor'){
+        if(erase){ctx.save();ctx.globalAlpha=.25;ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fill();ctx.restore();return;}
         ctx.save();
-        for(let i=3;i>=1;i--){const rr=radius*(.45+i*.28);ctx.globalAlpha=erase?.25:.055+i*.018;ctx.fillStyle=ink;ctx.beginPath();ctx.ellipse(x+(Math.random()-.5)*radius*.3,y+(Math.random()-.5)*radius*.3,rr,rr*(.78+Math.random()*.3),angle,0,Math.PI*2);ctx.fill();}
-        ctx.globalAlpha=erase?1:.11;ctx.strokeStyle=ink;ctx.lineWidth=Math.max(.5,radius*.12);ctx.beginPath();ctx.arc(x,y,radius*.85,0,Math.PI*2);ctx.stroke();ctx.restore();return;
+        // A pale halo spreads farther than the pigment when the paper is very wet.
+        ctx.globalAlpha=.055;ctx.fillStyle=ink;ctx.beginPath();ctx.ellipse(x,y,radius*1.65,radius*1.35,angle,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=.075;ctx.fillStyle=ink;ctx.beginPath();ctx.ellipse(x+(Math.random()-.5)*radius*.28,y+(Math.random()-.5)*radius*.28,radius*1.2,radius*(.75+Math.random()*.25),angle,0,Math.PI*2);ctx.fill();
+        for(let i=0;i<3;i++){
+          const spread=radius*(.35+i*.28),jitter=radius*.22;
+          ctx.globalAlpha=.065+i*.022;ctx.fillStyle=ink;ctx.beginPath();
+          ctx.ellipse(x+(Math.random()-.5)*jitter,y+(Math.random()-.5)*jitter,spread,spread*(.72+Math.random()*.45),angle,0,Math.PI*2);ctx.fill();
+        }
+        // Darker pigment gathers around the wet edge, with irregular bloom marks.
+        ctx.globalAlpha=.12;ctx.strokeStyle=ink;ctx.lineWidth=Math.max(.6,radius*.11);ctx.beginPath();
+        ctx.ellipse(x,y,radius*(.92+Math.random()*.13),radius*(.76+Math.random()*.15),angle,0,Math.PI*2);ctx.stroke();
+        ctx.globalAlpha=.07;ctx.fillStyle=ink;ctx.beginPath();ctx.arc(x+radius*.48,y-radius*.28,Math.max(1,radius*.22),0,Math.PI*2);ctx.fill();
+        ctx.restore();return;
       }
       if(selectedBrush==='acrylic'){
         ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.fillStyle=ink;
