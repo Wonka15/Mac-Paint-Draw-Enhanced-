@@ -39,7 +39,7 @@
           <button class="tool" data-tool="ellipse"><span class="ico">◯</span>Oval</button>
           <button class="tool" data-tool="text"><span class="ico">T</span>Text</button>
           <button class="tool" data-tool="eyedropper"><span class="ico">◉</span>Pick color</button>
-          <button class="tool" data-tool="hand"><span class="ico">✋</span>Pan / guide</button>
+          <button class="tool" data-tool="hand" title="Drag the page to pan; use the rulers to add guides"><span class="ico">✋</span>Pan canvas</button>
           <button class="tool" data-tool="fingerpaint" aria-pressed="false" title="Fingerpaint with a soft, broad stroke on touchscreens"><span class="ico" aria-hidden="true">☝︎</span>Fingerpaint</button>
           <button class="tool" data-tool="lasso" aria-pressed="false"><span class="ico icon-lasso" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M19.5 9.5c0-4-3.4-6.5-7.6-6.5S4 5.7 4 9.5s3.3 6.2 7.6 6.2 7.9-2.5 7.9-6.2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.2 1.4"/><path d="M15.8 13.8 20.5 20M18.3 17.4l-2.1 2.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>Lasso select</button>
           <button class="tool" data-tool="pen"><span class="ico icon-vector-pen" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M3 5 10.5 18.5 20.5 5" fill="none" stroke="#426bd6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="5" r="1.7" fill="#fff" stroke="#426bd6" stroke-width="1.4"/><circle cx="10.5" cy="18.5" r="1.7" fill="#fff" stroke="#426bd6" stroke-width="1.4"/><circle cx="20.5" cy="5" r="1.7" fill="#fff" stroke="#426bd6" stroke-width="1.4"/><path d="m9 12 7.8-8.3 3.1 3.1-8.3 7.8-3.5.9z" fill="#f0c66e" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="m9 12-.9 3.5 3.5-.9" fill="#fff3c8" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></span>Vector pen</button>
@@ -203,13 +203,13 @@
         <p class="snap-help">When enabled, points gently snap to visible guides, the 50 px grid, and nearby vector anchors. Turn on Guides or Grid first.</p>
         <div class="separator"></div>
         <h2>Shape Builder</h2>
-        <p class="shape-builder-help"><strong>Quick workflow</strong><br>1. Make overlapping closed vector shapes.<br>2. Choose Shape Builder and click/Shift-click shapes to select them.<br>3. Choose Unite, Subtract, Keep overlap, or Remove overlap.<br><em>Note: this version combines whole shapes; it does not yet select individual overlap regions like Illustrator.</em></p>
+        <p class="shape-builder-help"><strong>Beginner steps</strong><br>1. Draw two overlapping <em>Vector rect</em> or <em>Vector oval</em> shapes.<br>2. Choose Shape Builder. Click the first shape, then hold <kbd>Shift</kbd> and click the second. The blue outline shows what is selected.<br>3. Pick an action below. Start with <b>Build / Unite</b> to join the shapes.<br><em>Tip: this version combines whole shapes, not individual overlap pieces.</em></p>
         <div class="shape-builder-status" id="shapeBuilderStatus" role="status" aria-live="polite">0 shapes selected</div>
         <div class="shape-builder-grid">
-          <button class="btn secondary" id="shapeBuilderUniteBtn">Build / Unite</button>
-          <button class="btn secondary" id="shapeBuilderSubtractBtn">Subtract</button>
-          <button class="btn secondary" id="shapeBuilderIntersectBtn">Keep overlap</button>
-          <button class="btn secondary" id="shapeBuilderExcludeBtn">Remove overlap</button>
+          <button class="btn secondary" id="shapeBuilderUniteBtn" disabled>1. Build / Unite</button>
+          <button class="btn secondary" id="shapeBuilderSubtractBtn" disabled>2. Subtract</button>
+          <button class="btn secondary" id="shapeBuilderIntersectBtn" disabled>3. Keep overlap</button>
+          <button class="btn secondary" id="shapeBuilderExcludeBtn" disabled>4. Remove overlap</button>
           <button class="btn secondary" id="shapeBuilderClearBtn">Clear selection</button>
         </div>
         <div class="separator"></div>
