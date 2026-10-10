@@ -22,6 +22,7 @@
     // APP STATE: selected tool, drawing style, and current interaction.
     let tool = 'pencil', color = '#20252b', size = 4, fill = false, selectedPattern = 'solid', textSize = 24, selectedBrush = 'round', roughPaper = false, crtMode = 'off', fatBitsMode = false, zoomBeforeFatBits = 1, lastFatBit = null;
     let drawing = false, startPoint = null, lastPoint = null;
+    let fatBitsOffsetX = 0, fatBitsOffsetY = 0, fatBitsPanning = false, fatBitsPanStart = null, spaceHeld = false;
     let history = [], redoStack = [], showGuides = false, showGrid = false;
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
     let vectorPaths = [], activeVector = null, selectedVector = -1, selectedVectors = [], draggingAnchor = null, draggingHandle = null, curveDragAnchor = null;
@@ -283,26 +284,31 @@
 
     function floodFill(seedX,seedY){
       const w=W(),h=H(),image=ctx.getImageData(0,0,w,h),data=image.data,original=new Uint8ClampedArray(data);
-      const sx=Math.max(0,Math.min(w-1,Math.floor(seedX))),sy=Math.max(0,Math.min(h-1,Math.floor(seedY))),seed=(sy*w+sx)*4;
-      const target=[original[seed],original[seed+1],original[seed+2],original[seed+3]],rgb=hexRgb(color),solid=selectedPattern==='solid';
-      if(solid&&target[0]===rgb[0]&&target[1]===rgb[1]&&target[2]===rgb[2]&&target[3]===255)return;
-      const count=w*h,seen=new Uint8Array(count),stack=new Uint32Array(count);let top=0,first=sy*w+sx;stack[top++]=first;seen[first]=1;
+      const sx=Math.max(0,Math.min(w-1,Math.floor(seedX))),sy=Math.max(0,Math.min(h-1,Math.floor(seedY))),seed=sy*w+sx,seedByte=seed*4;
+      const target=[original[seedByte],original[seedByte+1],original[seedByte+2],original[seedByte+3]],rgb=hexRgb(color),solid=selectedPattern==='solid';
       const tol=22;
+      const matches=(idx)=>{const i=idx*4;return Math.abs(original[i]-target[0])<=tol&&Math.abs(original[i+1]-target[1])<=tol&&Math.abs(original[i+2]-target[2])<=tol&&Math.abs(original[i+3]-target[3])<=tol;};
+      if(solid&&target[0]===rgb[0]&&target[1]===rgb[1]&&target[2]===rgb[2]&&target[3]===255)return;
+      // MacPaint-style seed fill: only enqueue neighbors that match the seed color.
+      // This keeps the fill connected to the clicked region instead of recoloring every
+      // disconnected white area on the canvas.
+      const count=w*h,seen=new Uint8Array(count),stack=new Uint32Array(count);let top=0;
+      stack[top++]=seed;seen[seed]=1;
       while(top){
-        const idx=stack[--top],px=idx%w,py=(idx/w)|0,di=idx*4;
-        if(Math.abs(original[di]-target[0])>tol||Math.abs(original[di+1]-target[1])>tol||Math.abs(original[di+2]-target[2])>tol||Math.abs(original[di+3]-target[3])>tol)continue;
-        let ink=true;
-        if (!solid) ink = patternInkAt(px, py);
+        const idx=stack[--top],x=idx%w,y=(idx/w)|0,di=idx*4;
+        const ink=solid||patternInkAt(x,y);
         data[di]=ink?rgb[0]:255;data[di+1]=ink?rgb[1]:255;data[di+2]=ink?rgb[2]:255;data[di+3]=255;
-        // 🟩 HOW IT WORKS — Push neighbors directly to avoid allocating an array for every visited pixel.
-        if(px>0&&!seen[idx-1]){seen[idx-1]=1;if(top<count)stack[top++]=idx-1;}
-        if(px<w-1&&!seen[idx+1]){seen[idx+1]=1;if(top<count)stack[top++]=idx+1;}
-        if(py>0&&!seen[idx-w]){seen[idx-w]=1;if(top<count)stack[top++]=idx-w;}
-        if(py<h-1&&!seen[idx+w]){seen[idx+w]=1;if(top<count)stack[top++]=idx+w;}
+        const neighbors=[];
+        if(x>0)neighbors.push(idx-1);
+        if(x<w-1)neighbors.push(idx+1);
+        if(y>0)neighbors.push(idx-w);
+        if(y<h-1)neighbors.push(idx+w);
+        for(const next of neighbors){
+          if(!seen[next]&&matches(next)){seen[next]=1;if(top<count)stack[top++]=next;}
+        }
       }
       ctx.putImageData(image,0,0);saveSoon();retroSound('fill');
     }
-
 
     function brushStamp(x,y,angle,erase=false){
       const ink=erase?'#ffffff':color, radius=Math.max(1,size/2);
@@ -421,19 +427,25 @@
     function updateFatBitsGrid(){
       const grid=$('fatBitsGrid');
       if(!grid)return;
-      // Match one grid cell to one source-image pixel before CSS zoom is applied.
-      const cellWidth=canvas.offsetWidth/Math.max(1,W());
-      const cellHeight=canvas.offsetHeight/Math.max(1,H());
-      grid.style.backgroundSize=cellWidth+'px '+cellHeight+'px';
-      // CSS zoom scales the grid too, so keep its visible strokes about one screen pixel wide.
-      const lineWidth=1/Math.max(1,zoomLevel);
-      grid.style.backgroundImage='linear-gradient(to right, rgba(32,37,43,.58) '+lineWidth+'px, transparent '+lineWidth+'px), linear-gradient(to bottom, rgba(32,37,43,.58) '+lineWidth+'px, transparent '+lineWidth+'px)';
+      // The grid is transformed with the artwork, so each 1×1 tile becomes one visible pixel cell.
+      grid.style.backgroundSize='1px 1px';
+      grid.style.backgroundImage='linear-gradient(to right, rgba(32,37,43,.62) 1px, transparent 1px), linear-gradient(to bottom, rgba(32,37,43,.62) 1px, transparent 1px)';
+    }
+    function updateFatBitsView(){
+      const layers=['paper','onion','overlay','vectorLayer','guides','rulers','fatBitsGrid'];
+      if(fatBitsMode){
+        canvasWrap.style.zoom='1';
+        layers.forEach(id=>{const layer=$(id);if(layer){layer.style.transformOrigin='0 0';layer.style.transform='translate('+fatBitsOffsetX+'px, '+fatBitsOffsetY+'px) scale('+zoomLevel+')';}});
+        updateFatBitsGrid();
+      }else{
+        layers.forEach(id=>{const layer=$(id);if(layer)layer.style.transform='';});
+        canvasWrap.style.zoom=String(zoomLevel);
+      }
     }
     function setZoom(next){
-      zoomLevel=Math.max(.25,Math.min(fatBitsMode?12:3,next));
-      canvasWrap.style.zoom=String(zoomLevel);
+      zoomLevel=Math.max(.25,Math.min(fatBitsMode?16:3,next));
       $('zoomReadout').textContent=Math.round(zoomLevel*100)+'%';
-      if(fatBitsMode)updateFatBitsGrid();
+      updateFatBitsView();
     }
     function setGuideFromRuler(event){
       const rect=canvas.getBoundingClientRect();
@@ -721,9 +733,9 @@
     // 🟩 HOW IT WORKS — FatBits magnifies the artboard and writes one real canvas pixel per click/drag.
     // 🟪 BEGINNER TIP — Turn FatBits off to return to normal freehand drawing; the pixels stay in your artwork.
     function drawFatBit(event) {
-      const rect=canvas.getBoundingClientRect();
-      const x=Math.max(0,Math.min(W()-1,Math.floor((event.clientX-rect.left)*W()/rect.width)));
-      const y=Math.max(0,Math.min(H()-1,Math.floor((event.clientY-rect.top)*H()/rect.height)));
+      const rect=canvasWrap.getBoundingClientRect();
+      const x=Math.max(0,Math.min(W()-1,Math.floor((event.clientX-rect.left-fatBitsOffsetX)/zoomLevel)));
+      const y=Math.max(0,Math.min(H()-1,Math.floor((event.clientY-rect.top-fatBitsOffsetY)/zoomLevel)));
       if(lastFatBit&&lastFatBit.x===x&&lastFatBit.y===y)return;
       ctx.fillStyle=tool==='eraser'?'#ffffff':color;
       ctx.fillRect(x,y,1,1);
@@ -732,6 +744,11 @@
     }
     function down(event) {
       event.preventDefault();
+      if(fatBitsMode&&(spaceHeld||event.button===1)){
+        fatBitsPanning=true;fatBitsPanStart={x:event.clientX,y:event.clientY,offsetX:fatBitsOffsetX,offsetY:fatBitsOffsetY};
+        if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}
+        canvasWrap.style.cursor='grabbing';return;
+      }
       if(fatBitsMode){snapshot();drawing=true;lastFatBit=null;drawFatBit(event);if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}return;}
       const p=point(event);
       $('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';
@@ -754,6 +771,11 @@
       if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}
     }
     function move(event) {
+      if(fatBitsPanning&&fatBitsPanStart){
+        fatBitsOffsetX=fatBitsPanStart.offsetX+(event.clientX-fatBitsPanStart.x);
+        fatBitsOffsetY=fatBitsPanStart.offsetY+(event.clientY-fatBitsPanStart.y);
+        updateFatBitsView();return;
+      }
       if(!drawing)return;
       if(fatBitsMode){drawFatBit(event);return;}
       const p=point(event);
@@ -762,6 +784,11 @@
       else if(['line','rect','ellipse'].includes(tool)) shape(p);
     }
     function up(event) {
+      if(fatBitsPanning){
+        fatBitsPanning=false;fatBitsPanStart=null;canvasWrap.style.cursor='crosshair';
+        if(event&&event.pointerId!==undefined&&canvas.releasePointerCapture){try{canvas.releasePointerCapture(event.pointerId);}catch(_){}}
+        return;
+      }
       if(!drawing)return;
       if(event && event.pointerId!==undefined && canvas.releasePointerCapture){try{canvas.releasePointerCapture(event.pointerId);}catch(_){}}
       if(!fatBitsMode&&['line','rect','ellipse'].includes(tool)){ctx.drawImage(overlay,0,0);octx.clearRect(0,0,W(),H());}
@@ -774,7 +801,8 @@
     vectorLayer.addEventListener('pointerup',vectorUp);
     vectorLayer.addEventListener('pointercancel',vectorUp);
     vectorLayer.addEventListener('dblclick',event=>{if((tool==='pen'||tool==='bezier')&&activeVector){event.preventDefault();finishVector(false);}});
-    document.addEventListener('keydown',event=>{if(event.key==='Enter'&&(tool==='pen'||tool==='bezier')&&activeVector)finishVector(false);if(event.key==='Escape'&&activeVector){activeVector=null;renderVectors();toast('Path cancelled');}});
+    document.addEventListener('keydown',event=>{if(event.key===' '&&fatBitsMode){spaceHeld=true;event.preventDefault();}if(event.key==='Enter'&&(tool==='pen'||tool==='bezier')&&activeVector)finishVector(false);if(event.key==='Escape'&&activeVector){activeVector=null;renderVectors();toast('Path cancelled');}});
+    document.addEventListener('keyup',event=>{if(event.key===' ')spaceHeld=false;});
     document.querySelectorAll('.swatch').forEach(b=>b.addEventListener('click',()=>{color=b.dataset.color;$('colorInput').value=color;updateColorIndicator();toast('Color selected: '+color.toUpperCase());}));
     $('colorInput').addEventListener('input',e=>{color=e.target.value;updateColorIndicator();});
     $('sizeInput').addEventListener('input',e=>{size=Number(e.target.value);$('sizeValue').textContent=size+'px';});
@@ -812,6 +840,7 @@
       fatBitsMode=!fatBitsMode;
       if(fatBitsMode){
         zoomBeforeFatBits=zoomLevel;
+        fatBitsOffsetX=0;fatBitsOffsetY=0;
         setZoom(12);
         updateFatBitsGrid();
         $('fatBitsGrid').classList.add('active');
@@ -820,6 +849,7 @@
       }else{
         $('fatBitsGrid').classList.remove('active');
         canvasWrap.classList.remove('fatbits-active');
+        fatBitsOffsetX=0;fatBitsOffsetY=0;
         setZoom(zoomBeforeFatBits);
         toast('FatBits off — normal drawing restored');
       }
