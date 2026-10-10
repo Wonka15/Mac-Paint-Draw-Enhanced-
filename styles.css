@@ -535,3 +535,49 @@
 #canvasWrap{cursor:crosshair}
 
 .text-move-help{margin:0 0 8px;padding:8px 9px;border:1px solid #cbd7ff;border-radius:7px;background:#f1f5ff;color:#31509d;font-size:11px;line-height:1.45}
+
+
+/* Retro tactile toolbar: intentionally scoped to drawing tools, not Frame Studio. */
+#toolgrid .tool{
+  position:relative;
+  border:1px solid #b6b0a5;
+  border-radius:7px;
+  background:linear-gradient(180deg,#fffef9 0%,#e5dfd3 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 3px 0 #b7afa0, 0 5px 9px rgba(37,30,20,.16);
+  transition:transform 90ms ease, box-shadow 90ms ease, filter 120ms ease;
+  text-shadow:0 1px rgba(255,255,255,.65);
+}
+#toolgrid .tool:hover{
+  filter:brightness(1.04);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.98), 0 3px 0 #aaa18f, 0 0 12px rgba(80,224,255,.28), 0 0 20px rgba(111,95,255,.13);
+}
+#toolgrid .tool:active,
+#toolgrid .tool.active,
+#toolgrid .tool[aria-pressed="true"]{
+  transform:translateY(3px);
+  background:linear-gradient(180deg,#cdd7ff 0%,#edf0ff 100%);
+  border-color:#8197eb;
+  box-shadow:inset 0 2px 5px rgba(28,44,110,.25), inset 0 0 0 1px rgba(255,255,255,.65), 0 0 9px rgba(88,225,255,.62), 0 0 18px rgba(111,95,255,.25), 0 0 0 1px rgba(120,238,255,.45);
+}
+#toolgrid .tool:focus-visible{outline:2px solid #64eaff;outline-offset:3px}
+.pixel-navigator{
+  margin-top:16px;padding:11px;border:1px solid #8d8b9b;border-radius:9px;
+  background:linear-gradient(145deg,#26283c,#171a2b 75%);color:#e7efff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 4px 0 #0d1020,0 0 14px rgba(81,225,255,.12);
+}
+.pixel-navigator-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pixel-navigator-heading h2{margin:0;color:#c8f7ff;font-size:11px;letter-spacing:1.4px;text-transform:uppercase}
+.pixel-navigator-led{width:7px;height:7px;border-radius:50%;background:#64f6d2;box-shadow:0 0 8px #64f6d2}
+.pixel-navigator-help{font-size:10px;line-height:1.45;color:#aebbd6;margin:8px 0}
+.pixel-mode-toggle{
+  width:100%;padding:8px 6px;border:1px solid #6676a6;border-radius:5px;color:#e8faff;
+  background:linear-gradient(#444c72,#252b49);font-size:11px;font-weight:700;
+  box-shadow:inset 0 1px rgba(255,255,255,.2),0 3px 0 #101427,0 0 10px rgba(87,225,255,.12);
+}
+.pixel-mode-toggle:hover{box-shadow:inset 0 1px rgba(255,255,255,.25),0 3px 0 #101427,0 0 13px rgba(87,225,255,.35)}
+.pixel-mode-toggle:active,.pixel-mode-toggle[aria-pressed="true"]{transform:translateY(2px);background:linear-gradient(#20263f,#313c62);box-shadow:inset 0 2px 5px #101427,0 1px 0 #101427,0 0 12px rgba(87,225,255,.4)}
+.pixel-navigator-screen{position:relative;width:100%;aspect-ratio:3/2;overflow:hidden;margin-top:9px;background:#fff;border:2px solid #7888ad;border-radius:3px;cursor:crosshair;box-shadow:inset 0 0 0 1px #101427,0 0 10px rgba(87,225,255,.12)}
+.pixel-navigator-screen canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+.pixel-navigator-viewport{position:absolute;left:0;top:0;width:100%;height:100%;border:1px solid #58f3ff;background:rgba(69,231,255,.12);box-shadow:0 0 0 1px rgba(12,40,64,.8),0 0 8px rgba(88,243,255,.9);pointer-events:none;transition:left 70ms linear,top 70ms linear,width 70ms linear,height 70ms linear}
+.pixel-navigator-readout{margin-top:7px;color:#73f3ff;font:9px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.6px;text-align:center}
+@media(prefers-reduced-motion:reduce){#toolgrid .tool,.pixel-navigator-viewport{transition:none}}
