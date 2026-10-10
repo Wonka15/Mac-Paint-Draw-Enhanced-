@@ -153,17 +153,18 @@
     // 🟩 HOW IT WORKS — These 16×16 one-bit tiles add tiny Macintosh-era portraits/icons to the pattern palette.
     // 🟪 BEGINNER TIP — A # is an ink pixel; a . is paper. The bucket uses the same rows below.
     const iconPatternRows = {
+      // Keep the existing IDs so saved pattern choices continue to work.
       'steve-icon': [
-        '................','.....######.....','....########....','...##########...',
-        '..###......###..','..###.####.###..','..###.####.###..','..###......###..',
-        '...##..##..##...','...##..##..##...','...##..........','....##.####.##..',
-        '.....########...','......######....','.....##....##...','....##......##..'
+        '................','....########....','...#........#...','...#........#...',
+        '...#..####..#...','...#........#...','...#........#...','...#........#...',
+        '...#........#...','...############..','......####......','.....######.....',
+        '....########....','................','................','................'
       ],
       'happy-mac': [
-        '................','...##########...','..############..','..##........##..',
-        '..##.##..##.##..','..##.##..##.##..','..##..........##','..##..######..##',
-        '..##..........##','..############..','...##......##...','...##......##...',
-        '..###......###..','..###......###..','................','................'
+        '........##......','.......####.....','......######....','.....########...',
+        '....##########..','...############.','...############.','...##########...',
+        '...########.....','...#########....','....##########..','.....########...',
+        '......######....','.......####.....','........##......','................'
       ]
     };
     function makePattern(patternName = selectedPattern, preview = false) {
@@ -417,8 +418,19 @@
       for(let x=0;x<=W();x+=100){const label=document.createElement('span');label.className='ruler-label';label.textContent=String(x);label.style.left=(x/W()*100)+'%';top.appendChild(label);}
       for(let y=0;y<=H();y+=100){const label=document.createElement('span');label.className='ruler-label';label.textContent=String(y);label.style.top=(y/H()*100)+'%';left.appendChild(label);}
     }
+    function updateFatBitsGrid(){
+      const grid=$('fatBitsGrid');
+      if(!grid)return;
+      // Match one grid cell to one source-image pixel before CSS zoom is applied.
+      const cellWidth=canvas.offsetWidth/Math.max(1,W());
+      const cellHeight=canvas.offsetHeight/Math.max(1,H());
+      grid.style.backgroundSize=cellWidth+'px '+cellHeight+'px';
+    }
     function setZoom(next){
-      zoomLevel=Math.max(.25,Math.min(fatBitsMode?8:3,next));canvasWrap.style.zoom=String(zoomLevel);$('zoomReadout').textContent=Math.round(zoomLevel*100)+'%';
+      zoomLevel=Math.max(.25,Math.min(fatBitsMode?12:3,next));
+      canvasWrap.style.zoom=String(zoomLevel);
+      $('zoomReadout').textContent=Math.round(zoomLevel*100)+'%';
+      if(fatBitsMode)updateFatBitsGrid();
     }
     function setGuideFromRuler(event){
       const rect=canvas.getBoundingClientRect();
@@ -797,7 +809,8 @@
       fatBitsMode=!fatBitsMode;
       if(fatBitsMode){
         zoomBeforeFatBits=zoomLevel;
-        setZoom(8);
+        setZoom(12);
+        updateFatBitsGrid();
         $('fatBitsGrid').classList.add('active');
         canvasWrap.classList.add('fatbits-active');
         toast('FatBits on — click or drag to edit single pixels');
