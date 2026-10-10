@@ -828,7 +828,8 @@
       if(tool==='text'||tool==='select'){
         const textHit=event.target.closest?event.target.closest('[data-text]'):null;
         if(textHit){selectedText=Number(textHit.getAttribute('data-text'));const item=textObjects[selectedText];if(item)draggingText={index:selectedText,start:p,x:item.x,y:item.y};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;}
-        if(tool==='select'){selectedVector=-1;selectedVectors=[];renderVectors();toast('Click a vector shape or text, then drag to move it');return;}\n        const value=prompt('Type your text:');
+        if(tool==='select'){selectedVector=-1;selectedVectors=[];renderVectors();toast('Click a vector shape or text, then drag to move it');return;}
+        const value=prompt('Type your text:');
         if(value&&value.trim()){textObjects.push({text:value,x:p.x,y:p.y,font:currentFont,size:textSize,color});selectedText=textObjects.length-1;renderVectors();saveSoon();retroSound('tick');toast('Text added — drag it to reposition');}
         return;
       }
