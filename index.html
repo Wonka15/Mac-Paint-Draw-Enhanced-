@@ -31,7 +31,7 @@
       <aside class="panel leftpanel">
         <h2>Toolbox</h2>
         <div class="toolgrid" id="toolgrid">
-          <button class="tool active" data-tool="pencil"><span class="ico">✎</span>Paintbrush</button>
+          <button class="tool active" data-tool="pencil" aria-pressed="true"><span class="ico icon-macpaint-brush" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><path d="M20.9 4.1c1.4-1.5 3.7-1.5 5.1-.1l2 2c1.4 1.4 1.4 3.7-.1 5.1L15.8 23.2l-7-7Z" fill="#4b79c7" stroke="#26384e" stroke-width="1.4" stroke-linejoin="round"/><path d="m19.1 6 6.9 6.9" stroke="#d9e7ff" stroke-width="1.4"/><path d="m8.8 16.2 7 7-3.1 3.1c-1.2 1.2-3.3 1.8-5.2 1.7l-3.3-.2.3-3.1c.2-2 1-3.8 2.4-5.2Z" fill="#d9b27c" stroke="#26384e" stroke-width="1.4" stroke-linejoin="round"/><path d="M4.3 28c2.4-1.1 4.7-1.3 6.8-.7" fill="none" stroke="#26384e" stroke-width="1.4" stroke-linecap="round"/><path d="m8.8 16.2 7 7" stroke="#f9e6c6" stroke-width="1.3"/></svg></span>Paintbrush</button>
           <button class="tool" data-tool="eraser" aria-pressed="false"><span class="ico icon-eraser" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M3.8 14.2 11.9 5.9a2 2 0 0 1 2.8 0l5.5 5.5a2 2 0 0 1 0 2.8l-4.1 4.1H8.3z" fill="#f7b7c9" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m8.2 9.7 6.1 6.1M8.3 18.3h7.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>Eraser</button>
           <button class="tool" data-tool="bucket" aria-pressed="false"><span class="ico icon-bucket" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5.2 10.5 12 3.8l6.7 6.7-6.8 6.8z" fill="#dce6ff" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m8.2 7.7 6.7 6.7" stroke="currentColor" stroke-width="1.3"/><path d="M4.5 13.4h12.8l-1.5 6.1H6z" fill="#79a9e8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M17.4 14.8c1.4.7 2.1 1.8 2.1 3.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M20.3 7.7c0 1-.8 1.8-1.8 1.8s-1.8-.8-1.8-1.8 1.8-3.1 1.8-3.1 1.8 2.1 1.8 3.1z" fill="#438be0" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></span>Paint bucket</button>
           <button class="tool" data-tool="line"><span class="ico">／</span>Line</button>
@@ -109,9 +109,24 @@
           </div>
         </div>
 <section class="animation-panel" aria-label="Animation timeline">
-<div class="animation-heading"><div><strong>Frame Studio</strong><span class="animation-subtitle">Onion skin · playback · animated GIF</span></div><span class="animation-badge">BETA</span></div>
-<div class="animation-controls"><button class="btn primary" id="addFrameBtn">＋ Add frame</button><button class="btn secondary" id="playAnimationBtn">▶ Play</button><button class="btn secondary" id="stopAnimationBtn" disabled>■ Stop</button><button class="btn secondary" id="exportGifBtn">Export GIF</button><label class="fps-control" for="animationFps">FPS <select id="animationFps"><option>4</option><option>6</option><option selected>8</option><option>12</option><option>15</option><option>24</option></select></label><label class="onion-toggle"><input type="checkbox" id="onionToggle" checked> Onion skin</label></div>
-<div class="frame-strip" id="frameStrip"><span class="frame-empty">Draw something, then press Add frame.</span></div><p class="animation-help">Add frame saves the current drawing and opens a blank frame. Click a thumbnail to edit it. Previous artwork appears in blue.</p></section>
+  <div class="animation-heading">
+    <div class="frame-studio-title"><span class="frame-studio-symbol" aria-hidden="true">◉</span><div><strong>Frame Studio</strong><span class="animation-subtitle">A little motion lab for your MacPaint drawings</span></div></div>
+    <span class="animation-badge">FRAME BY FRAME</span>
+  </div>
+  <div class="animation-controls frame-glass-controls">
+    <button class="btn primary glass-action" id="addFrameBtn">＋ Add frame</button>
+    <button class="btn secondary glass-action" id="playAnimationBtn">▶ Play</button>
+    <button class="btn secondary glass-action" id="stopAnimationBtn" disabled>■ Stop</button>
+    <button class="btn secondary glass-action" id="exportGifBtn">Export GIF ↗</button>
+  </div>
+  <div class="frame-glass-settings">
+    <label class="glass-slider" for="animationFps"><span class="glass-slider-label"><span>Playback speed</span><output id="animationFpsValue" for="animationFps">8 FPS</output></span><input type="range" id="animationFps" min="4" max="24" step="1" value="8"><span class="slider-scale"><span>Slow</span><span>Fast</span></span></label>
+    <label class="glass-slider" for="ghostOpacity"><span class="glass-slider-label"><span>Onion skin strength</span><output id="ghostOpacityValue" for="ghostOpacity">35%</output></span><input type="range" id="ghostOpacity" min="0.05" max="1" step="0.05" value="0.35"><span class="slider-scale"><span>Faint</span><span>Strong</span></span></label>
+    <label class="glass-toggle"><input type="checkbox" id="onionToggle" checked><span class="glass-toggle-track" aria-hidden="true"></span><span><strong>Onion skin</strong><small>Show the previous frame in blue</small></span></label>
+  </div>
+  <div class="frame-strip" id="frameStrip"><span class="frame-empty">Draw something, then press Add frame.</span></div>
+  <p class="animation-help">Add frame saves your current drawing and opens a blank frame. Tap a thumbnail to edit it. The highlighted frame is your current pose.</p>
+</section>
       </section>
 
       <aside class="panel rightpanel">
@@ -173,10 +188,7 @@
           <div class="status"><strong id="textSizeValue">24px</strong></div>
         </div>
 
-        <div class="field">
-          <label for="ghostOpacity">Ghost opacity</label>
-          <input type="range" id="ghostOpacity" min="0.05" max="1" step="0.05" value="0.35">
-        </div>
+
       </aside>
     </main>
 

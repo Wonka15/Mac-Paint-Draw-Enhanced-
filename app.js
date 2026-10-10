@@ -806,7 +806,7 @@
         onionCtx.clearRect(0,0,W(),H());
         const ghost=document.createElement('canvas');ghost.width=W();ghost.height=H();const gx=ghost.getContext('2d');gx.drawImage(img,0,0,W(),H());
         const pixels=gx.getImageData(0,0,W(),H()),data=pixels.data;
-        for(let i=0;i<data.length;i+=4){const brightness=(data[i]+data[i+1]+data[i+2])/3;if(brightness>242){data[i+3]=0;}else{data[i]=53;data[i+1]=168;data[i+2]=237;data[i+3]=Math.round(data[i+3]*.38);}}
+        for(let i=0;i<data.length;i+=4){const brightness=(data[i]+data[i+1]+data[i+2])/3;if(brightness>242){data[i+3]=0;}else{data[i]=53;data[i+1]=168;data[i+2]=237;data[i+3]=Math.round(data[i+3]*ghostOpacity);}}
         gx.putImageData(pixels,0,0);onionCtx.drawImage(ghost,0,0);
       };img.src=frames[currentFrame-1].composite||frames[currentFrame-1].raster;
     }
@@ -884,7 +884,8 @@
       img.onerror=()=>{URL.revokeObjectURL(url);const a=document.createElement('a');a.download='drawing.png';a.href=canvas.toDataURL('image/png');a.click();toast('PNG exported (raster layer)');};img.src=url;
     });
     $('fontSelect').addEventListener('change',e=>currentFont=e.target.value);
-    $('ghostOpacity').addEventListener('input',e=>ghostOpacity=Number(e.target.value));
+    $('ghostOpacity').addEventListener('input', e => { ghostOpacity = Number(e.target.value); $('ghostOpacityValue').textContent = Math.round(ghostOpacity * 100) + '%'; drawOnionSkin(); });
+    $('animationFps').addEventListener('input', e => { $('animationFpsValue').textContent = e.target.value + ' FPS'; });
     canvas.addEventListener('pointerdown',down);
     canvas.addEventListener('pointermove',move);
     canvas.addEventListener('pointerup',up);
