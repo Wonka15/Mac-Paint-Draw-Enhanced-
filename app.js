@@ -20,7 +20,7 @@
     // 🟩 HOW IT WORKS — State is the app's memory: selected tool, ink, and active gestures.
     // 🟪 BEGINNER TIP — When adding a setting, define its default here and wire its UI control below.
     // APP STATE: selected tool, drawing style, and current interaction.
-    let tool = 'pencil', color = '#20252b', size = 4, fill = false, selectedPattern = 'solid', textSize = 24, selectedBrush = 'round', roughPaper = false, crtBlue = false, crtGreen = false, fatBitsMode = false, zoomBeforeFatBits = 1, lastFatBit = null;
+    let tool = 'pencil', color = '#20252b', size = 4, fill = false, selectedPattern = 'solid', textSize = 24, selectedBrush = 'round', roughPaper = false, crtMode = 'off', fatBitsMode = false, zoomBeforeFatBits = 1, lastFatBit = null;
     let drawing = false, startPoint = null, lastPoint = null;
     let history = [], redoStack = [], showGuides = false, showGrid = false;
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
@@ -140,7 +140,7 @@
         try {
           localStorage.setItem('mpde-art', JSON.stringify({
             w: W(), h: H(), image: canvas.toDataURL('image/png'),
-            color, size, textSize, currentFont, selectedPattern, selectedBrush, roughPaper, crtBlue, crtGreen, tool, guideX, guideY, showGuides, showGrid, vectors: vectorPaths
+            color, size, textSize, currentFont, selectedPattern, selectedBrush, roughPaper, crtMode, tool, guideX, guideY, showGuides, showGrid, vectors: vectorPaths
           }));
         } catch (error) { console.warn('Autosave unavailable:', error); }
       }, 300);
@@ -751,18 +751,26 @@
     document.addEventListener('pointermove',()=>{if(drawing){const now=performance.now();if(now-lastDragSound>90){lastDragSound=now;retroSound('tick');}}});
     document.querySelectorAll('.brush-option').forEach(b=>b.addEventListener('click',()=>{selectedBrush=b.dataset.brush;document.querySelectorAll('.brush-option').forEach(x=>x.classList.toggle('active',x===b));toast('Brush: '+b.dataset.brush);}));
     $('roughPaperToggle').addEventListener('change',e=>{roughPaper=e.target.checked;canvasWrap.classList.toggle('rough-paper',roughPaper);saveSoon();toast(roughPaper?'Rough paper texture on':'Rough paper texture off');});
-    // 🟩 HOW IT WORKS — The CRT effect is a visual overlay, so it never alters saved artwork pixels.
-    $('crtBlueToggle').addEventListener('change',e=>{
-      crtBlue=e.target.checked;
-      if(crtBlue){crtGreen=false;$('crtGreenToggle').checked=false;canvasWrap.classList.remove('crt-green');}
-      canvasWrap.classList.toggle('crt-blue',crtBlue);saveSoon();toast(crtBlue?'Blue Macintosh SE CRT look on':'Blue CRT look off');
-    });
-    // 🟩 HOW IT WORKS — Blue and green CRT modes are mutually exclusive visual overlays.
-    $('crtGreenToggle').addEventListener('change',e=>{
-      crtGreen=e.target.checked;
-      if(crtGreen){crtBlue=false;$('crtBlueToggle').checked=false;canvasWrap.classList.remove('crt-blue');}
-      canvasWrap.classList.toggle('crt-green',crtGreen);saveSoon();toast(crtGreen?'Green monochrome CRT look on':'Green CRT look off');
-    });
+    // 🟩 HOW IT WORKS — One CRT menu selects a single visual phosphor tint; artwork pixels stay unchanged.
+    // 🟪 BEGINNER TIP — Add new CRT choices to the menu and this class map.
+    function setCrtMode(mode, announce = true) {
+      const allowed = ['off','blue','red','green','yellow'];
+      crtMode = allowed.includes(mode) ? mode : 'off';
+      ['blue','red','green','yellow'].forEach(name => canvasWrap.classList.toggle('crt-' + name, crtMode === name));
+      document.querySelectorAll('[data-crt]').forEach(button => {
+        const active = button.dataset.crt === crtMode;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+      const menu = $('crtMenu');
+      if (menu) menu.querySelector('summary').classList.toggle('primary', crtMode !== 'off');
+      saveSoon();
+      if (announce) toast(crtMode === 'off' ? 'CRT effect off' : crtMode[0].toUpperCase() + crtMode.slice(1) + ' CRT effect on');
+    }
+    document.querySelectorAll('[data-crt]').forEach(button => button.addEventListener('click', () => {
+      setCrtMode(button.dataset.crt);
+      $('crtMenu').open = false;
+    }));
     $('fatBitsBtn').addEventListener('click',()=>{
       fatBitsMode=!fatBitsMode;
       if(fatBitsMode){
@@ -786,9 +794,29 @@
     $('gridBtn').addEventListener('click',()=>{showGrid=!showGrid;setToggleButton('gridBtn',showGrid);drawGuides();saveSoon();toast(showGrid?'Grid on':'Grid off');});
     function clearAllArtwork(message) {
       snapshot();
-      ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W(),H());
-      vectorPaths=[];activeVector=null;selectedVector=-1;selectedVectors=[];
-      renderVectors();saveSoon();toast(message);
+      // Reset the raster context before painting white so no lingering composite/transform state can affect Clear.
+      ctx.save();
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.globalAlpha=1;
+      ctx.globalCompositeOperation='source-over';
+      ctx.clearRect(0,0,W(),H());
+      ctx.fillStyle='#ffffff';
+      ctx.fillRect(0,0,W(),H());
+      ctx.restore();
+      // Clear every visible artwork layer, including in-progress and selected SVG paths.
+      octx.clearRect(0,0,W(),H());
+      onionCtx.clearRect(0,0,W(),H());
+      vectorPaths=[];activeVector=null;selectedVector=-1;selectedVectors=[];draggingAnchor=null;draggingHandle=null;curveDragAnchor=null;
+      vectorLayer.replaceChildren();
+      renderVectors();
+      // If Frame Studio is active, clear its current frame too so old vector art cannot return.
+      if(currentFrame>=0 && frames[currentFrame]) {
+        frames[currentFrame]=blankFrame();
+        renderFrameStrip();
+        drawOnionSkin();
+      }
+      saveSoon();
+      toast(message);
     }
     $('clearBtn').addEventListener('click',()=>{if(!confirm('Clear the whole canvas, including vector paths?'))return;clearAllArtwork('Canvas cleared');});
     $('newBtn').addEventListener('click',()=>{if(!confirm('Start a new drawing?'))return;clearAllArtwork('New drawing');});
@@ -941,7 +969,7 @@
         const saved=JSON.parse(localStorage.getItem('mpde-art')||'null');
         if(!saved||!saved.image)return;
         const img=new Image();
-        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;currentFont=saved.currentFont||currentFont;selectedPattern=saved.selectedPattern||selectedPattern;selectedBrush=saved.selectedBrush||selectedBrush;roughPaper=!!saved.roughPaper;crtBlue=!!saved.crtBlue;crtGreen=!!saved.crtGreen;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;updateColorIndicator();$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush===selectedBrush));$('roughPaperToggle').checked=roughPaper;canvasWrap.classList.toggle('rough-paper',roughPaper);$('crtBlueToggle').checked=crtBlue;$('crtGreenToggle').checked=crtGreen;canvasWrap.classList.toggle('crt-blue',crtBlue);canvasWrap.classList.toggle('crt-green',crtGreen);$('fontSelect').value=currentFont;selectTool(tool);setToggleButton('guidesBtn',showGuides);setToggleButton('gridBtn',showGrid);setToggleButton('rulersBtn',!$('rulerLayout').classList.contains('rulers-hidden'));drawGuides();renderVectors();updateShapeBuilderStatus();};
+        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;currentFont=saved.currentFont||currentFont;selectedPattern=saved.selectedPattern||selectedPattern;selectedBrush=saved.selectedBrush||selectedBrush;roughPaper=!!saved.roughPaper;crtMode=saved.crtMode||((saved.crtBlue)?'blue':(saved.crtGreen)?'green':'off');tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;updateColorIndicator();$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush===selectedBrush));$('roughPaperToggle').checked=roughPaper;canvasWrap.classList.toggle('rough-paper',roughPaper);setCrtMode(crtMode,false);$('fontSelect').value=currentFont;selectTool(tool);setToggleButton('guidesBtn',showGuides);setToggleButton('gridBtn',showGrid);setToggleButton('rulersBtn',!$('rulerLayout').classList.contains('rulers-hidden'));drawGuides();renderVectors();updateShapeBuilderStatus();};
         img.src=saved.image;
       } catch(error) { console.warn('Could not restore drawing:',error); }
     }
