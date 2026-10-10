@@ -20,7 +20,7 @@
     // 🟩 HOW IT WORKS — State is the app's memory: selected tool, ink, and active gestures.
     // 🟪 BEGINNER TIP — When adding a setting, define its default here and wire its UI control below.
     // APP STATE: selected tool, drawing style, and current interaction.
-    let tool = 'pencil', color = '#20252b', size = 4, fill = false, selectedPattern = 'solid', textSize = 24, selectedBrush = 'round', roughPaper = false, crtBlue = false;
+    let tool = 'pencil', color = '#20252b', size = 4, fill = false, selectedPattern = 'solid', textSize = 24, selectedBrush = 'round', roughPaper = false, crtBlue = false, crtGreen = false, fatBitsMode = false, zoomBeforeFatBits = 1, lastFatBit = null;
     let drawing = false, startPoint = null, lastPoint = null;
     let history = [], redoStack = [], showGuides = false, showGrid = false;
     let guideX = null, guideY = null, ghostOpacity = 0.35, currentFont = 'sans-serif';
@@ -93,7 +93,7 @@
         try {
           localStorage.setItem('mpde-art', JSON.stringify({
             w: W(), h: H(), image: canvas.toDataURL('image/png'),
-            color, size, textSize, selectedPattern, selectedBrush, roughPaper, crtBlue, tool, guideX, guideY, showGuides, showGrid, vectors: vectorPaths
+            color, size, textSize, currentFont, selectedPattern, selectedBrush, roughPaper, crtBlue, crtGreen, tool, guideX, guideY, showGuides, showGrid, vectors: vectorPaths
           }));
         } catch (error) { console.warn('Autosave unavailable:', error); }
       }, 300);
@@ -353,7 +353,7 @@
       for(let y=0;y<=H();y+=100){const label=document.createElement('span');label.className='ruler-label';label.textContent=String(y);label.style.top=(y/H()*100)+'%';left.appendChild(label);}
     }
     function setZoom(next){
-      zoomLevel=Math.max(.25,Math.min(3,next));canvasWrap.style.zoom=String(zoomLevel);$('zoomReadout').textContent=Math.round(zoomLevel*100)+'%';
+      zoomLevel=Math.max(.25,Math.min(fatBitsMode?8:3,next));canvasWrap.style.zoom=String(zoomLevel);$('zoomReadout').textContent=Math.round(zoomLevel*100)+'%';
     }
     function setGuideFromRuler(event){
       const rect=canvas.getBoundingClientRect();
@@ -637,8 +637,21 @@
       if(tool==='ellipse'){octx.beginPath();octx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2);if(fill)octx.fill();else octx.stroke();}
       octx.restore();
     }
+    // 🟩 HOW IT WORKS — FatBits magnifies the artboard and writes one real canvas pixel per click/drag.
+    // 🟪 BEGINNER TIP — Turn FatBits off to return to normal freehand drawing; the pixels stay in your artwork.
+    function drawFatBit(event) {
+      const rect=canvas.getBoundingClientRect();
+      const x=Math.max(0,Math.min(W()-1,Math.floor((event.clientX-rect.left)*W()/rect.width)));
+      const y=Math.max(0,Math.min(H()-1,Math.floor((event.clientY-rect.top)*H()/rect.height)));
+      if(lastFatBit&&lastFatBit.x===x&&lastFatBit.y===y)return;
+      ctx.fillStyle=tool==='eraser'?'#ffffff':color;
+      ctx.fillRect(x,y,1,1);
+      lastFatBit={x,y};
+      $('coordStatus').textContent=x+' × '+y+' px';
+    }
     function down(event) {
       event.preventDefault();
+      if(fatBitsMode){snapshot();drawing=true;lastFatBit=null;drawFatBit(event);if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}return;}
       const p=point(event);
       $('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';
       if(tool==='text'){
@@ -661,6 +674,7 @@
     }
     function move(event) {
       if(!drawing)return;
+      if(fatBitsMode){drawFatBit(event);return;}
       const p=point(event);
       $('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';
       if(tool==='pencil'||tool==='eraser'){paintBrushSegment(lastPoint,p,tool==='eraser');lastPoint=p;}
@@ -669,8 +683,8 @@
     function up(event) {
       if(!drawing)return;
       if(event && event.pointerId!==undefined && canvas.releasePointerCapture){try{canvas.releasePointerCapture(event.pointerId);}catch(_){}}
-      if(['line','rect','ellipse'].includes(tool)){ctx.drawImage(overlay,0,0);octx.clearRect(0,0,W(),H());}
-      drawing=false;saveSoon();retroSound('end');
+      if(!fatBitsMode&&['line','rect','ellipse'].includes(tool)){ctx.drawImage(overlay,0,0);octx.clearRect(0,0,W(),H());}
+      drawing=false;lastFatBit=null;saveSoon();retroSound('end');
       if(event){const p=point(event);$('coordStatus').textContent=Math.round(p.x)+' × '+Math.round(p.y)+' px';}
     }
     document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>selectTool(b.dataset.tool, true)));
@@ -690,7 +704,33 @@
     document.querySelectorAll('.brush-option').forEach(b=>b.addEventListener('click',()=>{selectedBrush=b.dataset.brush;document.querySelectorAll('.brush-option').forEach(x=>x.classList.toggle('active',x===b));toast('Brush: '+b.dataset.brush);}));
     $('roughPaperToggle').addEventListener('change',e=>{roughPaper=e.target.checked;canvasWrap.classList.toggle('rough-paper',roughPaper);saveSoon();toast(roughPaper?'Rough paper texture on':'Rough paper texture off');});
     // 🟩 HOW IT WORKS — The CRT effect is a visual overlay, so it never alters saved artwork pixels.
-    $('crtBlueToggle').addEventListener('change',e=>{crtBlue=e.target.checked;canvasWrap.classList.toggle('crt-blue',crtBlue);saveSoon();toast(crtBlue?'Blue Macintosh SE CRT look on':'Blue CRT look off');});
+    $('crtBlueToggle').addEventListener('change',e=>{
+      crtBlue=e.target.checked;
+      if(crtBlue){crtGreen=false;$('crtGreenToggle').checked=false;canvasWrap.classList.remove('crt-green');}
+      canvasWrap.classList.toggle('crt-blue',crtBlue);saveSoon();toast(crtBlue?'Blue Macintosh SE CRT look on':'Blue CRT look off');
+    });
+    // 🟩 HOW IT WORKS — Blue and green CRT modes are mutually exclusive visual overlays.
+    $('crtGreenToggle').addEventListener('change',e=>{
+      crtGreen=e.target.checked;
+      if(crtGreen){crtBlue=false;$('crtBlueToggle').checked=false;canvasWrap.classList.remove('crt-blue');}
+      canvasWrap.classList.toggle('crt-green',crtGreen);saveSoon();toast(crtGreen?'Green monochrome CRT look on':'Green CRT look off');
+    });
+    $('fatBitsBtn').addEventListener('click',()=>{
+      fatBitsMode=!fatBitsMode;
+      if(fatBitsMode){
+        zoomBeforeFatBits=zoomLevel;
+        setZoom(8);
+        $('fatBitsGrid').classList.add('active');
+        canvasWrap.classList.add('fatbits-active');
+        toast('FatBits on — click or drag to edit single pixels');
+      }else{
+        $('fatBitsGrid').classList.remove('active');
+        canvasWrap.classList.remove('fatbits-active');
+        setZoom(zoomBeforeFatBits);
+        toast('FatBits off — normal drawing restored');
+      }
+      setToggleButton('fatBitsBtn',fatBitsMode);
+    });
     $('fillToggle').addEventListener('change',e=>{fill=e.target.checked;saveSoon();toast(fill?'Shape fill on':'Shape fill off');});
     $('snapCheck').addEventListener('change', e => toast(e.target.checked ? 'Smart snapping on: visible guides, grid, and vector anchors' : 'Smart snapping off'));
     // Snap-to-guides is a native checkbox; drawing reads its checked state.
@@ -833,7 +873,7 @@
       img.onload=()=>{ox.drawImage(img,0,0,W(),H());URL.revokeObjectURL(url);const a=document.createElement('a');a.download='drawing.png';a.href=out.toDataURL('image/png');a.click();toast('PNG exported');};
       img.onerror=()=>{URL.revokeObjectURL(url);const a=document.createElement('a');a.download='drawing.png';a.href=canvas.toDataURL('image/png');a.click();toast('PNG exported (raster layer)');};img.src=url;
     });
-    $('fontSelect').addEventListener('change',e=>currentFont=e.target.value);
+    $('fontSelect').addEventListener('change',e=>{currentFont=e.target.value;saveSoon();toast('Text font: '+e.target.options[e.target.selectedIndex].text);});
     $('ghostOpacity').addEventListener('input', e => { ghostOpacity = Number(e.target.value); $('ghostOpacityValue').textContent = Math.round(ghostOpacity * 100) + '%'; drawOnionSkin(); });
     $('animationFps').addEventListener('input', e => { $('animationFpsValue').textContent = e.target.value + ' FPS'; });
     canvas.addEventListener('pointerdown',down);
@@ -847,7 +887,7 @@
         const saved=JSON.parse(localStorage.getItem('mpde-art')||'null');
         if(!saved||!saved.image)return;
         const img=new Image();
-        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;selectedPattern=saved.selectedPattern||selectedPattern;selectedBrush=saved.selectedBrush||selectedBrush;roughPaper=!!saved.roughPaper;crtBlue=!!saved.crtBlue;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush===selectedBrush));$('roughPaperToggle').checked=roughPaper;canvasWrap.classList.toggle('rough-paper',roughPaper);$('crtBlueToggle').checked=crtBlue;canvasWrap.classList.toggle('crt-blue',crtBlue);selectTool(tool);setToggleButton('guidesBtn',showGuides);setToggleButton('gridBtn',showGrid);setToggleButton('rulersBtn',!$('rulerLayout').classList.contains('rulers-hidden'));drawGuides();renderVectors();updateShapeBuilderStatus();};
+        img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());color=saved.color||color;size=saved.size||size;textSize=saved.textSize||textSize;currentFont=saved.currentFont||currentFont;selectedPattern=saved.selectedPattern||selectedPattern;selectedBrush=saved.selectedBrush||selectedBrush;roughPaper=!!saved.roughPaper;crtBlue=!!saved.crtBlue;crtGreen=!!saved.crtGreen;tool=saved.tool||tool;guideX=saved.guideX??null;guideY=saved.guideY??null;showGuides=!!saved.showGuides;showGrid=!!saved.showGrid;vectorPaths=Array.isArray(saved.vectors)?saved.vectors:[];activeVector=null;selectedVectors=[];$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';$('textSizeInput').value=String(textSize);$('textSizeValue').textContent=textSize+'px';document.querySelectorAll('.pattern-swatch').forEach(b=>b.classList.toggle('active',b.dataset.pattern===selectedPattern));document.querySelectorAll('.brush-option').forEach(b=>b.classList.toggle('active',b.dataset.brush===selectedBrush));$('roughPaperToggle').checked=roughPaper;canvasWrap.classList.toggle('rough-paper',roughPaper);$('crtBlueToggle').checked=crtBlue;$('crtGreenToggle').checked=crtGreen;canvasWrap.classList.toggle('crt-blue',crtBlue);canvasWrap.classList.toggle('crt-green',crtGreen);$('fontSelect').value=currentFont;selectTool(tool);setToggleButton('guidesBtn',showGuides);setToggleButton('gridBtn',showGrid);setToggleButton('rulersBtn',!$('rulerLayout').classList.contains('rulers-hidden'));drawGuides();renderVectors();updateShapeBuilderStatus();};
         img.src=saved.image;
       } catch(error) { console.warn('Could not restore drawing:',error); }
     }
