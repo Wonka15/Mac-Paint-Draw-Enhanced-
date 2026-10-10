@@ -517,3 +517,7 @@
 #selectionLayer{position:absolute;inset:0;width:100%;height:100%;z-index:7;pointer-events:none;image-rendering:pixelated}
 .selection-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
 .selection-actions .btn{font-size:11px;padding:7px 4px}
+
+/* Preserve crisp, one-bit-looking edges while editing in FatBits. */
+#canvasWrap.fatbits-active canvas,
+#canvasWrap.fatbits-active svg { image-rendering: pixelated; }
