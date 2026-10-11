@@ -680,3 +680,21 @@
 .vector-tool-list .tool:hover{background:#f0f4ff;border-color:#b8c5f0}
 .vector-tool-list .tool.active{background:#e6ecff;border-color:#839be6;color:#2345a8;box-shadow:inset 0 0 0 1px #b4c3fa}
 @media(max-width:520px){.vector-tool-list{min-width:280px;grid-template-columns:repeat(2,minmax(118px,1fr));gap:6px;padding:8px}.vector-tool-list .tool{gap:6px;padding:7px;font-size:11px}}
+
+
+/* Vectors menu: expand in the toolbar flow so the two-column palette has room. */
+.vector-tool-group{position:relative;display:block;width:100%;margin:10px 0 8px;padding:0;border:1px solid #d4cbbb;border-radius:9px;overflow:hidden;background:#f8f6f0;box-shadow:0 1px 2px rgba(35,29,18,.07)}
+.vector-tool-group>.vectors-trigger{display:flex;align-items:center;gap:9px;min-height:44px;width:100%;box-sizing:border-box;padding:9px 12px;border:0;border-radius:0;background:linear-gradient(#fffdf8,#f0ece3);color:#34332d;font:inherit;font-size:13px;font-weight:700;cursor:pointer;list-style:none}
+.vector-tool-group>.vectors-trigger::-webkit-details-marker{display:none}
+.vector-tool-group>.vectors-trigger:hover{background:#f2f5ff}
+.vector-tool-group[open]>.vectors-trigger{background:#e7edff;color:#2446a5;border-bottom:1px solid #d0d9f5}
+.vectors-trigger-icon{display:grid;place-items:center;width:24px;height:24px;flex:0 0 24px;border-radius:6px;background:#e2e9ff;color:#3457b5;font-size:18px}
+.vectors-chevron{margin-left:auto;font-size:11px;transition:transform .15s ease}
+.vector-tool-group[open] .vectors-chevron{transform:rotate(180deg)}
+.vector-tool-list{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;min-width:0;max-width:none;box-sizing:border-box;padding:10px;border:0;border-radius:0;background:#f8f6f0;box-shadow:none}
+.vector-tool-list .tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:72px;width:100%;min-width:0;box-sizing:border-box;padding:9px 5px;border:1px solid #ded9ce;border-radius:8px;background:#fffefa;color:#383832;font-size:11px;line-height:1.25;text-align:center;white-space:normal;overflow-wrap:anywhere;box-shadow:0 1px 0 rgba(40,35,25,.04)}
+.vector-tool-list .tool .ico{display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex:0 0 28px;margin:0;font-size:23px}
+.vector-tool-list .tool .ico svg{width:25px;height:25px}
+.vector-tool-list .tool:hover{background:#f0f4ff;border-color:#b8c5f0}
+.vector-tool-list .tool.active{background:#e6ecff;border-color:#839be6;color:#2345a8;box-shadow:inset 0 0 0 1px #b4c3fa}
+@media(max-width:520px){.vector-tool-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px}.vector-tool-list .tool{min-height:68px;padding:8px 4px;font-size:11px}}
