@@ -717,3 +717,16 @@
 .vector-tool-list .tool .ico{display:flex;align-items:center;justify-content:center;width:27px;height:27px;flex:0 0 27px;margin:0;font-size:22px}
 .vector-tool-list .tool .ico svg{display:block;width:24px;height:24px;flex:0 0 24px}
 @media(max-width:520px){.vector-tool-list .tool{min-height:66px;gap:5px;padding:7px 4px;font-size:11px;line-height:1.3}.vector-tool-list .tool .ico{width:25px;height:25px;flex-basis:25px}.vector-tool-list .tool .ico svg{width:23px;height:23px;flex-basis:23px}}
+
+
+/* Vectors tools are individual toolbar buttons again; keep the full grid visible. */
+.vector-tools-always-visible{display:block;width:100%;box-sizing:border-box;margin:8px 0 10px;padding:0;border:1px solid #d4cbbb;border-radius:9px;overflow:hidden;background:#f8f6f0;box-shadow:0 1px 2px rgba(35,29,18,.07)}
+.vector-tools-always-visible .vector-tool-heading{display:flex;align-items:center;gap:9px;padding:9px 11px;border-bottom:1px solid #e0dbd0;color:#555044;font-size:12px;font-weight:700;line-height:1.35;letter-spacing:.02em}
+.vector-tools-always-visible .vector-heading-mark{display:grid;place-items:center;width:24px;height:24px;flex:0 0 24px;border-radius:6px;background:#e1e8ff;color:#3457b5;font-size:18px}
+.vector-tools-always-visible .vector-tool-list{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:7px;width:100%;min-width:0;max-width:none;box-sizing:border-box;padding:9px;border:0;border-radius:0;background:transparent;box-shadow:none}
+.vector-tools-always-visible .vector-tool-list .tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:66px;width:100%;min-width:0;box-sizing:border-box;padding:8px 5px;border:1px solid #ded9ce;border-radius:8px;background:#fffefa;color:#383832;font-family:inherit;font-size:11px;font-weight:500;line-height:1.3;letter-spacing:normal;text-align:center;white-space:normal;overflow-wrap:normal;word-break:normal;box-shadow:0 1px 0 rgba(40,35,25,.04)}
+.vector-tools-always-visible .vector-tool-list .tool .ico{display:flex;align-items:center;justify-content:center;width:27px;height:27px;flex:0 0 27px;margin:0;font-size:22px}
+.vector-tools-always-visible .vector-tool-list .tool .ico svg{display:block;width:24px;height:24px;flex:0 0 24px}
+.vector-tools-always-visible .vector-tool-list .tool:hover{background:#f0f4ff;border-color:#b8c5f0}
+.vector-tools-always-visible .vector-tool-list .tool.active{background:#e6ecff;border-color:#839be6;color:#2345a8;box-shadow:inset 0 0 0 1px #b4c3fa}
+@media(max-width:520px){.vector-tools-always-visible .vector-tool-list{gap:6px;padding:8px}.vector-tools-always-visible .vector-tool-list .tool{min-height:64px;padding:7px 4px;font-size:11px}}
