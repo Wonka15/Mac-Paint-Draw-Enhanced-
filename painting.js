@@ -1,1 +1,159 @@
-(() => {'use strict';const d=document.getElementById('paintingDrawer'),tab=document.getElementById('paintingTab'),c=document.getElementById('paper');if(!d||!c)return;const x=c.getContext('2d');let open=false,base='#e53935',paint=base,brush='round',drawing=false,last=null;const chosen=new Set([base]);const rgb=h=>[1,3,5].map(n=>parseInt(h.slice(n,n+2),16)),hex=a=>'#'+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');function update(){let a=rgb(base),t=+document.getElementById('paintTint').value/100,v=+document.getElementById('paintVibrancy').value/100;a=a.map(n=>t>0?n+(255-n)*t:n*(1+t));const avg=a.reduce((s,n)=>s+n,0)/3;a=a.map(n=>avg+(n-avg)*v);paint=hex(a);document.getElementById('paintHex').textContent=paint.toUpperCase();document.getElementById('paintPreview').style.background=paint;}function toggle(v){open=v;d.open=v;d.setAttribute('aria-hidden',String(!v));tab.setAttribute('aria-expanded',String(v));}d.addEventListener('toggle',()=>{open=d.open;d.setAttribute('aria-hidden',String(!open));tab.setAttribute('aria-expanded',String(open));});document.getElementById('paintingClose').addEventListener('click',()=>toggle(false));d.querySelectorAll('[data-paint]').forEach(b=>b.addEventListener('click',()=>{const q=b.dataset.paint;if(chosen.has(q)){chosen.delete(q);b.classList.remove('active')}else{chosen.add(q);b.classList.add('active')}base=q;update()}));document.getElementById('mixPaintBtn').addEventListener('click',()=>{if(!chosen.size)return;const a=[0,1,2].map(i=>[...chosen].reduce((s,q)=>s+rgb(q)[i],0)/chosen.size);base=hex(a);document.getElementById('paintTint').value=0;document.getElementById('paintVibrancy').value=100;update()});['paintTint','paintVibrancy'].forEach(id=>document.getElementById(id).addEventListener('input',update));d.querySelectorAll('[data-paint-brush]').forEach(b=>b.addEventListener('click',()=>{brush=b.dataset.paintBrush;d.querySelectorAll('[data-paint-brush]').forEach(q=>q.classList.toggle('active',q===b))}));function point(e){const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}}function stroke(a,b){const s=+document.getElementById('paintSize').value,w=+document.getElementById('paintWater').value/100,o=+document.getElementById('paintOil').value/100;x.save();x.strokeStyle=paint;x.lineWidth=s*(1+w*.25);x.lineCap='round';x.lineJoin='round';x.globalAlpha=.5+o*.5;x.shadowColor=paint;x.shadowBlur=w*s*.3;x.beginPath();if(brush==='feather'||brush==='fan'){for(let n=0;n<5;n++){const z=(n-2)*s*.16;x.moveTo(a.x+z,a.y-z);x.lineTo(b.x+z,b.y-z)}x.lineWidth=Math.max(1,s*.18)}else{x.lineWidth=brush==='flat'?s*.55:s;x.moveTo(a.x,a.y);x.lineTo(b.x,b.y)}x.stroke();x.restore()}c.addEventListener('pointerdown',e=>{if(!open)return;e.preventDefault();e.stopImmediatePropagation();drawing=true;last=point(e);stroke(last,last);c.setPointerCapture(e.pointerId)},true);c.addEventListener('pointermove',e=>{if(!open||!drawing)return;e.preventDefault();e.stopImmediatePropagation();const p=point(e);stroke(last,p);last=p},true);const end=e=>{if(!open||!drawing)return;e.stopImmediatePropagation();drawing=false;last=null};c.addEventListener('pointerup',end,true);c.addEventListener('pointercancel',end,true);update()})();
+/*
+ * Painting drawer: a small color mixer that paints onto the existing raster canvas.
+ * It intentionally shares the main canvas so exports include these brush strokes.
+ */
+(() => {
+  'use strict';
+  const drawer = document.getElementById('paintingDrawer');
+  const tab = document.getElementById('paintingTab');
+  const canvas = document.getElementById('paper');
+  if (!drawer || !tab || !canvas) return;
+  const context = canvas.getContext('2d');
+  if (!context) return;
+  const $ = id => document.getElementById(id);
+  const tint = $('paintTint'), vibrancy = $('paintVibrancy'), hexLabel = $('paintHex');
+  const preview = $('paintPreview'), size = $('paintSize'), water = $('paintWater'), oil = $('paintOil');
+  if (![tint, vibrancy, hexLabel, preview, size, water, oil].every(Boolean)) {
+    console.warn('Painting drawer controls are incomplete; skipping initialization.');
+    return;
+  }
+
+  let isOpen = false, baseColor = '#e53935', paintColor = baseColor;
+  let brushType = 'round', isDrawing = false, lastPoint = null;
+  const selectedColors = new Set([baseColor]);
+
+  // Color helpers keep channel math readable and prevent values outside 0–255.
+  function hexToRgb(hex) {
+    return [1, 3, 5].map(start => parseInt(hex.slice(start, start + 2), 16));
+  }
+  function rgbToHex(channels) {
+    const safe = channels.map(value => Math.max(0, Math.min(255, Math.round(value))));
+    return '#' + safe.map(value => value.toString(16).padStart(2, '0')).join('');
+  }
+
+  function updatePreview() {
+    let channels = hexToRgb(baseColor);
+    const tintAmount = Number(tint.value) / 100;
+    const vibrancyAmount = Number(vibrancy.value) / 100;
+    // Tint moves colors toward white; vibrancy expands or contracts their distance from gray.
+    channels = channels.map(value => tintAmount > 0
+      ? value + (255 - value) * tintAmount
+      : value * (1 + tintAmount));
+    const average = channels.reduce((sum, value) => sum + value, 0) / 3;
+    channels = channels.map(value => average + (value - average) * vibrancyAmount);
+    paintColor = rgbToHex(channels);
+    hexLabel.textContent = paintColor.toUpperCase();
+    preview.style.backgroundColor = paintColor;
+  }
+
+  function setOpen(open) {
+    isOpen = open;
+    drawer.open = open;
+    drawer.setAttribute('aria-hidden', String(!open));
+    tab.setAttribute('aria-expanded', String(open));
+  }
+  drawer.addEventListener('toggle', () => {
+    isOpen = drawer.open;
+    drawer.setAttribute('aria-hidden', String(!isOpen));
+    tab.setAttribute('aria-expanded', String(isOpen));
+  });
+  $('paintingClose')?.addEventListener('click', () => setOpen(false));
+
+  drawer.querySelectorAll('[data-paint]').forEach(button => {
+    button.addEventListener('click', () => {
+      const color = button.dataset.paint;
+      if (selectedColors.has(color)) {
+        selectedColors.delete(color);
+        button.classList.remove('active');
+      } else {
+        selectedColors.add(color);
+        button.classList.add('active');
+      }
+      baseColor = color; // The clicked color remains active even if removed from the mix.
+      updatePreview();
+    });
+  });
+
+  $('mixPaintBtn')?.addEventListener('click', () => {
+    if (!selectedColors.size) return;
+    const mixed = [0, 1, 2].map(channel =>
+      [...selectedColors].reduce((sum, color) => sum + hexToRgb(color)[channel], 0) / selectedColors.size
+    );
+    baseColor = rgbToHex(mixed);
+    tint.value = 0;
+    vibrancy.value = 100;
+    updatePreview();
+  });
+  [tint, vibrancy].forEach(control => control.addEventListener('input', updatePreview));
+
+  drawer.querySelectorAll('[data-paint-brush]').forEach(button => {
+    button.addEventListener('click', () => {
+      brushType = button.dataset.paintBrush;
+      drawer.querySelectorAll('[data-paint-brush]').forEach(item => item.classList.toggle('active', item === button));
+    });
+  });
+
+  // The CSS display size may differ from the canvas bitmap size; convert coordinates.
+  function toCanvasPoint(event) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: (event.clientX - rect.left) * canvas.width / rect.width,
+      y: (event.clientY - rect.top) * canvas.height / rect.height };
+  }
+
+  function drawStroke(from, to) {
+    const brushSize = Number(size.value);
+    const waterAmount = Number(water.value) / 100;
+    const oilAmount = Number(oil.value) / 100;
+    context.save();
+    context.strokeStyle = paintColor;
+    context.lineWidth = brushSize * (1 + waterAmount * 0.25);
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.globalAlpha = 0.5 + oilAmount * 0.5;
+    context.shadowColor = paintColor;
+    context.shadowBlur = waterAmount * brushSize * 0.3;
+    context.beginPath();
+    if (brushType === 'feather' || brushType === 'fan') {
+      // Several slightly offset strokes create a simple bristle effect.
+      for (let index = 0; index < 5; index += 1) {
+        const offset = (index - 2) * brushSize * 0.16;
+        context.moveTo(from.x + offset, from.y - offset);
+        context.lineTo(to.x + offset, to.y - offset);
+      }
+      context.lineWidth = Math.max(1, brushSize * 0.18);
+    } else {
+      context.lineWidth = brushType === 'flat' ? brushSize * 0.55 : brushSize;
+      context.moveTo(from.x, from.y);
+      context.lineTo(to.x, to.y);
+    }
+    context.stroke();
+    context.restore();
+  }
+
+  canvas.addEventListener('pointerdown', event => {
+    if (!isOpen) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    isDrawing = true;
+    lastPoint = toCanvasPoint(event);
+    drawStroke(lastPoint, lastPoint);
+    canvas.setPointerCapture(event.pointerId);
+  }, true);
+  canvas.addEventListener('pointermove', event => {
+    if (!isOpen || !isDrawing) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const point = toCanvasPoint(event);
+    drawStroke(lastPoint, point);
+    lastPoint = point;
+  }, true);
+  function finishStroke(event) {
+    if (!isDrawing) return;
+    event.stopImmediatePropagation();
+    isDrawing = false;
+    lastPoint = null;
+  }
+  canvas.addEventListener('pointerup', finishStroke, true);
+  canvas.addEventListener('pointercancel', finishStroke, true);
+  updatePreview();
+})();

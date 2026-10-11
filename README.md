@@ -11,6 +11,7 @@ A browser-based, classic-Mac-inspired paint and vector design studio.
 - Shape Lab conversions: rectangle, rounded rectangle, oval, capsule, cylinder, and star.
 - Logo Trace Studio: import a faded reference and create editable threshold-based vector silhouettes.
 - Pixel Mode / FatBits, rulers, guides, panning, zoom, editable text, undo/redo, exports, retro sounds, and Frame Studio.
+- Optional C4 Corvette / Timex Indiglo-inspired green night theme and Macintosh SE desk radio.
 
 ## Logo tracing
 Tracing runs locally; images are not uploaded. The tracer converts thresholded pixels into simplified polygon outlines. It works best for high-contrast logos and stickers and is not a full-color vectorizer. Interior holes, fine details, and gradients may need manual cleanup.
@@ -18,7 +19,10 @@ Tracing runs locally; images are not uploaded. The tracer converts thresholded p
 ## Architecture
 - `index.html`: app layout, controls, and canvas/SVG layers.
 - `styles.css`: classic desktop UI and responsive styling.
-- `app.js`: raster drawing, vector paths, editor state, undo/redo, persistence, tracing, audio, and Frame Studio.
+- `app.js`: raster drawing, vector paths, editor state, undo/redo, persistence, tracing, and Frame Studio.
+- `painting.js`: optional color-mixing drawer.
+- `radio.js`: radio station definitions, playback lifecycle, and draggable radio panel.
+- `corvette.js`: Corvette theme toggle and generated dashboard.
 - Keep raster canvas content, SVG vectors, and Frame Studio frames separate. Preserve the animation panel when changing unrelated features.
 
 ## Dependencies and checks
