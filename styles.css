@@ -710,3 +710,10 @@
 .vector-tool-list .tool .ico{display:flex;align-items:center;justify-content:center;width:27px;height:27px;flex:0 0 27px;margin:0}
 .vector-tool-list .tool .ico svg{display:block;width:24px;height:24px;flex:0 0 24px}
 @media(max-width:520px){.vector-tool-list{gap:7px;padding:8px}.vector-tool-list .tool{min-height:58px;gap:7px;padding:8px;font-size:11px;line-height:1.35}.vector-tool-list .tool .ico{width:24px;height:24px;flex-basis:24px}.vector-tool-list .tool .ico svg{width:22px;height:22px;flex-basis:22px}}
+
+
+/* Restore the original compact icon-over-label look for the individual vector tools. */
+.vector-tool-list .tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:68px;padding:8px 6px;font-family:inherit;font-size:11px;font-weight:500;line-height:1.3;letter-spacing:normal;text-align:center;white-space:normal;overflow-wrap:normal;word-break:normal}
+.vector-tool-list .tool .ico{display:flex;align-items:center;justify-content:center;width:27px;height:27px;flex:0 0 27px;margin:0;font-size:22px}
+.vector-tool-list .tool .ico svg{display:block;width:24px;height:24px;flex:0 0 24px}
+@media(max-width:520px){.vector-tool-list .tool{min-height:66px;gap:5px;padding:7px 4px;font-size:11px;line-height:1.3}.vector-tool-list .tool .ico{width:25px;height:25px;flex-basis:25px}.vector-tool-list .tool .ico svg{width:23px;height:23px;flex-basis:23px}}
