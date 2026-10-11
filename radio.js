@@ -14,20 +14,21 @@
   const status = $('seRadioStatus'), player = $('seRadioPlayer');
   const dragHandle = $('seRadioDrag'), track = $('seRadioTrack');
 
-  // A varied soundtrack for painting: lo-fi, classical, ambient, and retro.
-  // These public feeds may occasionally change; playback errors are surfaced in the radio UI.
+  // Prefer official HTTPS direct streams. The old ice1 SomaFM hostnames
+  // were unreliable; use current official ice5 endpoints instead.
   const stations = [
     { name: 'LO-FI GIRL • OFFICIAL STUDY RADIO', short: 'LO-FI LIVE', frequency: '88.6', type: 'youtube', id: 'X4VbdwhkE10' },
     { name: 'ALL CLASSICAL • MOZART & DEBUSSY', short: 'CLASSICAL', frequency: '101.2', type: 'audio', url: 'https://allclassical.streamguys1.com/ac128kmp3' },
-    { name: 'SOMAFM • GROOVE SALAD', short: 'GROOVE SALAD', frequency: '90.1', type: 'audio', url: 'https://ice1.somafm.com/groovesalad-128-mp3' },
-    { name: 'SOMAFM • DRONE ZONE', short: 'DRONE ZONE', frequency: '90.7', type: 'audio', url: 'https://ice1.somafm.com/dronezone-128-mp3' },
-    { name: 'SOMAFM • SPACE STATION SOMA', short: 'SPACE STATION', frequency: '91.4', type: 'audio', url: 'https://ice1.somafm.com/spacestation-128-mp3' },
-    { name: 'SOMAFM • SECRET AGENT', short: 'SECRET AGENT', frequency: '92.3', type: 'audio', url: 'https://ice1.somafm.com/secretagent-128-mp3' },
-    { name: 'SOMAFM • DEF CON RADIO', short: 'DEF CON', frequency: '93.1', type: 'audio', url: 'https://ice1.somafm.com/defcon-128-mp3' },
-    { name: 'SOMAFM • LUSH', short: 'LUSH', frequency: '94.0', type: 'audio', url: 'https://ice1.somafm.com/lush-128-mp3' },
-    { name: 'SOMAFM • LEFT COAST 70S', short: 'LEFT COAST 70S', frequency: '95.2', type: 'audio', url: 'https://ice1.somafm.com/seventies-128-mp3' },
+    { name: 'SOMAFM • GROOVE SALAD', short: 'GROOVE SALAD', frequency: '90.1', type: 'audio', url: 'https://ice5.somafm.com/groovesalad-128-mp3' },
+    { name: 'SOMAFM • DRONE ZONE', short: 'DRONE ZONE', frequency: '90.7', type: 'audio', url: 'https://ice5.somafm.com/dronezone-128-mp3' },
+    { name: 'SOMAFM • SPACE STATION SOMA', short: 'SPACE STATION', frequency: '91.4', type: 'audio', url: 'https://ice5.somafm.com/spacestation-128-mp3' },
+    { name: 'SOMAFM • GROOVE SALAD CLASSIC', short: 'SALAD CLASSIC', frequency: '92.0', type: 'audio', url: 'https://ice5.somafm.com/gsclassic-128-mp3' },
+    { name: 'SOMAFM • LUSH', short: 'LUSH', frequency: '94.0', type: 'audio', url: 'https://ice5.somafm.com/lush-128-mp3' },
+    { name: 'SOMAFM • BEAT BLENDER', short: 'BEAT BLENDER', frequency: '94.6', type: 'audio', url: 'https://ice5.somafm.com/beatblender-128-mp3' },
+    { name: 'SOMAFM • SYN PHAERA RADIO', short: 'SYN PHAERA', frequency: '95.1', type: 'audio', url: 'https://ice5.somafm.com/synphaera-128-mp3' },
     { name: 'RADIO PARADISE • ECLECTIC MIX', short: 'RADIO PARADISE', frequency: '96.5', type: 'audio', url: 'https://stream.radioparadise.com/mp3-128' },
-    { name: 'SOMAFM • UNDERGROUND 80S', short: 'UNDERGROUND 80S', frequency: '80.8', type: 'audio', url: 'https://ice1.somafm.com/u80s-128-mp3' }
+    { name: 'SOMAFM • UNDERGROUND 80S', short: 'UNDERGROUND 80S', frequency: '80.8', type: 'audio', url: 'https://ice5.somafm.com/u80s-128-mp3' },
+    { name: '80S80S • REAL 80S RADIO', short: '80S80S RADIO', frequency: '80.0', type: 'audio', url: 'https://streams.80s80s.de/web/mp3-128/streams.80s80s.de/' }
   ];
   let stationIndex = 0, playing = false, dragState = null;
 
@@ -77,7 +78,7 @@
       frame.allowFullscreen = true;
       frame.referrerPolicy = 'strict-origin-when-cross-origin';
       frame.loading = 'eager';
-      frame.src = 'https://www.youtube-nocookie.com/embed/' + station.id
+      frame.src = 'https://www.youtube.com/embed/' + station.id
         + '?autoplay=1&playsinline=1&rel=0&modestbranding=1';
       frame.addEventListener('load', () => {
         if (playing && stations[stationIndex] === station) setStatus(true, 'PLAYER LOADED · ' + station.short);
