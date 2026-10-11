@@ -768,62 +768,47 @@
 @media(prefers-reduced-motion:reduce){.se-radio-visualizer i{animation:none!important}.se-radio.is-playing .se-radio-meter i{animation:none}}
 
 
-/* C4 Corvette dashboard + Timex Indiglo-inspired green EL night mode */
-body.corvette-mode{
-  --paper:#07110d;--panel:#101b16;--ink:#d9ffe1;--muted:#7eae8a;--line:#315b3d;--blue:#80ff91;--blue2:#153c25;--shadow:0 0 0 1px #2cff6a22,0 8px 26px #0009;
-  background:#050b08;color:#d9ffe1;
-  color-scheme:dark;
-}
-body.corvette-mode .app{background:radial-gradient(ellipse at 50% -20%,#193c26 0%,#08130d 58%,#040806 100%);border-radius:16px}
-body.corvette-mode .topbar,
-body.corvette-mode .panel,
-body.corvette-mode .canvasbar{background:linear-gradient(145deg,#17221b,#0b130e);border-color:#376342;box-shadow:inset 0 1px #c2ffd01c,0 0 14px #20ff5a0b,0 8px 24px #0007}
-body.corvette-mode .brand .mark{background:#07120b;color:#a2ffae;border-color:#4b9a5a;box-shadow:inset 0 0 12px #39ff6533,0 0 9px #39ff6520}
-body.corvette-mode .brand h1,body.corvette-mode .panel h2,body.corvette-mode .canvasbar strong{color:#c7ffd0;text-shadow:0 0 8px #54ff7044}
-body.corvette-mode .brand p,body.corvette-mode .canvasbar .hint{color:#82b890}
-body.corvette-mode .btn,body.corvette-mode .tool,
-body.corvette-mode input[type=number],body.corvette-mode input[type=text],body.corvette-mode select{
-  background:linear-gradient(#1a2b20,#0c1710);color:#bfffc9;border-color:#3a7148;box-shadow:inset 0 1px #d0ffda12,0 0 7px #34ff5b0b
-}
-body.corvette-mode .btn:hover,body.corvette-mode .tool:hover{background:#203c29;border-color:#83ff96;box-shadow:0 0 11px #35ff5c2b}
-body.corvette-mode .btn.primary,body.corvette-mode .tool.active{background:linear-gradient(#b4ffc0,#54e875);color:#06200d;border-color:#c7ffd0;box-shadow:inset 0 1px #fff9,0 0 14px #40ff6a55}
-body.corvette-mode .corvette-mode-toggle{background:linear-gradient(#b8ffc3,#61ed80);color:#05200c;border-color:#d4ffda;box-shadow:inset 0 1px #fff,0 0 12px #48ff6b66;font-weight:850;letter-spacing:.04em}
-body.corvette-mode .corvette-mode-toggle[aria-pressed="false"]{background:linear-gradient(#1a2b20,#0c1710);color:#bfffc9;border-color:#3a7148;box-shadow:none}
-body.corvette-mode .stage{background-color:#07100b;background-image:radial-gradient(#24452c 0.7px,transparent .7px);border-color:#31583a}
-body.corvette-mode .paper{box-shadow:0 0 0 1px #7eff9840,0 0 26px #20ff5a12,0 8px 32px #0009}
-body.corvette-mode .separator{background:#315b3d}
-body.corvette-mode input[type=range]{accent-color:#69ff86}
-body.corvette-mode input[type=color]{background:#101b16;border-color:#376342}
-body.corvette-mode .footer{color:#8ecb9b}
-body.corvette-mode .tool .ico{filter:drop-shadow(0 0 3px #5dff7d22)}
-body.corvette-mode .fatbits-zoom-presets{border-color:#327849;box-shadow:0 0 10px #39ff5a14}
-body.corvette-mode .fatbits-zoom-presets button:hover,body.corvette-mode .pixel-mode-exit:hover{border-color:#75ff91;box-shadow:0 0 8px #3cff652a}
-body.corvette-mode .se-radio-launch{filter:drop-shadow(0 0 5px #44ff6533)}
-body.corvette-mode .se-radio-panel{box-shadow:inset 2px 2px #fff,0 0 18px #38ff5b28,5px 7px 0 #0005,0 12px 35px #0006}
+/* C4 Corvette digital cockpit: blue EL illumination and amber/red accents. */
+body.corvette-mode{--paper:#07101b;--panel:#101b2a;--ink:#d9ecff;--muted:#7f9fbe;--line:#294a70;--blue:#70baff;--blue2:#102d50;--shadow:0 0 0 1px #409cff22,0 8px 26px #0009;background:#040914;color:#d9ecff;color-scheme:dark}
+body.corvette-mode .app{background:radial-gradient(ellipse at 50% -20%,#19375d 0%,#081323 58%,#030711 100%);border-radius:16px}
+body.corvette-mode .topbar,body.corvette-mode .panel,body.corvette-mode .canvasbar{background:linear-gradient(145deg,#17283c,#0a1422);border-color:#315b86;box-shadow:inset 0 1px #c8e6ff1c,0 0 14px #2994ff0b,0 8px 24px #0007}
+body.corvette-mode .brand .mark{background:#071323;color:#9bd2ff;border-color:#4d8fc9;box-shadow:inset 0 0 12px #39a5ff33,0 0 9px #39a5ff20}
+body.corvette-mode .brand h1,body.corvette-mode .panel h2,body.corvette-mode .canvasbar strong{color:#c7e6ff;text-shadow:0 0 8px #54b5ff44}
+body.corvette-mode .brand p,body.corvette-mode .canvasbar .hint{color:#82acd4}
+body.corvette-mode .btn,body.corvette-mode .tool,body.corvette-mode input[type=number],body.corvette-mode input[type=text],body.corvette-mode select{background:linear-gradient(#1a2d43,#0c1928);color:#bfe2ff;border-color:#3a6895;box-shadow:inset 0 1px #d0eaff12,0 0 7px #34a5ff0b}
+body.corvette-mode .btn:hover,body.corvette-mode .tool:hover{background:#203e5e;border-color:#83c8ff;box-shadow:0 0 11px #359eff2b}
+body.corvette-mode .btn.primary,body.corvette-mode .tool.active{background:linear-gradient(#b4e0ff,#54aef5);color:#06182b;border-color:#c7eaff;box-shadow:inset 0 1px #fff9,0 0 14px #40aaff55}
+body.corvette-mode .corvette-mode-toggle{background:linear-gradient(#b8e2ff,#61b6f0);color:#05203a;border-color:#d4eeff;box-shadow:inset 0 1px #fff,0 0 12px #48b5ff66;font-weight:850;letter-spacing:.04em}
+body.corvette-mode .corvette-mode-toggle[aria-pressed="false"]{background:linear-gradient(#1a2d43,#0c1928);color:#bfe2ff;border-color:#3a6895;box-shadow:none}
+body.corvette-mode .stage{background-color:#07101b;background-image:radial-gradient(#24415f .7px,transparent .7px);border-color:#31547a}
+body.corvette-mode .paper{box-shadow:0 0 0 1px #7ec5ff40,0 0 26px #209aff12,0 8px 32px #0009}
+body.corvette-mode .separator{background:#315b86}
+body.corvette-mode input[type=range]{accent-color:#69bdff}
+body.corvette-mode input[type=color]{background:#101b2a;border-color:#315b86}
+body.corvette-mode .footer{color:#8ebbe4}
+body.corvette-mode .tool .ico{filter:drop-shadow(0 0 3px #5dbaff22)}
+body.corvette-mode .fatbits-zoom-presets{border-color:#3270a4;box-shadow:0 0 10px #399fff14}
+body.corvette-mode .fatbits-zoom-presets button:hover,body.corvette-mode .pixel-mode-exit:hover{border-color:#75c7ff;box-shadow:0 0 8px #3ca8ff2a}
+body.corvette-mode .se-radio-launch{filter:drop-shadow(0 0 5px #44aaff33)}
+body.corvette-mode .se-radio-panel{box-shadow:inset 2px 2px #fff,0 0 18px #389fff28,5px 7px 0 #0005,0 12px 35px #0006}
 body.corvette-mode .topbar{position:relative}
-body.corvette-mode .topbar:after{content:"C4 • DIGITAL DASH / INDIGLO NIGHT MODE";display:block;position:absolute;left:14px;bottom:-19px;color:#6ba87a;font:700 8px/1 ui-monospace,Menlo,monospace;letter-spacing:.19em;opacity:.72;pointer-events:none}
+body.corvette-mode .topbar:after{content:"C4 • DIGITAL DASH / BLUE EL NIGHT MODE";display:block;position:absolute;left:14px;bottom:-19px;color:#7aaedb;font:700 8px/1 ui-monospace,Menlo,monospace;letter-spacing:.19em;opacity:.72;pointer-events:none}
 @media(max-width:760px){body.corvette-mode .topbar:after{display:none}}
-@media(prefers-reduced-motion:no-preference){body.corvette-mode .corvette-mode-toggle[aria-pressed="true"]{animation:corvetteIndiglo 2.8s ease-in-out infinite alternate}}
-@keyframes corvetteIndiglo{from{box-shadow:inset 0 1px #fff9,0 0 7px #48ff6b38}to{box-shadow:inset 0 1px #fff9,0 0 15px #48ff6b75}}
-
-
-/* The C4 dashboard is an optional instrument strip inserted by corvette.js. */
-.corvette-dash{display:none;align-items:center;gap:clamp(8px,2vw,24px);padding:10px 16px;border:1px solid #3e7049;border-radius:12px;background:linear-gradient(180deg,#15251a,#060d08 70%);color:#aaffb6;box-shadow:inset 0 1px #d9ffe01b,0 0 18px #2dff5820,0 5px 18px #0008;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-shadow:0 0 8px #56ff6d55;overflow:hidden}
+@media(prefers-reduced-motion:no-preference){body.corvette-mode .corvette-mode-toggle[aria-pressed="true"]{animation:corvetteBlueGlow 2.8s ease-in-out infinite alternate}}
+@keyframes corvetteBlueGlow{from{box-shadow:inset 0 1px #fff9,0 0 7px #48aaff38}to{box-shadow:inset 0 1px #fff9,0 0 15px #48aaff75}}
+.corvette-dash{display:none;align-items:center;gap:clamp(8px,2vw,24px);padding:10px 16px;border:1px solid #3974a8;border-radius:12px;background:linear-gradient(180deg,#152943,#060d18 70%);color:#a9d9ff;box-shadow:inset 0 1px #d9efff1b,0 0 18px #2d9fff20,0 5px 18px #0008;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-shadow:0 0 8px #56baff55;overflow:hidden}
 .corvette-dash:not([hidden]){display:flex}.corvette-dash[hidden]{display:none!important}
-.c4-dash-brand{display:flex;flex-direction:column;gap:2px;min-width:95px;letter-spacing:.15em;font-size:8px;color:#79b989}
-.c4-dash-brand strong{font-size:25px;line-height:1;color:#c9ffd1;letter-spacing:.02em}
-.c4-gauge{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:72px;min-height:62px;padding:3px 12px;border:1px solid #3b7147;border-radius:50% / 24%;background:radial-gradient(ellipse at 50% 20%,#1b3924,#07100a 75%);box-shadow:inset 0 0 12px #3cff6420}
-.c4-gauge-label{color:#7fb88a;font-size:7px;letter-spacing:.14em}.c4-gauge strong{font-size:22px;line-height:1.15;letter-spacing:.06em}.c4-gauge small{color:#8cce99;font-size:7px;letter-spacing:.1em}
-.c4-gauge i{position:absolute;top:10px;right:10px;width:4px;height:4px;border-radius:50%;background:#9bffab;box-shadow:0 0 6px #6dff84}
-.c4-dash-right{display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:8px;min-width:135px;margin-left:auto}.c4-dash-right strong{font-size:11px;letter-spacing:.16em}.c4-dash-right small{grid-column:2;color:#77b985;font-size:7px;letter-spacing:.13em}
-.c4-indiglo-led{grid-row:1/3;width:11px;height:11px;border-radius:50%;background:#9affaa;box-shadow:0 0 5px #9affaa,0 0 15px #3dff66,0 0 28px #3dff6670}
-.c4-dash-rule{grid-column:1/-1;height:1px;margin:5px 0;background:linear-gradient(90deg,transparent,#6aff804d,transparent)}
-body.corvette-mode .corvette-dash{animation:c4DashWake .5s ease-out both}
-@keyframes c4DashWake{from{opacity:0;filter:brightness(2);transform:translateY(-4px)}to{opacity:1;filter:brightness(1);transform:translateY(0)}}
+.c4-dash-brand{display:flex;flex-direction:column;gap:2px;min-width:95px;letter-spacing:.15em;font-size:8px;color:#79b5e8}.c4-dash-brand strong{font-size:25px;line-height:1;color:#c9e9ff;letter-spacing:.02em}
+.c4-gauge{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:72px;min-height:62px;padding:3px 12px;border:1px solid #3b78ad;border-radius:50% / 24%;background:radial-gradient(ellipse at 50% 20%,#1b3b5c,#07101b 75%);box-shadow:inset 0 0 12px #3cafff20}
+.c4-gauge-label{color:#7fb9e8;font-size:7px;letter-spacing:.14em}.c4-gauge strong{font-size:22px;line-height:1.15;letter-spacing:.06em}.c4-gauge small{color:#8cc9f7;font-size:7px;letter-spacing:.1em}.c4-gauge>i{position:absolute;top:10px;right:10px;width:4px;height:4px;border-radius:50%;background:#9bd8ff;box-shadow:0 0 6px #6dbfff}
+.c4-dash-right{display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:8px;min-width:135px;margin-left:auto}.c4-dash-right strong{font-size:11px;letter-spacing:.16em}.c4-dash-right small{grid-column:2;color:#77b8e9;font-size:7px;letter-spacing:.13em}
+.c4-indiglo-led{grid-row:1/3;width:11px;height:11px;border-radius:50%;background:#9affff;box-shadow:0 0 5px #9affff,0 0 15px #3dbdff,0 0 28px #3d9dff70}.c4-dash-rule{grid-column:1/-1;height:1px;margin:5px 0;background:linear-gradient(90deg,transparent,#6abaff55,transparent)}
+.c4-battery-track{width:68px;height:5px;margin-top:5px;overflow:hidden;border:1px solid #4279a9;border-radius:4px;background:#091321}.c4-battery-track span{display:block;width:0;height:100%;background:#62c0ff;box-shadow:0 0 7px #62c0ff;transition:width .25s}.c4-battery-track span[data-level="medium"]{background:#ffc34f;box-shadow:0 0 7px #ffc34f}.c4-battery-track span[data-level="low"]{background:#ff515d;box-shadow:0 0 7px #ff515d}
+.c4-weather-button{grid-column:1/-1;margin-top:5px;padding:3px 5px;border:1px solid #548fc3;border-radius:4px;background:#102b46;color:#a8dbff;font:700 7px/1.4 ui-monospace,Menlo,monospace;letter-spacing:.08em;cursor:pointer}.c4-weather-button:hover{border-color:#ffc34f;color:#ffe0a0}.c4-weather-button:disabled{opacity:.55;cursor:wait}
+.c4-warning-bars{grid-column:1/-1;display:flex;align-items:end;gap:3px;height:21px;margin-top:3px}.c4-warning-bars i{display:block;width:6px;height:8px;border-radius:1px;background:#54b6ff;box-shadow:0 0 5px #299eff55}.c4-warning-bars i:nth-child(2){height:12px}.c4-warning-bars i:nth-child(3){height:15px}.c4-warning-bars i:nth-child(4){height:10px}.c4-warning-bars i:nth-child(5){height:17px}.c4-warning-bars i:nth-child(6){height:13px}.c4-warning-bars i:nth-child(n+7):nth-child(-n+9){height:18px;background:#ffc34f;box-shadow:0 0 5px #ffc34f55}.c4-warning-bars i:nth-child(n+10){height:19px;background:#ff515d;box-shadow:0 0 5px #ff515d55}
+body.corvette-mode .corvette-dash{animation:c4DashWake .5s ease-out both}@keyframes c4DashWake{from{opacity:0;filter:brightness(2);transform:translateY(-4px)}to{opacity:1;filter:brightness(1);transform:translateY(0)}}
 .se-radio-player audio{display:block;width:100%;min-height:36px}
-@media(max-width:620px){.corvette-dash{gap:6px;padding:8px}.c4-dash-brand{min-width:45px}.c4-dash-brand span{display:none}.c4-gauge{min-width:51px;min-height:54px;padding:3px 6px}.c4-gauge strong{font-size:17px}.c4-dash-right{min-width:70px}.c4-dash-right small:last-child{display:none}}
-
-
+@media(max-width:620px){.corvette-dash{gap:6px;padding:8px;flex-wrap:wrap}.c4-dash-brand{min-width:45px}.c4-dash-brand span{display:none}.c4-gauge{min-width:51px;min-height:54px;padding:3px 6px}.c4-gauge strong{font-size:17px}.c4-dash-right{min-width:70px}.c4-dash-right small:last-child{display:none}}
 /* Larger invisible Bézier hit areas make curve handles easier to grab. */
 .vector-handle-hit{fill:transparent;stroke:transparent;stroke-width:1;pointer-events:all;cursor:grab;touch-action:none}
 .vector-handle{cursor:grab;stroke-width:2.5;pointer-events:all;touch-action:none}

@@ -17,7 +17,7 @@
   // A varied soundtrack for painting: lo-fi, classical, ambient, and retro.
   // These public feeds may occasionally change; playback errors are surfaced in the radio UI.
   const stations = [
-    { name: 'LO-FI GIRL • LIVE STUDY BEATS', short: 'LO-FI LIVE', frequency: '88.6', type: 'youtube', id: '1ctE0s1dAkA' },
+    { name: 'LO-FI GIRL • OFFICIAL STUDY RADIO', short: 'LO-FI LIVE', frequency: '88.6', type: 'youtube', id: 'X4VbdwhkE10' },
     { name: 'ALL CLASSICAL • MOZART & DEBUSSY', short: 'CLASSICAL', frequency: '101.2', type: 'audio', url: 'https://allclassical.streamguys1.com/ac128kmp3' },
     { name: 'SOMAFM • GROOVE SALAD', short: 'GROOVE SALAD', frequency: '90.1', type: 'audio', url: 'https://ice1.somafm.com/groovesalad-128-mp3' },
     { name: 'SOMAFM • DRONE ZONE', short: 'DRONE ZONE', frequency: '90.7', type: 'audio', url: 'https://ice1.somafm.com/dronezone-128-mp3' },
