@@ -561,11 +561,14 @@
     $('zoomInBtn').addEventListener('click',()=>setZoom(zoomLevel+.25));
     $('zoomOutBtn').addEventListener('click',()=>setZoom(zoomLevel-.25));
     $('zoomFitBtn').addEventListener('click',()=>{
-      const stage=document.querySelector('.stage');
-      const availableWidth=Math.max(240,stage.clientWidth-48);
-      const availableHeight=Math.max(240,stage.clientHeight-48);
-      const fit=Math.min(1.4,availableWidth/Math.max(1,1200),availableHeight/Math.max(1,800));
+      if(fatBitsMode)toggleFatBits(false);
+      const stage=document.querySelector('.stage'),wrap=canvasWrap;
+      const availableWidth=Math.max(160,(stage?.clientWidth||wrap.clientWidth)-48);
+      const availableHeight=Math.max(160,(stage?.clientHeight||wrap.clientHeight)-48);
+      const fit=Math.max(.1,Math.min(3,availableWidth/Math.max(1,W()),availableHeight/Math.max(1,H())));
       setZoom(fit);
+      requestAnimationFrame(()=>{wrap.scrollLeft=0;wrap.scrollTop=0;});
+      toast('Canvas fitted to workspace');
     });
     $('canvasFocusBtn').addEventListener('click',()=>applyCanvasFocus(!canvasFocus));
 
@@ -776,7 +779,7 @@
         if((tool==='editpoints'||tool==='shapebuilder')&&(i===selectedVector||selectedVectors.includes(i))){path.setAttribute('stroke-dasharray','5 4');path.setAttribute('stroke','#315cdb');}
         vectorLayer.appendChild(path);
         if(Array.isArray(v.details))v.details.forEach(detail=>vectorLayer.appendChild(svgEl('path',{d:pathData(detail.points,!!detail.closed),fill:'none',stroke:v.strokeColor||v.color,'stroke-width':v.strokeWidth||v.size,'data-vector':i},'vector-detail-path')));
-        if(tool!=='editpoints'||i!==selectedVector)return;
+        if(!['editpoints','select'].includes(tool)||i!==selectedVector)return;
         v.points.forEach((point,index)=>['in','out'].forEach(side=>{
           const handle=point[side];if(!handle)return;
           vectorLayer.appendChild(svgEl('line',{x1:point.x,y1:point.y,x2:handle.x,y2:handle.y,'pointer-events':'none'},'vector-handle-line'));
@@ -827,8 +830,12 @@
       event.preventDefault();event.stopPropagation();const p=svgPoint(event);
       if(tool==='text'||tool==='select'){
         const textHit=event.target.closest?event.target.closest('[data-text]'):null;
-        if(textHit){selectedText=Number(textHit.getAttribute('data-text'));const item=textObjects[selectedText];if(item)draggingText={index:selectedText,start:p,x:item.x,y:item.y};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;}
-        if(tool==='select'){selectedVector=-1;selectedVectors=[];renderVectors();toast('Click a vector shape or text, then drag to move it');return;}
+        if(textHit){selectedText=Number(textHit.getAttribute('data-text'));selectedVector=-1;selectedVectors=[];const item=textObjects[selectedText];if(item)draggingText={index:selectedText,start:p,x:item.x,y:item.y};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();return;}
+        if(tool==='select'){
+          const pathHit=event.target.closest?event.target.closest('[data-vector]'):null;
+          if(pathHit){const index=Number(pathHit.getAttribute('data-vector'));if(vectorPaths[index]){selectedText=-1;selectedVector=index;selectedVectors=[index];const shape=vectorPaths[index];draggingVector={vector:index,start:p,points:shape.points.map(q=>({...q,in:q.in?{...q.in}:null,out:q.out?{...q.out}:null}))};if(vectorLayer.setPointerCapture){try{vectorLayer.setPointerCapture(event.pointerId);}catch(_){}}renderVectors();updateShapeInspector();return;}}
+          selectedText=-1;selectedVector=-1;selectedVectors=[];renderVectors();toast('Click a vector shape or text, then drag it to move it');return;
+        }
         const value=prompt('Type your text:');
         if(value&&value.trim()){textObjects.push({text:value,x:p.x,y:p.y,font:currentFont,size:textSize,color});selectedText=textObjects.length-1;renderVectors();saveSoon();retroSound('tick');toast('Text added — drag it to reposition');}
         return;
