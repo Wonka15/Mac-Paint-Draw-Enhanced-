@@ -730,3 +730,17 @@
 .vector-tools-always-visible .vector-tool-list .tool:hover{background:#f0f4ff;border-color:#b8c5f0}
 .vector-tools-always-visible .vector-tool-list .tool.active{background:#e6ecff;border-color:#839be6;color:#2345a8;box-shadow:inset 0 0 0 1px #b4c3fa}
 @media(max-width:520px){.vector-tools-always-visible .vector-tool-list{gap:6px;padding:8px}.vector-tools-always-visible .vector-tool-list .tool{min-height:64px;padding:7px 4px;font-size:11px}}
+
+
+/* FatBits blue pixel-workbench polish: clear presets, live coordinates, and sampled ink. */
+.fatbits-zoom-presets{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin:8px 0;padding:7px;background:#101a34;border:1px solid #304a7d;border-radius:6px}
+.fatbits-zoom-presets>span{margin-right:auto;color:#8fa9d9;font:700 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:1px}
+.fatbits-zoom-presets button{min-height:27px;padding:4px 8px;border:1px solid #435982;border-radius:5px;background:#1c2b4d;color:#d9e8ff;font:700 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;cursor:pointer}
+.fatbits-zoom-presets button:hover{border-color:#67eaff;background:#263e6c}
+.fatbits-zoom-presets button.active{border-color:#63e9ff;background:#c5f7ff;color:#15345d;box-shadow:0 0 0 1px #63e9ff55}
+.fatbits-pixel-readout{display:flex;align-items:center;gap:7px;margin-top:7px;padding:7px 8px;border:1px solid #304a7d;border-radius:5px;background:#111b33;color:#b7c9ed;font:10px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace}
+.fatbits-coordinate{flex:1;white-space:nowrap}
+.fatbits-pixel-color{width:15px;height:15px;flex:0 0 15px;border:1px solid #9bb5e7;border-radius:3px;background:#fff;box-shadow:0 0 0 1px #101427}
+.fatbits-hex{color:#6ff0ff;font-weight:700;letter-spacing:.3px}
+#canvasWrap.fatbits-active canvas{image-rendering:pixelated;image-rendering:crisp-edges}
+#fatBitsGrid.active{background-color:transparent}

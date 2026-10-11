@@ -961,16 +961,54 @@
       size=originalSize;
     }
 
-    function drawFatBit(event) {
+    // FatBits always edits the source bitmap. Bresenham interpolation prevents gaps during fast drags.
+    function fatBitAt(event) {
       const rect=canvasWrap.getBoundingClientRect();
-      const x=Math.max(0,Math.min(W()-1,Math.floor((event.clientX-rect.left-fatBitsOffsetX)/zoomLevel)));
-      const y=Math.max(0,Math.min(H()-1,Math.floor((event.clientY-rect.top-fatBitsOffsetY)/zoomLevel)));
-      if(lastFatBit&&lastFatBit.x===x&&lastFatBit.y===y)return;
+      return {
+        x:Math.max(0,Math.min(W()-1,Math.floor((event.clientX-rect.left-fatBitsOffsetX)/zoomLevel))),
+        y:Math.max(0,Math.min(H()-1,Math.floor((event.clientY-rect.top-fatBitsOffsetY)/zoomLevel)))
+      };
+    }
+    function updateFatBitsReadout(x,y) {
+      const readout=$('fatBitsReadout');
+      if(x<0||y<0||x>=W()||y>=H())return;
+      let rgb=[255,255,255];
+      try{const d=ctx.getImageData(x,y,1,1).data;rgb=[d[0],d[1],d[2]];}catch(_){}
+      const hex='#'+rgb.map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();
+      $('coordStatus').textContent='X '+x+' · Y '+y+' px';
+      if(readout){readout.querySelector('.fatbits-coordinate').textContent='X '+x+'  /  Y '+y;readout.querySelector('.fatbits-pixel-color').style.backgroundColor=hex;readout.querySelector('.fatbits-hex').textContent=hex;}
+    }
+    function paintFatBit(x,y) {
+      if(x<0||y<0||x>=W()||y>=H())return;
       ctx.fillStyle=tool==='eraser'?'#ffffff':color;
       ctx.fillRect(x,y,1,1);
-      lastFatBit={x,y};
-      $('coordStatus').textContent=x+' × '+y+' px';
     }
+    function drawFatBit(event) {
+      const point=fatBitAt(event);
+      if(tool==='eyedropper'){
+        const d=ctx.getImageData(point.x,point.y,1,1).data;
+        color='#'+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+        $('colorInput').value=color;updateColorIndicator();updateFatBitsReadout(point.x,point.y);toast('Pixel color picked: '+color.toUpperCase());return;
+      }
+      if(!lastFatBit){paintFatBit(point.x,point.y);lastFatBit=point;updateFatBitsReadout(point.x,point.y);return;}
+      let x0=lastFatBit.x,y0=lastFatBit.y,x1=point.x,y1=point.y;
+      const dx=Math.abs(x1-x0),sx=x0<x1?1:-1,dy=-Math.abs(y1-y0),sy=y0<y1?1:-1;
+      let error=dx+dy;
+      while(true){
+        paintFatBit(x0,y0);
+        if(x0===x1&&y0===y1)break;
+        const twice=2*error;
+        if(twice>=dy){error+=dy;x0+=sx;}
+        if(twice<=dx){error+=dx;y0+=sy;}
+      }
+      lastFatBit=point;updateFatBitsReadout(point.x,point.y);
+    }
+    function updateFatBitsHover(event){
+      if(!fatBitsMode)return;
+      const p=fatBitAt(event);
+      if(p.x>=0&&p.y>=0)updateFatBitsReadout(p.x,p.y);
+    }
+    canvasWrap.addEventListener('pointermove',updateFatBitsHover,{passive:true});
     function down(event) {
       event.preventDefault();
       if(tool==='lasso'){
@@ -1157,18 +1195,26 @@
       setCrtMode(button.dataset.crt);
       $('crtMenu').open = false;
     }));
-    $('fatBitsBtn').addEventListener('click',()=>{
-      fatBitsMode=!fatBitsMode;
+    function toggleFatBits(force){
+      const next=typeof force==='boolean'?force:!fatBitsMode;
+      if(next===fatBitsMode)return;
+      fatBitsMode=next;
       if(fatBitsMode){
         zoomBeforeFatBits=zoomLevel;fatBitsOffsetX=0;fatBitsOffsetY=0;setZoom(12);updateFatBitsGrid();
         $('fatBitsGrid').classList.add('active');canvasWrap.classList.add('fatbits-active');
-        toast('FatBits on — drag with Space, or use the arrow pad to move around the canvas');
+        toast('FatBits on — drag to paint single pixels; hold Space to pan');
       }else{
         $('fatBitsGrid').classList.remove('active');canvasWrap.classList.remove('fatbits-active');
         fatBitsOffsetX=0;fatBitsOffsetY=0;setZoom(zoomBeforeFatBits);toast('FatBits off — normal drawing restored');
       }
-      setToggleButton('fatBitsBtn',fatBitsMode);
-    });
+      setToggleButton('fatBitsBtn',fatBitsMode);updatePixelNavigator();
+    }
+    $('fatBitsBtn').addEventListener('click',()=>toggleFatBits());
+    document.querySelectorAll('[data-fatzoom]').forEach(button=>button.addEventListener('click',()=>{
+      if(!fatBitsMode)toggleFatBits(true);
+      const target=Number(button.dataset.fatzoom);
+      if(Number.isFinite(target)){setZoom(target);document.querySelectorAll('[data-fatzoom]').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button));});}
+    }));
     document.querySelectorAll('[data-fatpan]').forEach(button=>button.addEventListener('click',()=>{
       if(!fatBitsMode){toast('Turn on FatBits first to move the magnified view');return;}
       const direction=button.dataset.fatpan,step=Math.max(120,canvasWrap.clientWidth*.35);
