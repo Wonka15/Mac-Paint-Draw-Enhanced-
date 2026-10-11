@@ -19,6 +19,8 @@
   const stations = [
     { name: 'LO-FI GIRL • OFFICIAL STUDY RADIO', short: 'LO-FI LIVE', frequency: '88.6', type: 'youtube', id: 'X4VbdwhkE10' },
     { name: 'ALL CLASSICAL • MOZART & DEBUSSY', short: 'CLASSICAL', frequency: '101.2', type: 'audio', url: 'https://allclassical.streamguys1.com/ac128kmp3' },
+    // Official KZSC 88.1 FM high-quality 128 kbps MP3 stream from UC Santa Cruz.
+    { name: 'KZSC • UC SANTA CRUZ 88.1 FM', short: 'KZSC 88.1 FM', frequency: '88.1', type: 'audio', url: 'https://kzscfms1-geckohost.radioca.st/kzschigh' },
     { name: 'SOMAFM • GROOVE SALAD', short: 'GROOVE SALAD', frequency: '90.1', type: 'audio', url: 'https://ice5.somafm.com/groovesalad-128-mp3' },
     { name: 'SOMAFM • DRONE ZONE', short: 'DRONE ZONE', frequency: '90.7', type: 'audio', url: 'https://ice5.somafm.com/dronezone-128-mp3' },
     { name: 'SOMAFM • SPACE STATION SOMA', short: 'SPACE STATION', frequency: '91.4', type: 'audio', url: 'https://ice5.somafm.com/spacestation-128-mp3' },
