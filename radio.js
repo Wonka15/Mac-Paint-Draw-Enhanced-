@@ -14,11 +14,20 @@
   const status = $('seRadioStatus'), player = $('seRadioPlayer');
   const dragHandle = $('seRadioDrag'), track = $('seRadioTrack');
 
-  // Lofi Girl is an official live video; All Classical provides a direct MP3 feed
-  // with a broad classical repertoire, including Mozart and Debussy.
+  // A varied soundtrack for painting: lo-fi, classical, ambient, and retro.
+  // These public feeds may occasionally change; playback errors are surfaced in the radio UI.
   const stations = [
     { name: 'LO-FI GIRL • LIVE STUDY BEATS', short: 'LO-FI LIVE', frequency: '88.6', type: 'youtube', id: '1ctE0s1dAkA' },
-    { name: 'MOZART • DEBUSSY • CLASSICAL LIVE', short: 'CLASSICAL', frequency: '101.2', type: 'audio', url: 'https://allclassical.streamguys1.com/ac128kmp3' }
+    { name: 'ALL CLASSICAL • MOZART & DEBUSSY', short: 'CLASSICAL', frequency: '101.2', type: 'audio', url: 'https://allclassical.streamguys1.com/ac128kmp3' },
+    { name: 'SOMAFM • GROOVE SALAD', short: 'GROOVE SALAD', frequency: '90.1', type: 'audio', url: 'https://ice1.somafm.com/groovesalad-128-mp3' },
+    { name: 'SOMAFM • DRONE ZONE', short: 'DRONE ZONE', frequency: '90.7', type: 'audio', url: 'https://ice1.somafm.com/dronezone-128-mp3' },
+    { name: 'SOMAFM • SPACE STATION SOMA', short: 'SPACE STATION', frequency: '91.4', type: 'audio', url: 'https://ice1.somafm.com/spacestation-128-mp3' },
+    { name: 'SOMAFM • SECRET AGENT', short: 'SECRET AGENT', frequency: '92.3', type: 'audio', url: 'https://ice1.somafm.com/secretagent-128-mp3' },
+    { name: 'SOMAFM • DEF CON RADIO', short: 'DEF CON', frequency: '93.1', type: 'audio', url: 'https://ice1.somafm.com/defcon-128-mp3' },
+    { name: 'SOMAFM • LUSH', short: 'LUSH', frequency: '94.0', type: 'audio', url: 'https://ice1.somafm.com/lush-128-mp3' },
+    { name: 'SOMAFM • LEFT COAST 70S', short: 'LEFT COAST 70S', frequency: '95.2', type: 'audio', url: 'https://ice1.somafm.com/seventies-128-mp3' },
+    { name: 'RADIO PARADISE • ECLECTIC MIX', short: 'RADIO PARADISE', frequency: '96.5', type: 'audio', url: 'https://stream.radioparadise.com/mp3-128' },
+    { name: 'SOMAFM • UNDERGROUND 80S', short: 'UNDERGROUND 80S', frequency: '80.8', type: 'audio', url: 'https://ice1.somafm.com/u80s-128-mp3' }
   ];
   let stationIndex = 0, playing = false, dragState = null;
 

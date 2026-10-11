@@ -793,6 +793,9 @@
         if(!['editpoints','select'].includes(tool)||i!==selectedVector)return;
         v.points.forEach((point,index)=>['in','out'].forEach(side=>{
           const handle=point[side];if(!handle)return;
+          // Expand the clickable area without changing the visible handle size.
+          // This makes curve editing much easier with a trackpad or on a touch screen.
+          vectorLayer.appendChild(svgEl('circle',{cx:handle.x,cy:handle.y,r:13,'data-handle':i+':'+index+':'+side,'aria-label':side==='in'?'Incoming curve handle':'Outgoing curve handle','fill':'transparent','stroke':'transparent','pointer-events':'all'},'vector-handle-hit'));
           vectorLayer.appendChild(svgEl('line',{x1:point.x,y1:point.y,x2:handle.x,y2:handle.y,'pointer-events':'none'},'vector-handle-line'));
           vectorLayer.appendChild(svgEl('circle',{cx:handle.x,cy:handle.y,r:5,'data-handle':i+':'+index+':'+side,'aria-label':side==='in'?'Incoming curve handle':'Outgoing curve handle'},'vector-handle '+(side==='in'?'handle-in':'handle-out')));
         }));
