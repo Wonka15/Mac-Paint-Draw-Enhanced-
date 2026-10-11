@@ -13,6 +13,7 @@
   const power = $('seRadioPower'), powerText = $('seRadioPowerText');
   const status = $('seRadioStatus'), player = $('seRadioPlayer');
   const dragHandle = $('seRadioDrag'), track = $('seRadioTrack');
+  const effectSelect = $('seRadioEffect');
 
   // Prefer official HTTPS direct streams. The old ice1 SomaFM hostnames
   // were unreliable; use current official ice5 endpoints instead.
@@ -36,7 +37,7 @@
     // 181.fm publishes a direct 128 kbps MP3 feed for its Beatles channel.
     { name: '181.FM • BEATLES', short: '181 BEATLES', frequency: '18.1', type: 'audio', url: 'https://listen.181fm.com/181-beatles_128k.mp3', hue: 48, visualizer: 'bounce' }
   ];
-  let stationIndex = 0, playing = false, dragState = null;
+  let stationIndex = 0, playing = false, dragState = null, selectedEffect = 'auto';
 
   function openPanel(open) {
     panel.hidden = !open;
@@ -49,7 +50,11 @@
     const frequency = root.querySelector('.se-radio-frequency strong');
     if (frequency) frequency.textContent = station.frequency;
     root.dataset.station = String(stationIndex);
-    root.dataset.visualizer = station.visualizer || ['spectrum', 'wave', 'pulse', 'bounce'][stationIndex % 4];
+    // Auto mode follows each station; manual mode lets listeners pick a visual style.
+    root.dataset.visualizer = selectedEffect === 'auto'
+      ? (station.visualizer || ['spectrum', 'wave', 'pulse', 'bounce'][stationIndex % 4])
+      : selectedEffect;
+    if (effectSelect && effectSelect.value !== selectedEffect) effectSelect.value = selectedEffect;
     root.style.setProperty('--radio-hue', String(station.hue ?? ((stationIndex * 37 + 115) % 360)));
     const visualizer = $('seRadioVisualizer');
     if (visualizer) visualizer.setAttribute('aria-label', 'Animated ' + root.dataset.visualizer + ' spectrum visualizer');
@@ -145,6 +150,10 @@
     else startPlayback();
   });
   $('seRadioPrev').addEventListener('click', () => changeStation(-1));
+  effectSelect?.addEventListener('change', () => {
+    selectedEffect = effectSelect.value;
+    renderStation();
+  });
   $('seRadioNext').addEventListener('click', () => changeStation(1));
 
   // Only drag from the title bar, and ignore its buttons so Close stays clickable.
