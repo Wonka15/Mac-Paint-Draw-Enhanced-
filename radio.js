@@ -19,6 +19,8 @@
   const stations = [
     { name: 'LO-FI GIRL • OFFICIAL STUDY RADIO', short: 'LO-FI LIVE', frequency: '88.6', type: 'youtube', id: 'X4VbdwhkE10' },
     { name: 'ALL CLASSICAL • MOZART & DEBUSSY', short: 'CLASSICAL', frequency: '101.2', type: 'audio', url: 'https://allclassical.streamguys1.com/ac128kmp3' },
+    { name: '98.1 THE BREEZE • RELAXING FAVORITES', short: 'THE BREEZE', frequency: '98.1', type: 'embed', url: 'https://www.iheart.com/live/981-the-breeze-285/?embed=true', hue: 190, visualizer: 'wave' },
+    { name: '107.7 THE BONE • BAY AREA ROCK', short: 'THE BONE', frequency: '107.7', type: 'embed', url: 'https://player.listenlive.co/25951', hue: 8, visualizer: 'pulse' },
     // Official KZSC 88.1 FM high-quality 128 kbps MP3 stream from UC Santa Cruz.
     { name: 'KZSC • UC SANTA CRUZ 88.1 FM', short: 'KZSC 88.1 FM', frequency: '88.1', type: 'audio', url: 'https://kzscfms1-geckohost.radioca.st/kzschigh' },
     { name: 'SOMAFM • GROOVE SALAD', short: 'GROOVE SALAD', frequency: '90.1', type: 'audio', url: 'https://ice5.somafm.com/groovesalad-128-mp3' },
@@ -30,7 +32,9 @@
     { name: 'SOMAFM • SYN PHAERA RADIO', short: 'SYN PHAERA', frequency: '95.1', type: 'audio', url: 'https://ice5.somafm.com/synphaera-128-mp3' },
     { name: 'RADIO PARADISE • ECLECTIC MIX', short: 'RADIO PARADISE', frequency: '96.5', type: 'audio', url: 'https://stream.radioparadise.com/mp3-128' },
     { name: 'SOMAFM • UNDERGROUND 80S', short: 'UNDERGROUND 80S', frequency: '80.8', type: 'audio', url: 'https://ice5.somafm.com/u80s-128-mp3' },
-    { name: '80S80S • REAL 80S RADIO', short: '80S80S RADIO', frequency: '80.0', type: 'audio', url: 'https://streams.80s80s.de/web/mp3-128/streams.80s80s.de/' }
+    { name: '80S80S • REAL 80S RADIO', short: '80S80S RADIO', frequency: '80.0', type: 'audio', url: 'https://streams.80s80s.de/web/mp3-128/streams.80s80s.de/' },
+    // 181.fm publishes a direct 128 kbps MP3 feed for its Beatles channel.
+    { name: '181.FM • BEATLES', short: '181 BEATLES', frequency: '18.1', type: 'audio', url: 'https://listen.181fm.com/181-beatles_128k.mp3', hue: 48, visualizer: 'bounce' }
   ];
   let stationIndex = 0, playing = false, dragState = null;
 
@@ -45,6 +49,10 @@
     const frequency = root.querySelector('.se-radio-frequency strong');
     if (frequency) frequency.textContent = station.frequency;
     root.dataset.station = String(stationIndex);
+    root.dataset.visualizer = station.visualizer || ['spectrum', 'wave', 'pulse', 'bounce'][stationIndex % 4];
+    root.style.setProperty('--radio-hue', String(station.hue ?? ((stationIndex * 37 + 115) % 360)));
+    const visualizer = $('seRadioVisualizer');
+    if (visualizer) visualizer.setAttribute('aria-label', 'Animated ' + root.dataset.visualizer + ' spectrum visualizer');
   }
 
   function setStatus(isPlaying, message) {
@@ -72,6 +80,18 @@
     player.replaceChildren();
     player.hidden = false;
     setStatus(true, 'CONNECTING…');
+
+    if (station.type === 'embed') {
+      // Some broadcasters only provide an official web player, not a direct audio URL.
+      const frame = document.createElement('iframe');
+      frame.title = station.name + ' official radio player';
+      frame.allow = 'autoplay; encrypted-media; picture-in-picture';
+      frame.loading = 'eager';
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      frame.src = station.url;
+      player.appendChild(frame);
+      return;
+    }
 
     if (station.type === 'youtube') {
       const frame = document.createElement('iframe');
