@@ -822,3 +822,12 @@ body.corvette-mode .corvette-dash{animation:c4DashWake .5s ease-out both}
 @keyframes c4DashWake{from{opacity:0;filter:brightness(2);transform:translateY(-4px)}to{opacity:1;filter:brightness(1);transform:translateY(0)}}
 .se-radio-player audio{display:block;width:100%;min-height:36px}
 @media(max-width:620px){.corvette-dash{gap:6px;padding:8px}.c4-dash-brand{min-width:45px}.c4-dash-brand span{display:none}.c4-gauge{min-width:51px;min-height:54px;padding:3px 6px}.c4-gauge strong{font-size:17px}.c4-dash-right{min-width:70px}.c4-dash-right small:last-child{display:none}}
+
+
+/* Larger invisible Bézier hit areas make curve handles easier to grab. */
+.vector-handle-hit{fill:transparent;stroke:transparent;stroke-width:1;pointer-events:all;cursor:grab;touch-action:none}
+.vector-handle{cursor:grab;stroke-width:2.5;pointer-events:all;touch-action:none}
+.vector-handle:active,.vector-handle-hit:active{cursor:grabbing}
+.vector-anchor{cursor:grab;touch-action:none}
+.vector-anchor:hover{stroke-width:2.5}
+.vector-handle:hover{stroke-width:2.5}
