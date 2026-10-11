@@ -650,3 +650,16 @@
 @media(max-width:900px){.rightpanel{max-height:none;overflow:visible}.inspector-studio-body{max-height:none}}
 
 .controlrow .icon-control{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:36px;padding:7px 9px}.icon-control svg{width:18px;height:18px;display:block}.btn[aria-pressed="true"].icon-control,.crt-menu[open]>summary.icon-control{background:#ffe0df!important;border-color:#d84b48!important;color:#9e1c1c!important;box-shadow:inset 0 0 0 1px #ef9692}.pathfinder-icon{display:grid;place-items:center;min-height:36px;padding:6px;font-size:19px}.vector-tool-group{margin:8px 0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#faf8f2}.vector-tool-group>summary{cursor:pointer;list-style:none;padding:9px 10px;font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;background:#f0eadf}.vector-tool-group>summary::-webkit-details-marker{display:none}.vector-tool-group[open]>summary{background:#e5ebff;color:#2448ad}.vector-tool-list{display:grid;grid-template-columns:1fr;gap:4px;padding:7px}.vector-tool-list .tool{width:100%;text-align:left}
+
+/* Refined Path & Shape palette: no nested disclosure/dropdown. */
+.vector-tool-group{margin:10px 0 8px;padding:0;border:1px solid #d8d2c6;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#fbfaf6,#f2efe7);box-shadow:0 1px 2px rgba(35,29,18,.05)}
+.vector-tool-heading{display:flex;align-items:center;gap:8px;padding:10px 11px;border-bottom:1px solid #e0dbd0;color:#555044;font-size:10px;font-weight:800;letter-spacing:.11em}
+.vector-heading-mark{display:grid;place-items:center;width:23px;height:23px;border-radius:6px;background:#e1e8ff;color:#3457b5;font-size:18px;letter-spacing:0}
+.vector-tool-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px}
+.vector-tool-list .tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:66px;width:100%;padding:8px 5px;border:1px solid #dedbd3;border-radius:8px;background:#fffdf8;color:#383832;font-size:11px;line-height:1.2;text-align:center;white-space:normal;box-shadow:0 1px 0 rgba(40,35,25,.04)}
+.vector-tool-list .tool .ico{display:flex;align-items:center;justify-content:center;width:27px;height:27px;margin:0;font-size:22px}
+.vector-tool-list .tool .ico svg{width:24px;height:24px}
+.vector-tool-list .tool:hover{background:#f2f5ff;border-color:#b8c5f0}
+.vector-tool-list .tool.active{background:#e6ecff;border-color:#839be6;color:#2345a8;box-shadow:inset 0 0 0 1px #b4c3fa}
+#rulersBtn[aria-pressed="true"],#gridBtn[aria-pressed="true"],#guidesBtn[aria-pressed="true"]{background:#ffe0df!important;border-color:#d84b48!important;color:#9e1c1c!important;box-shadow:inset 0 0 0 1px #ef9692}
+#rulersBtn,#gridBtn,#guidesBtn{white-space:nowrap}
