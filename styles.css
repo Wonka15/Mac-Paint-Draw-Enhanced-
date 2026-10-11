@@ -758,13 +758,22 @@
 
 /* Green CRT stereo spectrum + multi-station controls */
 .se-radio-visualizer{height:42px;display:flex;align-items:center;justify-content:center;gap:3px;padding:5px 6px 3px;margin:6px 0 4px;background:#111b17;border:1px solid #49634e;box-shadow:inset 0 0 10px #050a07;overflow:hidden}
-.se-radio-visualizer i{display:block;flex:1;max-width:5px;height:calc(var(--bar)*2.8px);min-height:3px;background:linear-gradient(to top,#3d8747 0%,#75e47e 55%,#c4ffc4 100%);box-shadow:0 0 4px #6af07c88;transform-origin:center;animation:seRadioSpectrum .72s ease-in-out infinite alternate;animation-delay:var(--delay)}
+.se-radio-visualizer i{display:block;flex:1;max-width:5px;height:calc(var(--bar)*2.8px);min-height:3px;background:linear-gradient(to top,hsl(var(--radio-hue,130) 72% 32%),hsl(var(--radio-hue,130) 88% 62%),hsl(calc(var(--radio-hue,130) + 35) 100% 88%));box-shadow:0 0 5px hsl(var(--radio-hue,130) 90% 62% / .7);transform-origin:center;animation:seRadioSpectrum .72s ease-in-out infinite alternate;animation-delay:var(--delay)}
 .se-radio:not(.is-playing) .se-radio-visualizer i{animation-play-state:paused;height:3px!important;opacity:.45}
 @keyframes seRadioSpectrum{0%{transform:scaleY(.16)}22%{transform:scaleY(.52)}48%{transform:scaleY(1)}73%{transform:scaleY(.35)}100%{transform:scaleY(.78)}}
 .se-radio-track{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center;color:#a5f4ac;font-size:8px;letter-spacing:.08em;margin:0 0 7px;text-shadow:0 0 5px #84ff9755}
 .se-radio-station-controls{display:flex;gap:6px;margin:0 0 8px}
 .se-radio-station-controls button{flex:1;padding:7px 5px;border:1px solid #77766f;background:linear-gradient(#f4f0e5,#c9c4b7);box-shadow:inset 1px 1px #fff;color:#343834;font-size:9px;font-weight:800;cursor:pointer;letter-spacing:.05em}
 .se-radio-station-controls button:hover{background:#f9f6ed}.se-radio-station-controls button:active{box-shadow:inset 1px 1px #888}
+/* Station-specific hues and motion make the old-school spectrum feel alive. */
+.se-radio-visualizer{--radio-hue:130}
+.se-radio[data-visualizer="wave"] .se-radio-visualizer i{animation-name:seRadioWave;animation-duration:1.15s}
+.se-radio[data-visualizer="pulse"] .se-radio-visualizer i{animation-name:seRadioPulseGlow;animation-duration:.95s}
+.se-radio[data-visualizer="bounce"] .se-radio-visualizer i{animation-name:seRadioBounce;animation-duration:.55s}
+.se-radio[data-visualizer="spectrum"] .se-radio-visualizer i{animation-name:seRadioSpectrum}
+@keyframes seRadioWave{from{transform:translateY(8px) scaleY(.42);opacity:.6}to{transform:translateY(-7px) scaleY(1.12);opacity:1}}
+@keyframes seRadioPulseGlow{from{transform:scaleY(.28);filter:saturate(.8);opacity:.65}to{transform:scaleY(1.15);filter:saturate(1.6);opacity:1}}
+@keyframes seRadioBounce{from{transform:scaleY(.2) translateY(5px)}to{transform:scaleY(1.12) translateY(-3px)}}
 @media(prefers-reduced-motion:reduce){.se-radio-visualizer i{animation:none!important}.se-radio.is-playing .se-radio-meter i{animation:none}}
 
 
