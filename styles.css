@@ -115,8 +115,8 @@
     .paper{
       position:relative;
       width:100%;
-      height:min(72vh,640px);
-      min-height:340px;
+      height:min(82vh,900px);
+      min-height:500px;
       background:white;
       box-shadow:0 8px 32px rgba(48,41,29,.14);
       border:1px solid #d8d8d8;
@@ -426,7 +426,7 @@
 .welcome-portrait span{font-size:10px;line-height:1.4;color:#555}
 .welcome-credit{border-top:1px dashed #aaa;padding-top:12px}
 .welcome-ack{width:100%;margin-top:8px;border-radius:4px;font-family:inherit;font-weight:700}
-@media(max-width:700px){.app{padding:6px}.workspace{grid-template-columns:minmax(0,1fr)}.ruler-layout{width:100%}.paper{height:64vh;min-height:340px}.app.canvas-focus .workspace{grid-template-columns:minmax(0,1fr)}.app.canvas-focus .leftpanel{display:none}.app.canvas-focus .stage{min-height:calc(100vh - 140px)}.app.canvas-focus .paper{height:80vh;min-height:420px}.welcome-card{padding:16px}.welcome-portraits{gap:8px}.welcome-portrait{padding:7px}}
+@media(max-width:700px){.app{padding:6px}.workspace{grid-template-columns:minmax(0,1fr)}.ruler-layout{width:100%}.paper{height:76vh;min-height:440px}.app.canvas-focus .workspace{grid-template-columns:minmax(0,1fr)}.app.canvas-focus .leftpanel{display:none}.app.canvas-focus .stage{min-height:calc(100vh - 140px)}.app.canvas-focus .paper{height:84vh;min-height:500px}.welcome-card{padding:16px}.welcome-portraits{gap:8px}.welcome-portrait{padding:7px}}
 
 
 /* 🟩 HOW IT WORKS — The single CRT dropdown keeps all display tints in one place. */

@@ -1350,6 +1350,23 @@
     $('fontSelect').addEventListener('change',e=>{currentFont=e.target.value;saveSoon();toast('Text font: '+e.target.options[e.target.selectedIndex].text);});
     $('ghostOpacity').addEventListener('input', e => { ghostOpacity = Number(e.target.value); $('ghostOpacityValue').textContent = Math.round(ghostOpacity * 100) + '%'; drawOnionSkin(); });
     $('animationFps').addEventListener('input', e => { $('animationFpsValue').textContent = e.target.value + ' FPS'; });
+    // Pan must work even when the pointer starts over the overlay, rulers, or SVG layer.
+    // Capture the gesture at the wrapper before child layers can swallow the event.
+    canvasWrap.addEventListener('pointerdown',event=>{
+      if(tool!=='hand')return;
+      event.preventDefault();event.stopImmediatePropagation();
+      down(event);
+    },true);
+    document.addEventListener('pointermove',event=>{
+      if(!panDragStart||tool!=='hand')return;
+      event.preventDefault();event.stopImmediatePropagation();
+      move(event);
+    },true);
+    document.addEventListener('pointerup',event=>{
+      if(!panDragStart)return;
+      event.preventDefault();event.stopImmediatePropagation();
+      up(event);
+    },true);
     canvas.addEventListener('pointerdown',down);
     canvas.addEventListener('pointermove',move);
     canvas.addEventListener('pointerup',up);
