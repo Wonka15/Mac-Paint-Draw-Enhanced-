@@ -478,9 +478,12 @@
       const lineWidth=1/Math.max(1,zoomLevel);
       grid.style.backgroundSize=cellWidth+'px '+cellHeight+'px';
       grid.style.backgroundImage='linear-gradient(to right, rgba(32,37,43,.68) '+lineWidth+'px, transparent '+lineWidth+'px), linear-gradient(to bottom, rgba(32,37,43,.68) '+lineWidth+'px, transparent '+lineWidth+'px)';
+      // Keep the grid helpful at high magnification without darkening the whole image when zoomed out.
+      grid.style.opacity=String(Math.max(0,Math.min(1,(zoomLevel-2)/5)));
+      grid.style.display=zoomLevel<2?'none':'';
     }
     function updateFatBitsView(){
-      const layers=['paper','onion','overlay','vectorLayer','guides','rulers','selectionLayer','fatBitsGrid'];
+      const layers=['paper','onion','overlay','vectorLayer','guides','rulers','selectionLayer','fatBitsGrid','fatBitsCursor'];
       if(fatBitsMode){
         canvasWrap.style.zoom='1';
         layers.forEach(id=>{const layer=$(id);if(layer){layer.style.transformOrigin='0 0';layer.style.transform='translate('+fatBitsOffsetX+'px, '+fatBitsOffsetY+'px) scale('+zoomLevel+')';}});
@@ -540,7 +543,15 @@
       $('fatBitsBtn').click();
       updatePixelNavigator();
     });
-    $('pixelNavigatorScreen').addEventListener('click',moveFatBitsToNavigatorPoint);
+    let navigatorDragging=false;
+    $('pixelNavigatorScreen').addEventListener('pointerdown',event=>{
+      navigatorDragging=true;
+      if($('pixelNavigatorScreen').setPointerCapture){try{$('pixelNavigatorScreen').setPointerCapture(event.pointerId);}catch(_){}}
+      moveFatBitsToNavigatorPoint(event);
+    });
+    $('pixelNavigatorScreen').addEventListener('pointermove',event=>{if(navigatorDragging)moveFatBitsToNavigatorPoint(event);});
+    $('pixelNavigatorScreen').addEventListener('pointerup',()=>{navigatorDragging=false;});
+    $('pixelNavigatorScreen').addEventListener('pointercancel',()=>{navigatorDragging=false;});
     $('pixelNavigatorScreen').addEventListener('keydown',event=>{
       if(event.key==='Enter'||event.key===' '){event.preventDefault();const rect=$('pixelNavigatorScreen').getBoundingClientRect();moveFatBitsToNavigatorPoint({clientX:rect.left+rect.width/2,clientY:rect.top+rect.height/2});}
     });
@@ -1004,11 +1015,16 @@
       lastFatBit=point;updateFatBitsReadout(point.x,point.y);
     }
     function updateFatBitsHover(event){
-      if(!fatBitsMode)return;
+      const cursor=$('fatBitsCursor');
+      if(!fatBitsMode){if(cursor)cursor.style.display='none';return;}
       const p=fatBitAt(event);
-      if(p.x>=0&&p.y>=0)updateFatBitsReadout(p.x,p.y);
+      if(p.x>=0&&p.y>=0){
+        updateFatBitsReadout(p.x,p.y);
+        if(cursor){cursor.style.display='block';cursor.style.left=p.x+'px';cursor.style.top=p.y+'px';}
+      }
     }
     canvasWrap.addEventListener('pointermove',updateFatBitsHover,{passive:true});
+    canvasWrap.addEventListener('pointerleave',()=>{const cursor=$('fatBitsCursor');if(cursor)cursor.style.display='none';},{passive:true});
     function down(event) {
       event.preventDefault();
       if(tool==='lasso'){
@@ -1210,6 +1226,7 @@
       setToggleButton('fatBitsBtn',fatBitsMode);updatePixelNavigator();
     }
     $('fatBitsBtn').addEventListener('click',()=>toggleFatBits());
+    $('fatBitsExitBtn').addEventListener('click',()=>toggleFatBits(false));
     document.querySelectorAll('[data-fatzoom]').forEach(button=>button.addEventListener('click',()=>{
       if(!fatBitsMode)toggleFatBits(true);
       const target=Number(button.dataset.fatzoom);

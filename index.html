@@ -56,6 +56,7 @@
           <div class="pixel-navigator-heading"><h2>Pixel Mode</h2><span class="pixel-navigator-led" aria-hidden="true"></span></div>
           <p class="pixel-navigator-help">A tiny map of your whole drawing. Click anywhere to move the magnified view.</p>
           <button class="pixel-mode-toggle" id="pixelModeBtn" type="button" aria-pressed="false"><span aria-hidden="true">▦</span> Toggle FatBits</button>
+          <button class="pixel-mode-exit" id="fatBitsExitBtn" type="button">↩ Return to Full Canvas</button>
           <div class="fatbits-zoom-presets" role="group" aria-label="FatBits magnification">
             <span>ZOOM</span>
             <button type="button" data-fatzoom="8" aria-pressed="false">8×</button>
@@ -173,6 +174,7 @@
             <canvas id="rulers" width="1200" height="800"></canvas>
             <canvas id="selectionLayer" width="1200" height="800" aria-hidden="true"></canvas>
             <div id="fatBitsGrid" aria-hidden="true"></div>
+            <div id="fatBitsCursor" aria-hidden="true"></div>
             </div>
           </div>
         </div>
