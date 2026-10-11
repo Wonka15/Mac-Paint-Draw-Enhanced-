@@ -698,3 +698,15 @@
 .vector-tool-list .tool:hover{background:#f0f4ff;border-color:#b8c5f0}
 .vector-tool-list .tool.active{background:#e6ecff;border-color:#839be6;color:#2345a8;box-shadow:inset 0 0 0 1px #b4c3fa}
 @media(max-width:520px){.vector-tool-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px}.vector-tool-list .tool{min-height:68px;padding:8px 4px;font-size:11px}}
+
+
+/* Match the Vectors disclosure to the full-width toolbar buttons like Lasso Select. */
+.vector-tool-group{display:block;width:100%;box-sizing:border-box;margin:8px 0 10px;border:1px solid #cfc8ba;border-radius:8px;overflow:hidden;background:#f8f6f0}
+.vector-tool-group>.vectors-trigger{display:flex;align-items:center;justify-content:flex-start;gap:10px;width:100%;min-height:46px;box-sizing:border-box;padding:10px 12px;font-family:inherit;font-size:13px;font-weight:600;line-height:1.35;text-align:left}
+.vector-tool-group>.vectors-trigger>span:nth-child(2){display:block;flex:1;text-align:left;letter-spacing:.01em}
+.vector-tool-group>.vectors-trigger .vectors-trigger-icon{width:24px;height:24px;flex:0 0 24px}
+.vector-tool-list{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:8px;padding:10px}
+.vector-tool-list .tool{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;min-height:54px;padding:10px 12px;font-family:inherit;font-size:12px;font-weight:500;line-height:1.4;letter-spacing:.01em;text-align:left;white-space:normal;overflow-wrap:normal;word-break:normal}
+.vector-tool-list .tool .ico{display:flex;align-items:center;justify-content:center;width:27px;height:27px;flex:0 0 27px;margin:0}
+.vector-tool-list .tool .ico svg{display:block;width:24px;height:24px;flex:0 0 24px}
+@media(max-width:520px){.vector-tool-list{gap:7px;padding:8px}.vector-tool-list .tool{min-height:58px;gap:7px;padding:8px;font-size:11px;line-height:1.35}.vector-tool-list .tool .ico{width:24px;height:24px;flex-basis:24px}.vector-tool-list .tool .ico svg{width:22px;height:22px;flex-basis:22px}}
