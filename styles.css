@@ -766,3 +766,42 @@
 .se-radio-station-controls button{flex:1;padding:7px 5px;border:1px solid #77766f;background:linear-gradient(#f4f0e5,#c9c4b7);box-shadow:inset 1px 1px #fff;color:#343834;font-size:9px;font-weight:800;cursor:pointer;letter-spacing:.05em}
 .se-radio-station-controls button:hover{background:#f9f6ed}.se-radio-station-controls button:active{box-shadow:inset 1px 1px #888}
 @media(prefers-reduced-motion:reduce){.se-radio-visualizer i{animation:none!important}.se-radio.is-playing .se-radio-meter i{animation:none}}
+
+
+/* C4 Corvette dashboard + Timex Indiglo-inspired green EL night mode */
+body.corvette-mode{
+  --paper:#07110d;--panel:#101b16;--ink:#d9ffe1;--muted:#7eae8a;--line:#315b3d;--blue:#80ff91;--blue2:#153c25;--shadow:0 0 0 1px #2cff6a22,0 8px 26px #0009;
+  background:#050b08;color:#d9ffe1;
+  color-scheme:dark;
+}
+body.corvette-mode .app{background:radial-gradient(ellipse at 50% -20%,#193c26 0%,#08130d 58%,#040806 100%);border-radius:16px}
+body.corvette-mode .topbar,
+body.corvette-mode .panel,
+body.corvette-mode .canvasbar{background:linear-gradient(145deg,#17221b,#0b130e);border-color:#376342;box-shadow:inset 0 1px #c2ffd01c,0 0 14px #20ff5a0b,0 8px 24px #0007}
+body.corvette-mode .brand .mark{background:#07120b;color:#a2ffae;border-color:#4b9a5a;box-shadow:inset 0 0 12px #39ff6533,0 0 9px #39ff6520}
+body.corvette-mode .brand h1,body.corvette-mode .panel h2,body.corvette-mode .canvasbar strong{color:#c7ffd0;text-shadow:0 0 8px #54ff7044}
+body.corvette-mode .brand p,body.corvette-mode .canvasbar .hint{color:#82b890}
+body.corvette-mode .btn,body.corvette-mode .tool,
+body.corvette-mode input[type=number],body.corvette-mode input[type=text],body.corvette-mode select{
+  background:linear-gradient(#1a2b20,#0c1710);color:#bfffc9;border-color:#3a7148;box-shadow:inset 0 1px #d0ffda12,0 0 7px #34ff5b0b
+}
+body.corvette-mode .btn:hover,body.corvette-mode .tool:hover{background:#203c29;border-color:#83ff96;box-shadow:0 0 11px #35ff5c2b}
+body.corvette-mode .btn.primary,body.corvette-mode .tool.active{background:linear-gradient(#b4ffc0,#54e875);color:#06200d;border-color:#c7ffd0;box-shadow:inset 0 1px #fff9,0 0 14px #40ff6a55}
+body.corvette-mode .corvette-mode-toggle{background:linear-gradient(#b8ffc3,#61ed80);color:#05200c;border-color:#d4ffda;box-shadow:inset 0 1px #fff,0 0 12px #48ff6b66;font-weight:850;letter-spacing:.04em}
+body.corvette-mode .corvette-mode-toggle[aria-pressed="false"]{background:linear-gradient(#1a2b20,#0c1710);color:#bfffc9;border-color:#3a7148;box-shadow:none}
+body.corvette-mode .stage{background-color:#07100b;background-image:radial-gradient(#24452c 0.7px,transparent .7px);border-color:#31583a}
+body.corvette-mode .paper{box-shadow:0 0 0 1px #7eff9840,0 0 26px #20ff5a12,0 8px 32px #0009}
+body.corvette-mode .separator{background:#315b3d}
+body.corvette-mode input[type=range]{accent-color:#69ff86}
+body.corvette-mode input[type=color]{background:#101b16;border-color:#376342}
+body.corvette-mode .footer{color:#8ecb9b}
+body.corvette-mode .tool .ico{filter:drop-shadow(0 0 3px #5dff7d22)}
+body.corvette-mode .fatbits-zoom-presets{border-color:#327849;box-shadow:0 0 10px #39ff5a14}
+body.corvette-mode .fatbits-zoom-presets button:hover,body.corvette-mode .pixel-mode-exit:hover{border-color:#75ff91;box-shadow:0 0 8px #3cff652a}
+body.corvette-mode .se-radio-launch{filter:drop-shadow(0 0 5px #44ff6533)}
+body.corvette-mode .se-radio-panel{box-shadow:inset 2px 2px #fff,0 0 18px #38ff5b28,5px 7px 0 #0005,0 12px 35px #0006}
+body.corvette-mode .topbar{position:relative}
+body.corvette-mode .topbar:after{content:"C4 • DIGITAL DASH / INDIGLO NIGHT MODE";display:block;position:absolute;left:14px;bottom:-19px;color:#6ba87a;font:700 8px/1 ui-monospace,Menlo,monospace;letter-spacing:.19em;opacity:.72;pointer-events:none}
+@media(max-width:760px){body.corvette-mode .topbar:after{display:none}}
+@media(prefers-reduced-motion:no-preference){body.corvette-mode .corvette-mode-toggle[aria-pressed="true"]{animation:corvetteIndiglo 2.8s ease-in-out infinite alternate}}
+@keyframes corvetteIndiglo{from{box-shadow:inset 0 1px #fff9,0 0 7px #48ff6b38}to{box-shadow:inset 0 1px #fff9,0 0 15px #48ff6b75}}
