@@ -825,3 +825,33 @@ body.corvette-mode .corvette-dash{animation:c4DashWake .5s ease-out both}@keyfra
 .vector-anchor{cursor:grab;touch-action:none}
 .vector-anchor:hover{stroke-width:2.5}
 .vector-handle:hover{stroke-width:2.5}
+
+
+/* Tiny 80s-style effect picker, styled like a control on the desk radio. */
+.se-radio-effect-label{display:flex;align-items:center;gap:7px;margin:7px 0;color:#5d625e;font-size:8px;font-weight:800;letter-spacing:.08em}
+.se-radio-effect-label select{min-width:0;flex:1;padding:5px 6px;border:1px solid #77766f;border-radius:2px;background:linear-gradient(#faf7ee,#d1ccbf);color:#292e2c;font:9px Monaco,"Courier New",monospace}
+.se-radio-effect-label select:focus-visible{outline:2px solid #287bd5;outline-offset:2px}
+.se-radio-visualizer{position:relative;isolation:isolate}
+.se-radio-visualizer i{position:relative;z-index:1}
+.se-radio[data-visualizer="lava"] .se-radio-visualizer{background:radial-gradient(ellipse at 50% 100%,#2a1740,#111323 70%);border-color:#a45bda;box-shadow:inset 0 0 16px #6f31a766}
+.se-radio[data-visualizer="lava"] .se-radio-visualizer i{position:absolute;left:var(--blob-x,50%);top:var(--blob-y,50%);width:24px;max-width:none;height:24px!important;min-height:0;border-radius:48% 52% 62% 38%;opacity:.9;filter:blur(3px);background:radial-gradient(circle at 35% 30%,#fff5a5 0,#ff9e4d 18%,#f04dba 48%,#792ee8 76%);box-shadow:0 0 12px #e65eff99;animation:seRadioLava 4.8s ease-in-out infinite alternate;animation-delay:var(--delay)}
+.se-radio[data-visualizer="lava"] .se-radio-visualizer i:nth-child(3n){--blob-x:12%;--blob-y:58%;background:radial-gradient(circle at 35% 30%,#d7ffff,#46e8ff 25%,#4975ff 68%,#6e42d9)}
+.se-radio[data-visualizer="lava"] .se-radio-visualizer i:nth-child(3n + 1){--blob-x:43%;--blob-y:65%}
+.se-radio[data-visualizer="lava"] .se-radio-visualizer i:nth-child(3n + 2){--blob-x:72%;--blob-y:28%;background:radial-gradient(circle at 35% 30%,#ffffd0,#baff5c 25%,#37c987 68%,#176b82)}
+.se-radio[data-visualizer="lava"] .se-radio-visualizer i:nth-child(4n){width:32px;height:32px!important}
+@keyframes seRadioLava{0%{transform:translate3d(-5px,12px,0) scale(.7,.9);border-radius:55% 45% 38% 62%}50%{transform:translate3d(14px,-7px,0) scale(1.15,.82);border-radius:35% 65% 58% 42%}100%{transform:translate3d(-8px,-15px,0) scale(.8,1.2);border-radius:62% 38% 46% 54%}}
+.se-radio[data-visualizer="starfield"] .se-radio-visualizer{background:radial-gradient(ellipse at center,#182650,#05070f 80%);border-color:#6d83c9}
+.se-radio[data-visualizer="starfield"] .se-radio-visualizer i{height:2px!important;min-height:0;width:2px;max-width:none;flex:none;position:absolute;left:calc((var(--bar)*7 + 3%) % 100);top:calc((var(--bar)*13 + 5%) % 100);border-radius:50%;background:#fff;box-shadow:0 0 4px #8fd8ff;animation:seRadioStarfield 1.8s linear infinite;animation-delay:var(--delay)}
+@keyframes seRadioStarfield{from{transform:translateX(32px) scale(.5);opacity:.25}to{transform:translateX(-45px) scale(1.8);opacity:1}}
+.se-radio[data-visualizer="toasters"] .se-radio-visualizer{background:linear-gradient(#05091c,#152d56 65%,#31235a);border-color:#8e8aff}
+.se-radio[data-visualizer="toasters"] .se-radio-visualizer i{height:2px!important;min-height:0;max-width:none;flex:none;width:2px;position:absolute;left:calc((var(--bar)*11 + 7%) % 100);top:calc((var(--bar)*9 + 8%) % 100);background:#dff9ff;box-shadow:0 0 4px #7fe8ff;animation:seRadioStarfield 2.4s linear infinite;animation-delay:var(--delay)}
+.se-radio[data-visualizer="toasters"] .se-radio-visualizer:before{content:"✧ ▣ ✧";position:absolute;z-index:2;left:-45%;top:9px;color:#fff0c9;font:bold 17px Monaco,monospace;letter-spacing:2px;text-shadow:0 0 5px #ff8de8;white-space:nowrap;animation:seRadioToasters 5.5s linear infinite}
+.se-radio[data-visualizer="toasters"] .se-radio-visualizer:after{content:"✧ ▣ ✧";position:absolute;z-index:2;left:110%;top:20px;color:#b7faff;font:bold 12px Monaco,monospace;letter-spacing:2px;white-space:nowrap;animation:seRadioToasters 7s linear infinite reverse}
+@keyframes seRadioToasters{from{transform:translateX(0)}to{transform:translateX(240px)}}
+.se-radio[data-visualizer="plasma"] .se-radio-visualizer{background:linear-gradient(125deg,#ff3ca6,#673cff,#21d4fd,#6dff7d,#ffed55,#ff3ca6);background-size:300% 300%;animation:seRadioPlasma 4s ease infinite;border-color:#c7a7ff}
+.se-radio[data-visualizer="plasma"] .se-radio-visualizer i{height:2px!important;min-height:0;opacity:.8;background:#fff;box-shadow:0 0 5px #fff;animation:seRadioPlasmaBars 1.1s ease-in-out infinite alternate;animation-delay:var(--delay)}
+@keyframes seRadioPlasma{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes seRadioPlasmaBars{from{transform:scaleY(.5)}to{transform:scaleY(4)}}
+.se-radio:not(.is-playing)[data-visualizer="lava"] .se-radio-visualizer i{animation-play-state:paused;opacity:.5}
+.se-radio:not(.is-playing)[data-visualizer="starfield"] .se-radio-visualizer i,.se-radio:not(.is-playing)[data-visualizer="toasters"] .se-radio-visualizer i,.se-radio:not(.is-playing)[data-visualizer="plasma"] .se-radio-visualizer i{animation-play-state:paused}
+@media(prefers-reduced-motion:reduce){.se-radio[data-visualizer="lava"] .se-radio-visualizer i,.se-radio[data-visualizer="starfield"] .se-radio-visualizer i,.se-radio[data-visualizer="toasters"] .se-radio-visualizer i,.se-radio[data-visualizer="plasma"] .se-radio-visualizer,.se-radio[data-visualizer="plasma"] .se-radio-visualizer i,.se-radio[data-visualizer="toasters"] .se-radio-visualizer:before,.se-radio[data-visualizer="toasters"] .se-radio-visualizer:after{animation:none!important}}
