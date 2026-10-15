@@ -892,3 +892,85 @@ body.corvette-mode .corvette-dash{animation:c4DashWake .5s ease-out both}@keyfra
   .texture-studio { gap:8px; }
   .rightpanel .separator { margin-block:4px; }
 }
+
+
+/* RETRO TOOLBOX — tactile 1980s beige keys with chamfered corners and teal press glow.
+   CSS-only styling: tool behavior, icons, labels, and keyboard/touch handlers remain unchanged. */
+.toolgrid .tool {
+  position: relative;
+  isolation: isolate;
+  min-height: 65px;
+  padding: 9px 7px 8px;
+  gap: 6px;
+  color: #34352f;
+  border: 1px solid #b4a990;
+  border-radius: 0;
+  clip-path: polygon(0 7px, 7px 0, calc(100% - 7px) 0, 100% 7px, 100% calc(100% - 7px), calc(100% - 7px) 100%, 7px 100%, 0 calc(100% - 7px));
+  background-color: #d8ceb8;
+  background-image:
+    radial-gradient(ellipse at 22% 18%, rgba(255,255,255,.56) 0 1px, transparent 1.8px),
+    radial-gradient(ellipse at 76% 68%, rgba(91,75,51,.10) 0 .7px, transparent 1.5px),
+    linear-gradient(145deg, #f0e7d3 0%, #d8ceb8 45%, #c4b79d 100%);
+  background-size: 5px 5px, 7px 7px, 100% 100%;
+  box-shadow:
+    inset 1px 1px 0 rgba(255,255,255,.94),
+    inset 2px 2px 0 rgba(255,255,255,.30),
+    inset -2px -2px 0 rgba(94,78,54,.30),
+    inset -4px -4px 0 rgba(94,78,54,.09),
+    0 3px 0 #a69a82,
+    0 4px 5px rgba(52,43,27,.18);
+  filter: drop-shadow(0 1px 0 rgba(75,64,45,.14));
+  transition: transform .12s ease, filter .16s ease, background-color .16s ease, box-shadow .12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.toolgrid .tool::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 3px;
+  pointer-events: none;
+  opacity: .46;
+  clip-path: polygon(0 4px, 4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px));
+  border: 1px solid rgba(255,255,255,.45);
+  box-shadow: inset 0 0 0 1px rgba(110,94,69,.10);
+}
+.toolgrid .tool:hover {
+  color: #242f2d;
+  border-color: #a59a83;
+  background-image:
+    radial-gradient(ellipse at 22% 18%, rgba(255,255,255,.62) 0 1px, transparent 1.8px),
+    radial-gradient(ellipse at 76% 68%, rgba(91,75,51,.09) 0 .7px, transparent 1.5px),
+    linear-gradient(145deg, #f4ead6 0%, #dfd4be 45%, #cbbda2 100%);
+  filter: drop-shadow(0 2px 2px rgba(47,190,177,.10));
+}
+.toolgrid .tool:active,
+.toolgrid .tool.active,
+.toolgrid .tool[aria-pressed="true"] {
+  color: #183e3b;
+  border-color: #65bdb4;
+  background-image:
+    radial-gradient(ellipse at 22% 18%, rgba(255,255,255,.38) 0 1px, transparent 1.8px),
+    radial-gradient(ellipse at 76% 68%, rgba(35,91,84,.12) 0 .7px, transparent 1.5px),
+    linear-gradient(145deg, #d3d2bd 0%, #c8c8b2 50%, #b9c0ad 100%);
+  box-shadow:
+    inset 2px 2px 5px rgba(80,75,58,.25),
+    inset -1px -1px 0 rgba(255,255,255,.48),
+    0 1px 0 #a69a82;
+  filter:
+    drop-shadow(0 0 3px rgba(65,211,194,.78))
+    drop-shadow(0 0 8px rgba(65,211,194,.43));
+  transform: translateY(2px);
+}
+.toolgrid .tool:focus-visible {
+  outline: 2px solid #39bfb1;
+  outline-offset: 3px;
+}
+.toolgrid .tool .ico {
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,.62));
+}
+@media (max-width:700px) {
+  .toolgrid .tool { min-height:58px; padding:6px 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toolgrid .tool { transition:none; }
+}
