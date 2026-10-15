@@ -974,3 +974,24 @@ body.corvette-mode .corvette-dash{animation:c4DashWake .5s ease-out both}@keyfra
 @media (prefers-reduced-motion: reduce) {
   .toolgrid .tool { transition:none; }
 }
+
+
+/* CIRCULAR TOOLBOX — round tactile keys with a convincing push-in action. */
+.toolgrid .tool {
+  aspect-ratio:1/1; width:100%; min-height:0; padding:8px 5px; gap:5px;
+  border-radius:50%; clip-path:none; overflow:hidden;
+  box-shadow:inset 2px 2px 0 rgba(255,255,255,.96),inset 4px 4px 7px rgba(255,255,255,.22),inset -3px -3px 0 rgba(91,76,54,.28),inset -5px -5px 7px rgba(91,76,54,.10),0 4px 0 #a69a82,0 6px 8px rgba(52,43,27,.20);
+  transform:translateY(0); transition:transform .11s ease,box-shadow .11s ease,filter .16s ease,background-image .16s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.toolgrid .tool::after { inset:4px; border-radius:50%; clip-path:none; border:1px solid rgba(255,255,255,.48); box-shadow:inset 0 0 0 1px rgba(110,94,69,.10); }
+.toolgrid .tool:hover { transform:translateY(-1px); box-shadow:inset 2px 2px 0 rgba(255,255,255,.96),inset 4px 4px 7px rgba(255,255,255,.22),inset -3px -3px 0 rgba(91,76,54,.28),0 5px 0 #a69a82,0 7px 9px rgba(52,43,27,.18); }
+.toolgrid .tool:active,.toolgrid .tool.active,.toolgrid .tool[aria-pressed="true"] {
+  transform:translateY(3px) scale(.97);
+  box-shadow:inset 4px 4px 8px rgba(70,64,49,.34),inset 1px 1px 0 rgba(255,255,255,.38),inset -1px -1px 0 rgba(255,255,255,.22),0 1px 0 #a69a82;
+  filter:drop-shadow(0 0 3px rgba(65,211,194,.68)) drop-shadow(0 0 7px rgba(65,211,194,.30));
+}
+.toolgrid .tool .ico { flex:0 0 24px; }
+@media(max-width:700px) { .toolgrid .tool { width:100%; min-height:0; aspect-ratio:1/1; padding:5px 2px; gap:4px; } .toolgrid .tool .ico { flex-basis:22px; } }
+@media(orientation:portrait) and (min-width:701px) and (max-width:1050px) { .toolgrid .tool { min-height:0; } }
+@media(prefers-reduced-motion:reduce) { .toolgrid .tool { transition:none; } }
