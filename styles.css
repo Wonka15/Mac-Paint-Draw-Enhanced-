@@ -1155,3 +1155,17 @@ body.corvette-mode .c4-warning-bars i:nth-child(12) { animation-delay: -.36s; }
 @media (prefers-reduced-motion: reduce) {
   .palette .swatch { transition: none; }
 }
+
+
+/* Playful, hand-painted accents for the rest of the classic toolbox. */
+.toolgrid .tool .icon-line svg,
+.toolgrid .tool .icon-oval svg,
+.toolgrid .tool .icon-text svg,
+.toolgrid .tool .icon-eyedropper svg,
+.toolgrid .tool .icon-fingerpaint svg,
+.toolgrid .tool .icon-bezier svg,
+.toolgrid .tool .icon-editpoints svg,
+.toolgrid .tool .icon-shapebuilder svg { width:25px; height:25px; }
+.toolgrid .tool .icon-fingerpaint svg { overflow:visible; }
+/* Keep the new pigment details crisp instead of adding extra glow. */
+.toolgrid .tool .ico svg { filter:none; }
