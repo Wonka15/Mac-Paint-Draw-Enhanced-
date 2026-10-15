@@ -42,7 +42,7 @@
     // Shape Builder selection is separate from anchor editing.
     let shapeBuilderDragging = false, shapeBuilderVisited = new Set();
     let saveTimer = null, audioContext = null, lastDragSound = 0;
-    // FRAME STUDIO: each frame stores raster art plus editable vector paths.
+    // ANIMATION STUDIO: each frame stores raster art plus editable vector paths.
     const onionCanvas = $('onion'), onionCtx = onionCanvas.getContext('2d');
     const frames = [];
     let currentFrame = -1, playbackTimer = null, playbackIndex = 0, frameBusy = false;
@@ -591,7 +591,7 @@
       button.setAttribute('aria-pressed', String(enabled));
       button.textContent = enabled ? '◉ Focus ON' : '◉ Studio Focus';
       button.title = enabled ? 'Turn off animation-table spotlight and restore the full workspace' : 'Dim the workspace and spotlight the animation drawing table';
-      toast(enabled ? 'Frame Studio Focus on — lights down, animation table up' : 'Frame Studio Focus off — full workspace restored');
+      toast(enabled ? 'Animation Studio Focus on — lights down, animation table up' : 'Animation Studio Focus off — full workspace restored');
     }
     $('frameStudioModeBtn').addEventListener('click', () => setFrameStudioMode(!$('appRoot').classList.contains('frame-studio-mode')));
     document.addEventListener('keydown', event => { if (event.key === 'Escape' && $('appRoot').classList.contains('frame-studio-mode')) setFrameStudioMode(false); });
@@ -1268,7 +1268,7 @@
       selectionMask=null;selectionBitmap=null;selectionBase=null;selectionBounds=null;selectionMove=null;lassoPoints=[];lassoDrawing=false;sctx.clearRect(0,0,W(),H());
       vectorLayer.replaceChildren();
       renderVectors();
-      // If Frame Studio is active, clear its current frame too so old vector art cannot return.
+      // If Animation Studio is active, clear its current frame too so old vector art cannot return.
       if(currentFrame>=0 && frames[currentFrame]) {
         frames[currentFrame]=blankFrame();
         renderFrameStrip();
@@ -1281,9 +1281,9 @@
     $('undoBtn').addEventListener('click',()=>{if(!history.length)return;redoStack.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(history.pop(),0,0);updateButtons();saveSoon();toast('Undid action');});
     $('redoBtn').addEventListener('click',()=>{if(!redoStack.length)return;history.push(ctx.getImageData(0,0,W(),H()));ctx.putImageData(redoStack.pop(),0,0);updateButtons();saveSoon();toast('Redid action');});
 
-    // 🟩 HOW IT WORKS — Frame Studio composites the pixel canvas and SVG artwork for previews/exports.
+    // 🟩 HOW IT WORKS — Animation Studio composites the pixel canvas and SVG artwork for previews/exports.
     // 🟪 BEGINNER TIP — Keep frame changes separate from ordinary paint tools to avoid breaking undo behavior.
-    // FRAME STUDIO: compose raster and SVG layers for thumbnails, onion skin, and GIFs.
+    // ANIMATION STUDIO: compose raster and SVG layers for thumbnails, onion skin, and GIFs.
     function compositeDataURL(){
       return new Promise(resolve=>{
         const out=document.createElement('canvas');out.width=W();out.height=H();const ox=out.getContext('2d');ox.drawImage(canvas,0,0);
@@ -1327,7 +1327,30 @@
           }
           frameBusy=false;toast('Frame deleted');
         });
-        card.append(b,del);strip.appendChild(card);
+        // Duplicate the selected pose without changing the original frame.
+        const copy=document.createElement('button');copy.type='button';copy.className='frame-copy';copy.textContent='⧉ Copy';copy.title='Copy frame '+(i+1);copy.setAttribute('aria-label','Copy frame '+(i+1));
+        copy.addEventListener('click',async event=>{
+          event.stopPropagation();
+          if(frameBusy||playbackTimer)return;
+          frameBusy=true;
+          try{
+            // Capture unsaved edits before copying, then clone the complete frame data.
+            if(currentFrame>=0&&frames[currentFrame])frames[currentFrame]=await captureFrame();
+            const source=frames[i];
+            if(!source)return;
+            const duplicate=JSON.parse(JSON.stringify(source));
+            frames.splice(i+1,0,duplicate);
+            currentFrame=i+1;
+            loadFrame(currentFrame);
+            renderFrameStrip();
+            drawOnionSkin();
+            toast('Frame '+(i+1)+' copied');
+          }catch(error){
+            console.error('Could not copy animation frame:',error);
+            toast('Could not copy this frame');
+          }finally{frameBusy=false;}
+        });
+        card.append(b,copy,del);strip.appendChild(card);
       });
     }
     function drawOnionSkin(){

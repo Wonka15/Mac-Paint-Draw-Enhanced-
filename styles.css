@@ -1310,3 +1310,11 @@ body:not(.corvette-mode) .toolgrid .tool[aria-pressed="true"] .ico {
     transform: translateY(-16px);
   }
 }
+
+
+/* Animation Studio — compact, touch-friendly frame duplication action. */
+.frame-copy{align-self:stretch;min-height:24px;padding:3px 6px;border:1px solid rgba(255,255,255,.9);border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(226,235,252,.88));color:#34486f;font-size:10px;font-weight:700;line-height:1.2;box-shadow:0 2px 5px rgba(54,75,126,.1),inset 0 1px 0 rgba(255,255,255,.95);cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+.frame-copy:hover{background:linear-gradient(180deg,#fff,#dce8ff);box-shadow:0 4px 9px rgba(54,75,126,.16),inset 0 1px 0 #fff}
+.frame-copy:active{transform:translateY(1px) scale(.98);box-shadow:inset 0 2px 4px rgba(54,75,126,.16)}
+.frame-copy:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.frame-copy{transition:none}}
