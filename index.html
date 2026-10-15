@@ -53,6 +53,7 @@
           <button class="tool" data-tool="shapebuilder" aria-pressed="false"><span class="ico">⬡</span>Shape Builder</button>
         </div>
 
+        <!-- responsive-slot:pixel -->
         <section class="pixel-navigator" aria-label="Pixel Mode navigator">
           <div class="pixel-navigator-heading"><h2>Pixel Mode</h2><span class="pixel-navigator-led" aria-hidden="true"></span></div>
           <p class="pixel-navigator-help">A tiny map of your whole drawing. Click anywhere to move the magnified view.</p>
@@ -86,8 +87,9 @@
           <ul><li><b>Bezier Curve:</b> click-drag each anchor to pull its handles.</li><li><b>Finish:</b> press Enter or double-click.</li><li><b>Edit Points:</b> drag an anchor or handle to refine the curve.</li><li><b>Option-drag handle:</b> move it independently.</li><li><b>Click selected path:</b> add an anchor.</li></ul>
           <span class="edit-points-hint">Tip: hold Option while dragging a handle to move it independently.</span>
         </section>
-        <div class="separator"></div>
-        <h2>Quick palette</h2>
+        <!-- responsive-slot:palette -->
+        <section class="quick-palette-studio">
+          <h2>Quick palette</h2>
         <div class="palette" id="palette">
           <button class="swatch" style="background:#20252b" data-color="#20252b" aria-label="Ink black"></button>
           <button class="swatch" style="background:#ffffff" data-color="#ffffff" aria-label="White"></button>
@@ -102,8 +104,10 @@
           <button class="swatch" style="background:#7a7a7a" data-color="#7a7a7a" aria-label="Gray"></button>
           <button class="swatch" style="background:#f1d4c5" data-color="#f1d4c5" aria-label="Pink"></button>
         </div>
-        <div class="separator"></div>
-        <h2>MacPaint pattern palette</h2>
+        </section>
+        <!-- responsive-slot:textures -->
+        <section class="texture-studio">
+          <h2>MacPaint pattern palette</h2>
         <p class="pattern-help">30 repeating patterns for brush marks, shape fills, and the paint bucket. Pick a swatch to make it the active ink.</p>
         <div class="pattern-palette" id="patternPalette" aria-label="MacPaint pattern palette">
           <section class="pattern-group" aria-label="MacPaint basics"><h3>MacPaint basics</h3><div class="pattern-grid"><button class="pattern-swatch active" data-pattern="solid" aria-label="Solid ink" title="Solid ink" aria-pressed="true"><span>Solid ink</span></button><button class="pattern-swatch custom-pattern-swatch" data-pattern="custom" aria-label="Custom texture" title="Custom texture" aria-pressed="false" hidden><span>My texture</span></button>
@@ -140,6 +144,7 @@
 <button class="pattern-swatch" data-pattern="happy-mac" aria-label="Apple logo pattern" title="Apple logo pattern" aria-pressed="false"><span>Apple logo</span></button></div></section>
         </div>
         <div class="custom-asset-card"><h3>Custom pattern / texture</h3><p>Import a repeating tile, paper grain, fabric, or photo texture for brush strokes and shape fills.</p><label class="file-pick-button" for="customPatternUpload">＋ Upload texture</label><input class="visually-hidden-file" id="customPatternUpload" type="file" accept="image/*"><div class="custom-asset-status" id="customPatternStatus">No custom texture loaded</div></div>
+        </section>
         <label class="check"><input type="checkbox" id="soundToggle" checked> Retro drawing sounds</label>
       </aside>
 
@@ -179,7 +184,8 @@
             </div>
           </div>
         </div>
-<section class="animation-panel" aria-label="Animation timeline">
+<!-- responsive-slot:animation -->
+        <section class="animation-panel" aria-label="Animation timeline">
   <div class="animation-heading">
     <div class="frame-studio-title"><span class="frame-studio-symbol" aria-hidden="true">◉</span><div><strong>Frame Studio</strong><span class="animation-subtitle">A little motion lab for your MacPaint drawings</span></div></div>
     <span class="animation-badge">FRAME BY FRAME</span>
@@ -207,7 +213,8 @@
           <label for="colorInput">Ink color</label>
           <input type="color" id="colorInput" value="#20252b">
           <div class="color-status" id="colorStatus" aria-live="polite"><span class="color-chip" id="colorChip"></span><span>Selected: <strong id="colorHex">#20252B</strong></span></div>
-        </div><details class="inspector-studio" id="selectedShapeStudio"><summary>Selected Shape</summary><div class="inspector-studio-body"><div class="shape-inspector-card" id="shapeInspectorCard"><p>Select a vector shape with <strong>Edit Points</strong> to adjust its outline and stacking order.</p><label for="shapeStrokeColor">Line color</label><input type="color" id="shapeStrokeColor" value="#20252b"><label for="shapeStrokeWidth">Line thickness</label><input type="range" id="shapeStrokeWidth" min="1" max="50" value="4"><div class="status"><strong id="shapeStrokeWidthValue">4 px</strong></div><div class="shape-order-buttons"><button class="btn secondary" id="sendShapeBackBtn" type="button" disabled>⇩ Send backward</button><button class="btn secondary" id="bringShapeFrontBtn" type="button" disabled>⇧ Bring to front</button></div><div id="shapeInspectorStatus" role="status">No shape selected</div></div></div></details>
+        </div>
+        <details class="inspector-studio" id="selectedShapeStudio"><summary>Selected Shape</summary><div class="inspector-studio-body"><div class="shape-inspector-card" id="shapeInspectorCard"><p>Select a vector shape with <strong>Edit Points</strong> to adjust its outline and stacking order.</p><label for="shapeStrokeColor">Line color</label><input type="color" id="shapeStrokeColor" value="#20252b"><label for="shapeStrokeWidth">Line thickness</label><input type="range" id="shapeStrokeWidth" min="1" max="50" value="4"><div class="status"><strong id="shapeStrokeWidthValue">4 px</strong></div><div class="shape-order-buttons"><button class="btn secondary" id="sendShapeBackBtn" type="button" disabled>⇩ Send backward</button><button class="btn secondary" id="bringShapeFrontBtn" type="button" disabled>⇧ Bring to front</button></div><div id="shapeInspectorStatus" role="status">No shape selected</div></div></div></details>
         <details class="inspector-studio" id="shapeLabStudio"><summary>Shape Lab</summary><div class="inspector-studio-body"><div class="shape-inspector-card" id="shapeConvertCard"><p>Convert a selected vector without redrawing it.</p><label for="convertShapeType">Convert selected shape to</label><select id="convertShapeType"><option value="rectangle">Rectangle / square</option><option value="rounded">Rounded rectangle</option><option value="oval">Oval / ellipse</option><option value="capsule">Capsule / pill</option><option value="cylinder">Cylinder</option><option value="star">Five-point star</option></select><button class="btn secondary" id="convertShapeBtn" type="button">Convert shape</button></div></div></details>
         <details class="inspector-studio" id="logoTraceStudio"><summary>Logo Trace Studio</summary><div class="inspector-studio-body"><div class="shape-inspector-card" id="traceLogoCard"><p>Import an old logo or sticker as a faded guide, then trace its high-contrast silhouette into editable vectors.</p><label class="file-pick-button" for="traceLogoUpload">＋ Import logo / sticker</label><input class="visually-hidden-file" id="traceLogoUpload" type="file" accept="image/*"><div class="custom-asset-status" id="traceReferenceStatus">No logo guide loaded</div><label for="traceOpacity">Reference opacity</label><input id="traceOpacity" type="range" min="5" max="70" value="24"><div class="status"><strong id="traceOpacityValue">24%</strong></div><label for="traceThreshold">Darkness threshold</label><input id="traceThreshold" type="range" min="20" max="245" value="150"><label class="check"><input type="checkbox" id="traceInvert"> Trace light areas instead</label><button class="btn primary" id="traceLogoBtn" type="button">Trace to editable vectors</button><button class="btn secondary" id="clearTraceReferenceBtn" type="button">Remove guide image</button><p class="snap-help">Adjust threshold, trace, then use Edit Points to refine the outline and draw on top. This is a silhouette tracer, not full-color vectorization.</p></div></div></details>
         
@@ -305,5 +312,53 @@
   <script src="app.js" defer></script>
 <aside class="se-radio" id="seRadio" aria-label="Macintosh SE lo-fi radio"><button class="se-radio-launch" id="seRadioLaunch" type="button" aria-expanded="false" aria-controls="seRadioPanel"><span class="se-radio-launch-icon">♫</span><span>LO-FI RADIO</span><span class="se-radio-led"></span></button><section class="se-radio-panel" id="seRadioPanel" hidden><header class="se-radio-titlebar" id="seRadioDrag"><span>▤</span><strong>DESK RADIO</strong><span class="se-radio-title-dots">▪ ▪ ▪</span><button class="se-radio-close" id="seRadioClose" type="button" aria-label="Close radio">×</button></header><div class="se-radio-body"><div class="se-radio-brand"><span class="se-radio-brand-icon">♫</span><div><strong>Macintosh SE</strong><small>PERSONAL FM / LO-FI</small></div></div><div class="se-radio-display"><div class="se-radio-frequency"><span>FM</span><strong>88.6</strong><small>MHz</small></div><div class="se-radio-meter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="se-radio-visualizer" id="seRadioVisualizer" role="img" aria-label="Animated green stereo spectrum visualizer"><i style="--bar:3;--delay:0s"></i><i style="--bar:10;--delay:-0.11s"></i><i style="--bar:6;--delay:-0.22s"></i><i style="--bar:13;--delay:-0.33s"></i><i style="--bar:9;--delay:-0.44s"></i><i style="--bar:5;--delay:-0.55s"></i><i style="--bar:12;--delay:-0.66s"></i><i style="--bar:8;--delay:-0.77s"></i><i style="--bar:4;--delay:-0.88s"></i><i style="--bar:11;--delay:0s"></i><i style="--bar:7;--delay:-0.11s"></i><i style="--bar:3;--delay:-0.22s"></i><i style="--bar:10;--delay:-0.33s"></i><i style="--bar:6;--delay:-0.44s"></i><i style="--bar:13;--delay:-0.55s"></i><i style="--bar:9;--delay:-0.66s"></i><i style="--bar:5;--delay:-0.77s"></i><i style="--bar:12;--delay:-0.88s"></i><i style="--bar:8;--delay:0s"></i><i style="--bar:4;--delay:-0.11s"></i><i style="--bar:11;--delay:-0.22s"></i><i style="--bar:7;--delay:-0.33s"></i><i style="--bar:3;--delay:-0.44s"></i><i style="--bar:10;--delay:-0.55s"></i><i style="--bar:6;--delay:-0.66s"></i><i style="--bar:13;--delay:-0.77s"></i><i style="--bar:9;--delay:-0.88s"></i><i style="--bar:5;--delay:0s"></i></div><label class="se-radio-effect-label" for="seRadioEffect">VISUAL FX <select id="seRadioEffect" aria-label="Choose radio visual effect"><option value="auto">Station default</option><option value="spectrum">Classic Spectrum</option><option value="wave">Oscilloscope Wave</option><option value="pulse">Neon Pulse</option><option value="bounce">Bouncing Bars</option><option value="lava">Lava Lamp</option><option value="starfield">Starfield</option><option value="toasters">Flying Toasters</option><option value="plasma">Rainbow Plasma</option></select></label><div class="se-radio-track" id="seRadioTrack">LO-FI GIRL • CHILL BEATS</div><div class="se-radio-status"><span class="se-radio-live-dot"></span><span id="seRadioStatus">STANDBY</span><span>STEREO</span></div></div><div class="se-radio-speaker" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div class="se-radio-station-controls"><button type="button" id="seRadioPrev" aria-label="Previous station" title="Previous station">◂ PREV</button><button type="button" id="seRadioNext" aria-label="Skip to next station" title="Skip to next station">NEXT ▸</button></div><div class="se-radio-controls"><button class="se-radio-power" id="seRadioPower" type="button" aria-pressed="false"><span class="se-radio-power-dot"></span><span id="seRadioPowerText">POWER OFF</span></button><span class="se-radio-volume-label">VOL <small>Use YouTube player controls for volume</small></span></div><div class="se-radio-player" id="seRadioPlayer" hidden></div><p class="se-radio-footnote">LO-FI STUDY FM <span>•</span> PAINT ON</p></div></section></aside><script src="radio.js" defer></script>
 <script src="corvette.js" defer></script>
+
+<script>
+/* iPad portrait workspace order: toolbox → canvas → colors → animation → textures → Pixel Studio.
+   The original positions are restored automatically when the device returns to landscape. */
+(() => {
+  const portraitTablet = window.matchMedia('(orientation: portrait) and (min-width: 701px) and (max-width: 1050px)');
+  const palette = document.querySelector('.quick-palette-studio');
+  const textures = document.querySelector('.texture-studio');
+  const animation = document.querySelector('.animation-panel');
+  const pixel = document.querySelector('.pixel-navigator');
+  const slots = {};
+  [['palette', palette], ['textures', textures], ['animation', animation], ['pixel', pixel]].forEach(([name, node]) => {
+    if (!node || !node.parentNode) return;
+    const slot = document.createElement('span');
+    slot.hidden = true;
+    slot.setAttribute('data-responsive-slot', name);
+    node.parentNode.insertBefore(slot, node);
+    slots[name] = slot;
+  });
+  function moveAfter(node, target) {
+    if (node && target && target.parentNode) target.parentNode.insertBefore(node, target.nextSibling);
+  }
+  function restore(name, node) {
+    const slot = slots[name];
+    if (slot && node && slot.parentNode) slot.parentNode.insertBefore(node, slot.nextSibling);
+  }
+  function applyLayout() {
+    if (portraitTablet.matches) {
+      const right = document.querySelector('.rightpanel');
+      const colorField = right && right.querySelector('.field');
+      const paintingDrawer = document.getElementById('paintingDrawer');
+      if (colorField) moveAfter(palette, colorField);
+      if (palette) moveAfter(animation, palette);
+      if (paintingDrawer) moveAfter(textures, paintingDrawer);
+      if (textures) moveAfter(pixel, textures);
+    } else {
+      restore('palette', palette);
+      restore('textures', textures);
+      restore('animation', animation);
+      restore('pixel', pixel);
+    }
+  }
+  applyLayout();
+  if (portraitTablet.addEventListener) portraitTablet.addEventListener('change', applyLayout);
+  else if (portraitTablet.addListener) portraitTablet.addListener(applyLayout);
+})();
+</script>
+
 </body>
 </html>
