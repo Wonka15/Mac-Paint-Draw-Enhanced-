@@ -1,3 +1,10 @@
+/*
+ * Corvette mode dashboard.
+ *
+ * This module stays separate from the drawing engine. It creates the optional
+ * C4-inspired panel, updates time/battery/weather readouts, and saves only the
+ * theme preference. Location is requested only after the visitor presses GET WEATHER.
+ */
 (() => {
   'use strict';
   const button = document.getElementById('corvetteModeBtn');

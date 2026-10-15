@@ -1,5 +1,10 @@
 /*
  * Macintosh SE desk radio.
+ *
+ * Beginner map: stations is the station catalogue; renderStation() updates the
+ * display; startPlayback()/stopPlayback() own the player lifecycle; setStatus()
+ * keeps the visual power state and accessible button label synchronized.
+
  * Playback starts only after POWER is clicked. Switching stations always stops
  * the previous player first, preventing overlapping audio streams.
  */

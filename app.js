@@ -1,5 +1,15 @@
   (() => {
     'use strict';
+    /*
+     * Mac Paint / Draw Enhanced — main editor.
+     *
+     * Beginner map:
+     * - State variables track the active tool, artwork, selections, and undo history.
+     * - Raster pixels live on the main canvas; editable vector geometry lives in the SVG layer.
+     * - Pointer handlers translate screen coordinates into canvas coordinates before drawing.
+     * - saveSoon() persists a snapshot; Animation Studio keeps independent frame snapshots.
+     * - Keep UI wiring near the feature it controls and reuse existing render/update helpers.
+     */
     // Small helper: find a page element by its HTML id.
     const $ = id => document.getElementById(id);
     const canvas = $('paper');
@@ -143,6 +153,7 @@
       $('undoBtn').disabled = history.length === 0;
       $('redoBtn').disabled = redoStack.length === 0;
     }
+        // Build one undo/persistence snapshot of raster artwork and editor settings.
     function snapshot() {
       try {
         history.push(ctx.getImageData(0, 0, W(), H()));
@@ -151,6 +162,7 @@
         updateButtons();
       } catch (error) { console.error('Could not save undo state:', error); }
     }
+        // Debounce persistence so pointer movement does not write to storage on every event.
     function saveSoon() {
       clearTimeout(saveTimer);
       saveTimer = setTimeout(() => {
@@ -293,6 +305,7 @@
       }
     }
 
+        // Replace one connected pixel region; tolerance handles small color differences.
     function floodFill(seedX,seedY){
       const w=W(),h=H(),image=ctx.getImageData(0,0,w,h),data=image.data,original=new Uint8ClampedArray(data);
       const sx=Math.max(0,Math.min(w-1,Math.floor(seedX))),sy=Math.max(0,Math.min(h-1,Math.floor(seedY))),seed=sy*w+sx,seedByte=seed*4;
@@ -423,6 +436,7 @@
       return { x, y };
     }
 
+        // Convert a pointer's CSS-screen position into the bitmap's actual pixel coordinates.
     function point(event) {
       const rect = canvas.getBoundingClientRect();
       let x = (event.clientX - rect.left) * W() / rect.width;
@@ -452,6 +466,7 @@
     // 🟩 HOW IT WORKS — Raster pixels live on #paper; editable vector shapes live in the SVG layer.
     // 🟪 BEGINNER TIP — Keep vector edits in vectorPaths so users can still move anchors later.
     // VECTOR ENGINE: SVG paths are stored separately from the pixel paint canvas.
+        // Convert pointer coordinates for SVG editing and apply optional ruler/grid snapping.
     function svgPoint(event, ignoreAnchor = null, shouldSnap = true) {
       const rect = vectorLayer.getBoundingClientRect();
       let x = (event.clientX - rect.left) * W() / rect.width;
@@ -616,6 +631,7 @@
         closed:p.closed,color:style.color,size:style.size,fill:true,curve:true
       }));
     }
+        // Run vector boolean operations on copies so failure cannot damage source shapes.
     function runBoolean(operation){
       if(!window.paper){toast('Pathfinder library did not load — refresh with internet');return;}
       const indices=[...new Set(selectedVectors)].filter(i=>i>=0&&i<vectorPaths.length).sort((a,b)=>a-b);
@@ -664,6 +680,7 @@
       ['shapeBuilderUniteBtn','shapeBuilderSubtractBtn','shapeBuilderIntersectBtn','shapeBuilderExcludeBtn'].forEach(id => { const button=$(id); if(button)button.disabled=count<2; });
     }
 
+        // Combine selected vector regions, then refresh the SVG and saved editor state.
     function runShapeBuilder(operation) {
       if (!window.paper) {
         toast('Shape Builder needs an internet connection to load its vector engine.');
@@ -776,6 +793,7 @@
 
     // 🟩 HOW IT WORKS — SVG paths stay editable; handles are lightweight controls layered above the artwork.
     // 🟪 BEGINNER TIP — Each handle stores a canvas position. Moving an anchor shifts its handles along with it.
+        // Rebuild the SVG display from vectorPaths; stored geometry stays separate from presentation.
     function renderVectors() {
       vectorLayer.innerHTML = '';
       const ns='http://www.w3.org/2000/svg';
@@ -1028,6 +1046,7 @@
     }
     canvasWrap.addEventListener('pointermove',updateFatBitsHover,{passive:true});
     canvasWrap.addEventListener('pointerleave',()=>{const cursor=$('fatBitsCursor');if(cursor)cursor.style.display='none';},{passive:true});
+        // Start a tool gesture after determining which canvas layer or vector was hit.
     function down(event) {
       event.preventDefault();
       if(tool==='lasso'){
@@ -1064,6 +1083,7 @@
       if(tool==='pencil'||tool==='eraser'||tool==='fingerpaint'){paintInputSegment(p,p,event,tool==='eraser');}
       if(canvas.setPointerCapture){try{canvas.setPointerCapture(event.pointerId);}catch(_){}}
     }
+        // Update the active gesture; coordinate conversion stays centralized in point()/svgPoint().
     function move(event) {
       if(panDragStart&&tool==='hand'){
         panX=panDragStart.panX+(event.clientX-panDragStart.x);panY=panDragStart.panY+(event.clientY-panDragStart.y);
@@ -1091,6 +1111,7 @@
       if(tool==='pencil'||tool==='eraser'||tool==='fingerpaint'){paintInputSegment(lastPoint,p,event,tool==='eraser');lastPoint=p;}
       else if(['line','rect','ellipse'].includes(tool)) shape(p);
     }
+        // Finish the gesture and update history/persistence after the artwork settles.
     function up(event) {
       if(panDragStart){panDragStart=null;canvasWrap.style.cursor='grab';if(event&&event.pointerId!==undefined&&canvas.releasePointerCapture){try{canvas.releasePointerCapture(event.pointerId);}catch(_){}}return;}
       if(lassoDrawing&&tool==='lasso'){
@@ -1156,6 +1177,7 @@
       img.onerror=()=>{URL.revokeObjectURL(url);toast('Could not read image; try PNG or JPEG');};img.src=url;
     }
     // Threshold-based contour tracing creates editable polygon paths for high-contrast sticker art.
+        // Trace a locally selected image into editable vector outlines without uploading the source image.
     function traceLogo(){
       if(!traceReferenceData)return toast('Import a logo first');
       const img=new Image();img.onload=()=>{
@@ -1284,6 +1306,7 @@
     // 🟩 HOW IT WORKS — Animation Studio composites the pixel canvas and SVG artwork for previews/exports.
     // 🟪 BEGINNER TIP — Keep frame changes separate from ordinary paint tools to avoid breaking undo behavior.
     // ANIMATION STUDIO: compose raster and SVG layers for thumbnails, onion skin, and GIFs.
+        // Combine raster pixels and SVG paths for animation thumbnails and GIF export.
     function compositeDataURL(){
       return new Promise(resolve=>{
         const out=document.createElement('canvas');out.width=W();out.height=H();const ox=out.getContext('2d');ox.drawImage(canvas,0,0);
@@ -1292,13 +1315,18 @@
         img.onload=()=>{ox.drawImage(img,0,0,W(),H());URL.revokeObjectURL(url);resolve(out.toDataURL('image/png'));};img.onerror=()=>{URL.revokeObjectURL(url);resolve(out.toDataURL('image/png'));};img.src=url;
       });
     }
+        // Capture raster art, flattened preview, editable vectors, and drawing defaults as one snapshot.
     async function captureFrame(){return {raster:canvas.toDataURL('image/png'),composite:await compositeDataURL(),vectors:JSON.parse(JSON.stringify(vectorPaths)),color,size};}
+        // Save edits to the active frame before switching frames or starting playback.
     async function saveCurrentFrame(){if(currentFrame>=0&&frames[currentFrame])frames[currentFrame]=await captureFrame();renderFrameStrip();}
+        // Start a new animation frame with a white canvas and no vector paths.
     function blankFrame(){const c=document.createElement('canvas');c.width=W();c.height=H();const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,W(),H());const data=c.toDataURL('image/png');return {raster:data,composite:data,vectors:[],color,size};}
+        // Restore raster first, then vector geometry and related controls.
     function loadFrame(index){
       if(!frames[index])return;currentFrame=index;const f=frames[index],img=new Image();
       img.onload=()=>{ctx.clearRect(0,0,W(),H());ctx.drawImage(img,0,0,W(),H());vectorPaths=JSON.parse(JSON.stringify(f.vectors||[]));activeVector=null;selectedVector=-1;color=f.color||color;size=f.size||size;$('colorInput').value=color;$('sizeInput').value=String(size);$('sizeValue').textContent=size+'px';renderVectors();renderFrameStrip();drawOnionSkin();};img.src=f.raster;
     }
+        // Rebuild frame thumbnails and select/copy/delete controls from the frames array.
     function renderFrameStrip(){
       const strip=$('frameStrip');strip.innerHTML='';
       if(!frames.length){const empty=document.createElement('span');empty.className='frame-empty';empty.textContent='No frames yet. Draw something, then press Add frame.';strip.appendChild(empty);return;}
@@ -1353,6 +1381,7 @@
         card.append(b,copy,del);strip.appendChild(card);
       });
     }
+        // Tint the previous frame and fade its white background to help align the next pose.
     function drawOnionSkin(){
       onionCtx.clearRect(0,0,W(),H());if(!$('onionToggle').checked||currentFrame<=0||!frames[currentFrame-1])return;
       const img=new Image();img.onload=()=>{
@@ -1373,6 +1402,7 @@
       if(frames.length<2){toast('Add at least two frames');return;}$('playAnimationBtn').disabled=true;$('stopAnimationBtn').disabled=false;playbackIndex=currentFrame;
       playbackTimer=setInterval(()=>{playbackIndex=(playbackIndex+1)%frames.length;loadFrame(playbackIndex);},1000/Number($('animationFps').value));toast('Animation playing');
     });
+        // Clear the animation timer and restore the Play/Stop controls.
     function stopPlayback(){if(playbackTimer){clearInterval(playbackTimer);playbackTimer=null;}$('playAnimationBtn').disabled=false;$('stopAnimationBtn').disabled=true;}
     $('stopAnimationBtn').addEventListener('click',()=>{stopPlayback();toast('Playback stopped');});
     $('animationFps').addEventListener('change',()=>{if(playbackTimer){stopPlayback();$('playAnimationBtn').click();}});
@@ -1387,6 +1417,7 @@
     });
 
     // Export editable vector paths as SVG cut outlines. Raster pencil marks are intentionally excluded.
+        // Export editable vector paths and text as SVG; raster brush marks are excluded.
     function exportVectorSvg() {
       if (!vectorPaths.length && !textObjects.length) {
         toast('Add a vector shape or text first');
