@@ -1301,3 +1301,12 @@ body:not(.corvette-mode) .toolgrid .tool[aria-pressed="true"] .ico {
 @media (prefers-reduced-motion: reduce) {
   body:not(.corvette-mode) .toolgrid .tool .ico { transition: none; }
 }
+
+
+/* iPad landscape: nudge the drawing board upward so it sits more comfortably
+   in the visible workspace without changing portrait or phone layouts. */
+@media (orientation: landscape) and (min-width: 768px) and (max-width: 1366px) and (max-height: 1100px) {
+  .stage .ruler-layout {
+    transform: translateY(-16px);
+  }
+}
