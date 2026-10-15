@@ -1035,3 +1035,69 @@ body:not(.corvette-mode) .toolgrid .tool[aria-pressed="true"] {
   filter: none;
 }
 
+/* C4 EL NIGHT LIGHT MOTION — subtle, Corvette-only illumination. */
+body.corvette-mode .c4-indiglo-led {
+  animation: c4ElDimFlicker 3.7s steps(1, end) infinite;
+}
+body.corvette-mode .c4-dash-rule {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, transparent, rgba(106,186,255,.32), transparent);
+}
+body.corvette-mode .c4-dash-rule::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -24%;
+  width: 24%;
+  background: linear-gradient(90deg, transparent, rgba(128,205,255,.22) 15%, #8bd8ff 50%, rgba(74,168,255,.55) 78%, transparent);
+  box-shadow: 0 0 5px rgba(73,174,255,.72), 0 0 10px rgba(42,139,255,.35);
+  animation: c4ElLightTrace 2.8s linear infinite;
+  pointer-events: none;
+}
+body.corvette-mode .c4-warning-bars i {
+  transform-origin: 50% 100%;
+  animation: c4WarningBarDance 1.15s ease-in-out infinite alternate;
+}
+body.corvette-mode .c4-warning-bars i:nth-child(2) { animation-delay: -.42s; }
+body.corvette-mode .c4-warning-bars i:nth-child(3) { animation-delay: -.18s; }
+body.corvette-mode .c4-warning-bars i:nth-child(4) { animation-delay: -.71s; }
+body.corvette-mode .c4-warning-bars i:nth-child(5) { animation-delay: -.33s; }
+body.corvette-mode .c4-warning-bars i:nth-child(6) { animation-delay: -.88s; }
+body.corvette-mode .c4-warning-bars i:nth-child(7) { animation-delay: -.26s; }
+body.corvette-mode .c4-warning-bars i:nth-child(8) { animation-delay: -.64s; }
+body.corvette-mode .c4-warning-bars i:nth-child(9) { animation-delay: -.09s; }
+body.corvette-mode .c4-warning-bars i:nth-child(10) { animation-delay: -.54s; }
+body.corvette-mode .c4-warning-bars i:nth-child(11) { animation-delay: -.78s; }
+body.corvette-mode .c4-warning-bars i:nth-child(12) { animation-delay: -.36s; }
+@keyframes c4ElLightTrace {
+  from { left: -24%; opacity: .12; }
+  12% { opacity: .85; }
+  78% { opacity: .8; }
+  to { left: 100%; opacity: .08; }
+}
+@keyframes c4ElDimFlicker {
+  0%, 8%, 10%, 32%, 34%, 62%, 64%, 100% {
+    opacity: .62;
+    box-shadow: 0 0 3px rgba(154,255,255,.45), 0 0 8px rgba(61,189,255,.38), 0 0 15px rgba(61,157,255,.20);
+  }
+  9%, 33%, 63% {
+    opacity: .24;
+    box-shadow: 0 0 2px rgba(154,255,255,.20), 0 0 5px rgba(61,189,255,.16);
+  }
+  48%, 49% { opacity: .78; }
+}
+@keyframes c4WarningBarDance {
+  from { transform: scaleY(.42); filter: brightness(.82); }
+  to { transform: scaleY(1.12); filter: brightness(1.18); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.corvette-mode .c4-indiglo-led,
+  body.corvette-mode .c4-dash-rule::after,
+  body.corvette-mode .c4-warning-bars i {
+    animation: none !important;
+  }
+  body.corvette-mode .c4-dash-rule::after { display: none; }
+}
+
