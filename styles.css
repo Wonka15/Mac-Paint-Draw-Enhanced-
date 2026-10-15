@@ -997,26 +997,14 @@ body.corvette-mode .corvette-dash{animation:c4DashWake .5s ease-out both}@keyfra
 @media(prefers-reduced-motion:reduce) { .toolgrid .tool { transition:none; } }
 
 
-/* CORVETTE TOOLBOX LEGIBILITY — pale blue lettering with a deep navy halo.
-   Keep labels readable on the dark dash theme without changing tool behavior. */
+/* CORVETTE TOOLBOX LEGIBILITY — brighten only the text labels.
+   Leave the original toolbox icons and their colors untouched. */
 body.corvette-mode .toolgrid .tool {
   color: #e3f0ff;
   text-shadow: 0 1px 1px #061326, 0 0 4px rgba(5, 24, 52, .95);
-}
-body.corvette-mode .toolgrid .tool .ico {
-  color: #d7e8ff;
-  filter: drop-shadow(0 1px 1px #061326) drop-shadow(0 0 4px rgba(7, 35, 77, .98));
-}
-body.corvette-mode .toolgrid .tool .ico svg {
-  filter: drop-shadow(0 1px 1px #061326) drop-shadow(0 0 3px rgba(7, 35, 77, .95));
 }
 body.corvette-mode .toolgrid .tool.active,
 body.corvette-mode .toolgrid .tool[aria-pressed="true"] {
   color: #071a31;
   text-shadow: 0 1px 0 rgba(255,255,255,.35);
-}
-body.corvette-mode .toolgrid .tool.active .ico,
-body.corvette-mode .toolgrid .tool[aria-pressed="true"] .ico {
-  color: #102b4d;
-  filter: drop-shadow(0 1px 0 rgba(255,255,255,.45)) drop-shadow(0 0 3px rgba(4, 21, 45, .65));
 }
