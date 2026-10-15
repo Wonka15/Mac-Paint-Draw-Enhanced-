@@ -1169,3 +1169,70 @@ body.corvette-mode .c4-warning-bars i:nth-child(12) { animation-delay: -.36s; }
 .toolgrid .tool .icon-fingerpaint svg { overflow:visible; }
 /* Keep the new pigment details crisp instead of adding extra glow. */
 .toolgrid .tool .ico svg { filter:none; }
+
+/* NEON TOOLBOX — dark circular keys with a restrained cyan edge glow.
+   Preserve the playful SVG icon colors and keep the Corvette theme independent. */
+body:not(.corvette-mode) .toolgrid .tool {
+  color: #d8faff;
+  border: 1px solid rgba(77, 222, 235, .58);
+  background-color: #0a151a;
+  background-image:
+    radial-gradient(ellipse at 30% 18%, rgba(255,255,255,.09), transparent 42%),
+    linear-gradient(145deg, #1b2a30 0%, #0a151a 56%, #050b0e 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.13),
+    inset 0 -3px 6px rgba(0,0,0,.48),
+    0 2px 0 #071014,
+    0 0 5px rgba(55, 218, 232, .17),
+    0 0 12px rgba(55, 218, 232, .09);
+  filter: none;
+}
+body:not(.corvette-mode) .toolgrid .tool::after {
+  border: 1px solid rgba(95, 237, 242, .36);
+  box-shadow: inset 0 0 0 1px rgba(95, 237, 242, .05);
+  opacity: 1;
+}
+body:not(.corvette-mode) .toolgrid .tool:hover {
+  color: #f0feff;
+  border-color: rgba(111, 248, 245, .9);
+  background-image:
+    radial-gradient(ellipse at 30% 18%, rgba(255,255,255,.13), transparent 42%),
+    linear-gradient(145deg, #203b42 0%, #0b1c22 56%, #061014 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.17),
+    inset 0 -3px 6px rgba(0,0,0,.42),
+    0 2px 0 #071014,
+    0 0 7px rgba(55, 218, 232, .3),
+    0 0 16px rgba(55, 218, 232, .16);
+  filter: none;
+}
+body:not(.corvette-mode) .toolgrid .tool:active,
+body:not(.corvette-mode) .toolgrid .tool.active,
+body:not(.corvette-mode) .toolgrid .tool[aria-pressed="true"] {
+  color: #efffff;
+  border-color: #79fff5;
+  background-image:
+    radial-gradient(ellipse at 28% 22%, rgba(255,255,255,.08), transparent 44%),
+    linear-gradient(145deg, #071216 0%, #0a2026 58%, #071014 100%);
+  transform: translateY(3px) scale(.96);
+  box-shadow:
+    inset 3px 3px 7px rgba(0,0,0,.66),
+    inset -1px -1px 0 rgba(115,255,247,.12),
+    0 1px 0 #071014,
+    0 0 6px rgba(74, 244, 239, .66),
+    0 0 14px rgba(74, 244, 239, .38),
+    0 0 25px rgba(74, 244, 239, .16);
+  filter: none;
+}
+body:not(.corvette-mode) .toolgrid .tool:active::after,
+body:not(.corvette-mode) .toolgrid .tool.active::after,
+body:not(.corvette-mode) .toolgrid .tool[aria-pressed="true"]::after {
+  border: 2px solid rgba(116, 255, 247, .96);
+  box-shadow: inset 0 0 0 1px rgba(116, 255, 247, .2), 0 0 7px rgba(72, 240, 235, .7);
+}
+body:not(.corvette-mode) .toolgrid .tool .ico {
+  filter: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  body:not(.corvette-mode) .toolgrid .tool { transition: none; }
+}
