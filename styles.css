@@ -1236,3 +1236,51 @@ body:not(.corvette-mode) .toolgrid .tool .ico {
 @media (prefers-reduced-motion: reduce) {
   body:not(.corvette-mode) .toolgrid .tool { transition: none; }
 }
+
+
+/* Vintage Macintosh toolbox — platinum faces, crisp dark lettering, tactile black press state.
+   Scoped outside Corvette mode so the dashboard theme remains untouched. */
+body:not(.corvette-mode) .toolgrid .tool {
+  color: #211f1b;
+  font-family: Chicago, Geneva, Charcoal, Monaco, "Lucida Grande", sans-serif;
+  font-size: .88rem;
+  font-weight: 700;
+  letter-spacing: -.025em;
+  text-shadow: 0 1px 0 rgba(255,255,255,.72);
+  border: 1px solid rgba(61, 204, 219, .76);
+  background-color: #d5d5d2;
+  background-image: linear-gradient(180deg, rgba(255,255,255,.94) 0%, rgba(245,245,241,.98) 17%, #d8d8d4 55%, #c2c2be 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.98), inset 0 -1px 0 rgba(75,75,70,.2), 0 2px 0 #898985, 0 0 0 1px rgba(48,204,218,.16), 0 0 7px rgba(48,204,218,.2);
+  filter: none;
+}
+body:not(.corvette-mode) .toolgrid .tool:hover {
+  color: #171613;
+  border-color: rgba(42,193,208,.95);
+  background-image: linear-gradient(180deg, #fff 0%, #f1f1ed 18%, #d9d9d5 58%, #c9c9c4 100%);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(75,75,70,.2), 0 2px 0 #898985, 0 0 9px rgba(48,204,218,.28);
+}
+body:not(.corvette-mode) .toolgrid .tool:active,
+body:not(.corvette-mode) .toolgrid .tool.active,
+body:not(.corvette-mode) .toolgrid .tool[aria-pressed="true"] {
+  color: #171613;
+  border: 2px solid #111;
+  background-image: linear-gradient(180deg, #b9b9b5 0%, #d0d0cc 45%, #e1e1dc 100%);
+  transform: translateY(3px) scale(.96);
+  box-shadow: inset 3px 3px 6px rgba(0,0,0,.28), inset -1px -1px 0 rgba(255,255,255,.6), 0 1px 0 #858580;
+  text-shadow: 0 1px 0 rgba(255,255,255,.65);
+}
+body:not(.corvette-mode) .toolgrid .tool:active::after,
+body:not(.corvette-mode) .toolgrid .tool.active::after,
+body:not(.corvette-mode) .toolgrid .tool[aria-pressed="true"]::after {
+  border: 1px solid #111;
+  box-shadow: none;
+  opacity: 1;
+}
+body:not(.corvette-mode) .toolgrid .tool .ico,
+body:not(.corvette-mode) .toolgrid .tool .ico svg { filter: none; }
+@media (max-width: 600px) {
+  body:not(.corvette-mode) .toolgrid .tool { font-size: .82rem; letter-spacing: -.02em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body:not(.corvette-mode) .toolgrid .tool { transition: none; }
+}
