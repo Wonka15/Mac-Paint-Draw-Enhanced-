@@ -857,21 +857,23 @@ body.corvette-mode .corvette-dash{animation:c4DashWake .5s ease-out both}@keyfra
 @media(prefers-reduced-motion:reduce){.se-radio[data-visualizer="lava"] .se-radio-visualizer i,.se-radio[data-visualizer="starfield"] .se-radio-visualizer i,.se-radio[data-visualizer="toasters"] .se-radio-visualizer i,.se-radio[data-visualizer="plasma"] .se-radio-visualizer,.se-radio[data-visualizer="plasma"] .se-radio-visualizer i,.se-radio[data-visualizer="toasters"] .se-radio-visualizer:before,.se-radio[data-visualizer="toasters"] .se-radio-visualizer:after{animation:none!important}}
 
 
-/* iPad portrait layout — keep the canvas centered and give it the full workspace width.
+/* iPad portrait layout — toolbox first, drawing board next, Pixel Mode at the bottom.
    This tablet-only breakpoint leaves phone and landscape layouts unchanged. */
 @media (orientation: portrait) and (min-width: 701px) and (max-width: 1050px) {
   .app { min-height:100vh; padding:12px; gap:10px; }
   .workspace { display:flex; flex-direction:column; gap:12px; min-height:0; }
   .leftpanel,.canvas-shell,.rightpanel { width:100%; min-width:0; }
-  .leftpanel { padding:12px; }
+  .leftpanel { display:flex; flex-direction:column; padding:12px; }
   .toolgrid { grid-template-columns:repeat(6,minmax(0,1fr)); gap:7px; }
   .tool { min-width:0; min-height:58px; padding:6px 3px; }
   .tool .shortcut-hint { display:none; }
-  .canvas-shell { align-self:stretch; }
+  /* Keep Pixel Mode after the toolbox controls, so it sits at the bottom of the tool panel. */
+  .pixel-navigator { order:99; }
+  .canvas-shell { order:2; align-self:stretch; }
   .canvasbar { align-items:center; }
   .stage { width:100%; min-width:0; min-height:0; padding:14px; place-items:start center; }
   .ruler-layout { width:min(100%,924px); min-width:0; margin-inline:auto; }
   .paper { max-width:100%; height:min(68vh,760px); min-height:380px; }
-  .rightpanel { display:flex; flex-direction:column; gap:12px; }
+  .rightpanel { order:3; display:flex; flex-direction:column; gap:12px; }
   .rightpanel h2 { grid-column:auto; }
 }
