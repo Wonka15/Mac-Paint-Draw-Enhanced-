@@ -1008,3 +1008,30 @@ body.corvette-mode .toolgrid .tool[aria-pressed="true"] {
   color: #071a31;
   text-shadow: 0 1px 0 rgba(255,255,255,.35);
 }
+
+/* CORVETTE TOOLBOX — ruby-red text labels only.
+   Keep the original toolbox icons and their colors untouched. */
+body.corvette-mode .toolgrid .tool,
+body.corvette-mode .toolgrid .tool.active,
+body.corvette-mode .toolgrid .tool[aria-pressed="true"] {
+  color: #ff3158;
+  text-shadow: 0 1px 1px #310510, 0 0 4px rgba(100, 0, 24, .92);
+}
+
+/* NORMAL MODE — toggled circular keys sink into the tactile toolbox.
+   Corvette mode retains its own dashboard styling. */
+body:not(.corvette-mode) .toolgrid .tool.active,
+body:not(.corvette-mode) .toolgrid .tool[aria-pressed="true"] {
+  transform: translateY(3px) scale(.96);
+  background-image:
+    radial-gradient(ellipse at 22% 18%, rgba(255,255,255,.20) 0 1px, transparent 1.8px),
+    radial-gradient(ellipse at 76% 68%, rgba(91,75,51,.18) 0 .7px, transparent 1.5px),
+    linear-gradient(145deg, #c9bea7 0%, #bdb198 52%, #b0a489 100%);
+  box-shadow:
+    inset 4px 4px 8px rgba(65,54,37,.34),
+    inset 1px 1px 0 rgba(255,255,255,.40),
+    inset -2px -2px 3px rgba(255,255,255,.14),
+    0 1px 0 #a69a82;
+  filter: none;
+}
+
