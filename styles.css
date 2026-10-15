@@ -1284,3 +1284,20 @@ body:not(.corvette-mode) .toolgrid .tool .ico svg { filter: none; }
 @media (prefers-reduced-motion: reduce) {
   body:not(.corvette-mode) .toolgrid .tool { transition: none; }
 }
+
+
+/* Color-preserving icon glow while a toolbox key is pressed or selected.
+   Drop shadows follow each icon's silhouette, leaving its original pigments intact. */
+body:not(.corvette-mode) .toolgrid .tool:active .ico,
+body:not(.corvette-mode) .toolgrid .tool.active .ico,
+body:not(.corvette-mode) .toolgrid .tool[aria-pressed="true"] .ico {
+  filter:
+    drop-shadow(0 0 1px rgba(255,255,255,.98))
+    drop-shadow(0 0 3px rgba(72,235,255,.96))
+    drop-shadow(0 0 6px rgba(72,235,255,.72))
+    drop-shadow(0 0 9px rgba(255,91,205,.38));
+  transition: filter 120ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  body:not(.corvette-mode) .toolgrid .tool .ico { transition: none; }
+}
