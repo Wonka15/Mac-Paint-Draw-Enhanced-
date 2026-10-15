@@ -1,15 +1,27 @@
 name: Code quality
+
 on:
   pull_request:
   push:
     branches: [main]
+
 jobs:
   static-checks:
+    name: JavaScript syntax and project integrity
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --check app.js
-      - run: node scripts/check-project.js
+      - name: Check every local JavaScript module
+        run: |
+          node --check app.js
+          node --check painting.js
+          node --check radio.js
+          node --check corvette.js
+          node --check scripts/check-project.js
+      - name: Run project integrity checks
+        run: node scripts/check-project.js

@@ -1,0 +1,14 @@
+{
+  "name": "mac-paint-draw-enhanced",
+  "version": "2.0.0",
+  "private": true,
+  "description": "A classic-Mac-inspired browser painting and vector design studio.",
+  "license": "MIT",
+  "scripts": {
+    "check": "node --check app.js && node --check painting.js && node --check radio.js && node --check corvette.js && node --check scripts/check-project.js && node scripts/check-project.js",
+    "test": "npm run check"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

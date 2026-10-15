@@ -1,5 +1,9 @@
 /*
  * Painting drawer: a small color mixer that paints onto the existing raster canvas.
+ *
+ * Beginner map: color helpers handle RGB math, updatePreview() updates the swatch,
+ * toCanvasPoint() maps touch/mouse coordinates to canvas pixels, and drawStroke()
+ * applies the chosen brush. Pointer events are captured only while this drawer is open.
  * It intentionally shares the main canvas so exports include these brush strokes.
  */
 (() => {
